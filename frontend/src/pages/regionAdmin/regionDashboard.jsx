@@ -32,6 +32,7 @@ import { adminService } from "@/services/adminService"
 import { issueService } from "@/services/issueService"
 import { useToast } from "@/components/ui/use-toast"
 import { IssueDetailDialog } from "@/components/IssueDetailDialog"
+import { useAuth } from "@/context/AuthContext"
 
 // Standard department options for a region.
 const PREDEFINED_DEPARTMENTS = [
@@ -48,6 +49,7 @@ const PREDEFINED_DEPARTMENTS = [
 ]
 
 export default function DepartmentDashboard() {
+  const { user } = useAuth()
   const { toast } = useToast()
   const [departments, setDepartments] = React.useState([])
   const [selectedDepartment, setSelectedDepartment] = React.useState("all")
@@ -64,6 +66,7 @@ export default function DepartmentDashboard() {
   const [detailOpen, setDetailOpen] = React.useState(false)
   const [pendingIssues, setPendingIssues] = React.useState([])
   const [assigningDept, setAssigningDept] = React.useState(null)
+  const [report, setReport] = React.useState(null)
 
   // Departments that have NOT yet been created in this region,
   // based on the standard list above.
@@ -151,7 +154,7 @@ export default function DepartmentDashboard() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex flex-col gap-1">
-          <h2 className="text-3xl font-bold">Region Admin Dashboard</h2>
+          <h2 className="text-3xl font-bold">{user?.region?.name ? user.region.name : "Region Admin Dashboard"}</h2>
           {pendingDeptCount > 0 && (
             <div className="inline-flex items-center gap-2 rounded-full bg-amber-100 text-amber-900 dark:bg-amber-950/40 dark:text-amber-200 px-3 py-1 text-xs font-medium">
               <AlertTriangle className="h-3 w-3" />
@@ -361,10 +364,21 @@ export default function DepartmentDashboard() {
       {/* Department Actions */}
       <Card>
         <CardHeader>
-          <CardTitle>Department Actions</CardTitle>
+          <CardTitle>Region Admin Actions</CardTitle>
         </CardHeader>
         <CardContent className="flex gap-4 flex-wrap">
-          <Button variant="outline">
+          <Button
+            variant="outline"
+            onClick={async () => {
+              try {
+                const data = await adminService.getRegionReport()
+                setReport(data)
+                toast({ title: "Region report generated" })
+              } catch (err) {
+                toast({ title: err.message || "Failed to generate report", variant: "destructive" })
+              }
+            }}
+          >
             <ArrowUpRight className="mr-2 h-4 w-4" />
             Generate Report
           </Button>
@@ -378,6 +392,37 @@ export default function DepartmentDashboard() {
           </Button>
         </CardContent>
       </Card>
+
+      {report && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Region Report Summary</CardTitle>
+            <CardDescription>Status and performance across departments in your region.</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-2 text-sm">
+            <p><span className="font-semibold">Total Issues:</span> {report.totalIssues}</p>
+            <div>
+              <p className="font-semibold">Status Distribution:</p>
+              <ul className="list-disc list-inside text-muted-foreground">
+                {Object.entries(report.statusDistribution || {}).map(([status, count]) => (
+                  <li key={status}>{status}: {count}</li>
+                ))}
+              </ul>
+            </div>
+            <div>
+              <p className="font-semibold">Departments:</p>
+              <ul className="list-disc list-inside text-muted-foreground">
+                {(report.departments || []).map((d) => (
+                  <li key={d.id || d.name}>
+                    {d.name}: {d.completed}/{d.totalIssues} completed
+                    {d.averageResolutionHours != null && ` · avg ${d.averageResolutionHours.toFixed(1)}h`}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
     </div>
   )

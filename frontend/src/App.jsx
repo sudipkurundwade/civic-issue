@@ -15,6 +15,7 @@ import NotificationsPage from "@/pages/Notifications"
 import AnnouncementsPage from "@/pages/SuperAdmin/announcements"
 import AnnouncementsList from "@/pages/shared/AnnouncementsList"
 import CreateAnnouncement from "@/pages/shared/CreateAnnouncement"
+import ReportsPage from "@/pages/Reports"
 import { AppSidebar } from "@/components/app-sidebar"
 import { SidebarProvider, SidebarInset, SidebarTrigger } from "@/components/ui/sidebar"
 import { useAuth } from "@/context/AuthContext"
@@ -133,6 +134,7 @@ function AppContent() {
               (page.includes("civic-dashboard") || page.includes("citizen-dashboard")) ? "Report Issue" :
                 page.includes("my-issues") ? "My Issues" :
                   page === "notifications" ? "Notifications" :
+                  page === "reports" ? "Reports" :
                   page === "chat" ? "Chat" :
                     page === "profile" ? "Profile" :
                       page === "analytics" ? "Analytics" :
@@ -163,6 +165,7 @@ function AppContent() {
             {page === "profile" && <ProfilePage />}
             {page === "profile" && <ProfilePage />}
             {page === "analytics" && user?.role === "super_admin" && <AnalyticsPage />}
+            {page === "reports" && <ReportsPage />}
             {page === "announcements" && <AnnouncementsList />}
             {page === "my-announcements" && <AnnouncementsList mode="my" />}
             {page === "create-announcement" && <CreateAnnouncement />}

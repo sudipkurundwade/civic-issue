@@ -78,6 +78,176 @@ router.post('/regions', authenticate, requireRole('super_admin'), async (req, re
   }
 });
 
+// Super admin: System-wide reporting summary
+router.get('/reports/system-summary', authenticate, requireRole('super_admin'), async (req, res) => {
+  try {
+    const issues = await Issue.find()
+      .populate({ path: 'department', populate: { path: 'region' } })
+      .lean();
+
+    const totalIssues = issues.length;
+    const statusDistribution = issues.reduce(
+      (acc, i) => {
+        acc[i.status] = (acc[i.status] || 0) + 1;
+        return acc;
+      },
+      {}
+    );
+
+    // Region and department performance
+    const regionStats = {};
+    const deptStats = {};
+    const SLA_HOURS = 72;
+
+    issues.forEach((i) => {
+      const dept = i.department;
+      const region = dept?.region;
+      const regionKey = region ? region._id.toString() : 'unassigned';
+      const deptKey = dept ? dept._id.toString() : 'unassigned';
+
+      if (!regionStats[regionKey]) {
+        regionStats[regionKey] = {
+          id: region?._id,
+          name: region?.name || 'Unassigned',
+          totalIssues: 0,
+          completed: 0,
+          totalResolutionHours: 0,
+          resolutionCount: 0,
+          slaBreaches: 0,
+        };
+      }
+      if (!deptStats[deptKey]) {
+        deptStats[deptKey] = {
+          id: dept?._id,
+          name: dept?.name || 'Unassigned',
+          regionId: region?._id,
+          regionName: region?.name || 'Unassigned',
+          totalIssues: 0,
+          completed: 0,
+          totalResolutionHours: 0,
+          resolutionCount: 0,
+          slaBreaches: 0,
+        };
+      }
+
+      const r = regionStats[regionKey];
+      const d = deptStats[deptKey];
+      r.totalIssues += 1;
+      d.totalIssues += 1;
+
+      if (i.status === 'COMPLETED' && i.createdAt && i.completedAt) {
+        const hours =
+          (new Date(i.completedAt).getTime() - new Date(i.createdAt).getTime()) /
+          (1000 * 60 * 60);
+        r.completed += 1;
+        d.completed += 1;
+        r.totalResolutionHours += hours;
+        d.totalResolutionHours += hours;
+        r.resolutionCount += 1;
+        d.resolutionCount += 1;
+        if (hours > SLA_HOURS) {
+          r.slaBreaches += 1;
+          d.slaBreaches += 1;
+        }
+      }
+    });
+
+    const regionPerformance = Object.values(regionStats).map((r) => ({
+      id: r.id,
+      name: r.name,
+      totalIssues: r.totalIssues,
+      completed: r.completed,
+      averageResolutionHours:
+        r.resolutionCount > 0
+          ? r.totalResolutionHours / r.resolutionCount
+          : null,
+      slaBreaches: r.slaBreaches,
+    }));
+
+    const departmentEfficiency = Object.values(deptStats).map((d) => ({
+      id: d.id,
+      name: d.name,
+      regionId: d.regionId,
+      regionName: d.regionName,
+      totalIssues: d.totalIssues,
+      completed: d.completed,
+      averageResolutionHours:
+        d.resolutionCount > 0
+          ? d.totalResolutionHours / d.resolutionCount
+          : null,
+      slaBreaches: d.slaBreaches,
+    }));
+
+    const totalCompleted = issues.filter((i) => i.status === 'COMPLETED').length;
+    const totalBreaches = departmentEfficiency.reduce(
+      (sum, d) => sum + d.slaBreaches,
+      0
+    );
+
+    // Basic insights (most/least issues, fastest/slowest departments)
+    const mostIssuesRegion = [...regionPerformance].sort(
+      (a, b) => b.totalIssues - a.totalIssues
+    )[0];
+    const leastIssuesRegion = [...regionPerformance].sort(
+      (a, b) => a.totalIssues - b.totalIssues
+    )[0];
+
+    const deptsWithAvg = departmentEfficiency.filter(
+      (d) => d.averageResolutionHours != null && d.totalIssues > 0
+    );
+    const fastestDept =
+      deptsWithAvg.length > 0
+        ? [...deptsWithAvg].sort(
+            (a, b) => a.averageResolutionHours - b.averageResolutionHours
+          )[0]
+        : null;
+    const slowestDept =
+      deptsWithAvg.length > 0
+        ? [...deptsWithAvg].sort(
+            (a, b) => b.averageResolutionHours - a.averageResolutionHours
+          )[0]
+        : null;
+
+    const insightsText = [
+      `There are ${totalIssues} issues in the system, with ${totalCompleted} completed and ${totalBreaches} SLA breaches (>${SLA_HOURS} hours).`,
+      mostIssuesRegion
+        ? `${mostIssuesRegion.name} has the highest volume with ${mostIssuesRegion.totalIssues} reported issues.`
+        : null,
+      leastIssuesRegion
+        ? `${leastIssuesRegion.name} has the lowest volume with ${leastIssuesRegion.totalIssues} issues.`
+        : null,
+      fastestDept
+        ? `The fastest department is ${fastestDept.name} in ${fastestDept.regionName}, resolving issues in an average of ${fastestDept.averageResolutionHours.toFixed(
+            1
+          )} hours.`
+        : null,
+      slowestDept && slowestDept.id !== fastestDept?.id
+        ? `The slowest department is ${slowestDept.name} in ${slowestDept.regionName}, averaging ${slowestDept.averageResolutionHours.toFixed(
+            1
+          )} hours and ${slowestDept.slaBreaches} SLA breaches.`
+        : null,
+    ]
+      .filter(Boolean)
+      .join(' ');
+
+    res.json({
+      totalIssues,
+      statusDistribution,
+      regionPerformance,
+      departmentEfficiency,
+      sla: {
+        thresholdHours: SLA_HOURS,
+        totalCompleted,
+        totalBreaches,
+      },
+      insightsText,
+    });
+  } catch (err) {
+    console.error('System summary report error:', err);
+    res.status(500).json({ error: 'Failed to generate report' });
+  }
+});
+
 // ------ REGIONAL ADMIN ------
 
 // Create departmental admin
@@ -190,6 +360,129 @@ router.get('/departments', authenticate, requireRole('regional_admin'), async (r
   } catch (err) {
     console.error('Departments error:', err);
     res.status(500).json({ error: 'Failed to fetch departments' });
+  }
+});
+
+// Regional admin: Reporting summary for my region
+router.get('/reports/region-summary', authenticate, requireRole('regional_admin'), async (req, res) => {
+  try {
+    const regionId = req.user.region;
+    if (!regionId) return res.status(403).json({ error: 'No region assigned' });
+    const region = await Region.findById(regionId).select('name').lean();
+
+    const departments = await Department.find({ region: regionId }).select('_id name').lean();
+    const deptIds = departments.map((d) => d._id);
+
+    const issues = await Issue.find({ department: { $in: deptIds } })
+      .populate('department', 'name')
+      .lean();
+
+    const totalIssues = issues.length;
+    const statusDistribution = issues.reduce(
+      (acc, i) => {
+        acc[i.status] = (acc[i.status] || 0) + 1;
+        return acc;
+      },
+      {}
+    );
+
+    const deptMap = {};
+    const SLA_HOURS = 72;
+
+    issues.forEach((i) => {
+      const dept = i.department;
+      const key = dept ? dept._id.toString() : 'unassigned';
+      if (!deptMap[key]) {
+        deptMap[key] = {
+          id: dept?._id,
+          name: dept?.name || 'Unassigned',
+          totalIssues: 0,
+          completed: 0,
+          totalResolutionHours: 0,
+          resolutionCount: 0,
+          slaBreaches: 0,
+        };
+      }
+      const d = deptMap[key];
+      d.totalIssues += 1;
+      if (i.status === 'COMPLETED' && i.createdAt && i.completedAt) {
+        const hours =
+          (new Date(i.completedAt).getTime() - new Date(i.createdAt).getTime()) /
+          (1000 * 60 * 60);
+        d.completed += 1;
+        d.totalResolutionHours += hours;
+        d.resolutionCount += 1;
+        if (hours > SLA_HOURS) d.slaBreaches += 1;
+      }
+    });
+
+    const departmentsPerformance = Object.values(deptMap).map((d) => ({
+      id: d.id,
+      name: d.name,
+      totalIssues: d.totalIssues,
+      completed: d.completed,
+      averageResolutionHours:
+        d.resolutionCount > 0
+          ? d.totalResolutionHours / d.resolutionCount
+          : null,
+      slaBreaches: d.slaBreaches,
+    }));
+
+    const mostIssuesDept = [...departmentsPerformance].sort(
+      (a, b) => b.totalIssues - a.totalIssues
+    )[0];
+    const leastIssuesDept = [...departmentsPerformance].sort(
+      (a, b) => a.totalIssues - b.totalIssues
+    )[0];
+    const withAvg = departmentsPerformance.filter(
+      (d) => d.averageResolutionHours != null && d.totalIssues > 0
+    );
+    const fastestDept =
+      withAvg.length > 0
+        ? [...withAvg].sort(
+            (a, b) => a.averageResolutionHours - b.averageResolutionHours
+          )[0]
+        : null;
+    const slowestDept =
+      withAvg.length > 0
+        ? [...withAvg].sort(
+            (a, b) => b.averageResolutionHours - a.averageResolutionHours
+          )[0]
+        : null;
+
+    const insightsText = [
+      `Your region has ${totalIssues} issues across ${departmentsPerformance.length} departments.`,
+      mostIssuesDept
+        ? `${mostIssuesDept.name} has the highest load with ${mostIssuesDept.totalIssues} issues.`
+        : null,
+      leastIssuesDept
+        ? `${leastIssuesDept.name} has the lowest load with ${leastIssuesDept.totalIssues} issues.`
+        : null,
+      fastestDept
+        ? `${fastestDept.name} resolves issues fastest with an average of ${fastestDept.averageResolutionHours.toFixed(
+            1
+          )} hours.`
+        : null,
+      slowestDept && slowestDept.id !== fastestDept?.id
+        ? `${slowestDept.name} is slowest, averaging ${slowestDept.averageResolutionHours.toFixed(
+            1
+          )} hours and ${slowestDept.slaBreaches} SLA breaches.`
+        : null,
+    ]
+      .filter(Boolean)
+      .join(' ');
+
+    res.json({
+      regionId,
+      regionName: region?.name || null,
+      totalIssues,
+      statusDistribution,
+      departments: departmentsPerformance,
+      insightsText,
+    });
+  } catch (err) {
+    console.error('Region summary report error:', err);
+    res.status(500).json({ error: 'Failed to generate report' });
   }
 });
 

@@ -12,6 +12,7 @@ import {
   List,
   Bell,
   Megaphone,
+  FileText,
 } from "lucide-react"
 
 import { NavMain } from "@/components/nav-main"
@@ -27,6 +28,7 @@ import {
 const ROLE_NAV = {
   super_admin: [
     { title: "Super Admin Dashboard", url: "/super-dashboard", icon: LayoutDashboard },
+    { title: "Reports", url: "/reports", icon: FileText },
     { title: "Notifications", url: "/notifications", icon: Bell },
     { title: "Analytics", url: "/analytics", icon: PieChart },
     { title: "Announcements", url: "/announcements", icon: Megaphone },
@@ -37,12 +39,14 @@ const ROLE_NAV = {
   regional_admin: [
     { title: "Region Dashboard", url: "/region-dashboard", icon: Map },
     { title: "Departments", url: "/region-departments", icon: Building2 },
+    { title: "Reports", url: "/reports", icon: FileText },
     { title: "Notifications", url: "/notifications", icon: Bell },
     { title: "Messages", url: "/chat", icon: MessageSquare },
     { title: "Profile", url: "/profile", icon: User },
   ],
   departmental_admin: [
     { title: "Department Dashboard", url: "/dept-dashboard", icon: Building2 },
+    { title: "Reports", url: "/reports", icon: FileText },
     { title: "Notifications", url: "/notifications", icon: Bell },
     { title: "Announcements", url: "/announcements", icon: Megaphone },
     { title: "Messages", url: "/chat", icon: MessageSquare },
@@ -60,11 +64,16 @@ const ROLE_NAV = {
 export function AppSidebar({ user, onLogout, page, onNavigate }) {
   const baseNav = ROLE_NAV[user?.role] || ROLE_NAV.civic
   const navItems =
-    user?.role === "departmental_admin" && user?.department?.name
-      ? baseNav.map((item, idx) =>
-          idx === 0 ? { ...item, title: user.department.name } : item
-        )
-      : baseNav
+    baseNav.map((item, idx) => {
+      if (idx !== 0) return item
+      if (user?.role === "departmental_admin" && user?.department?.name) {
+        return { ...item, title: user.department.name }
+      }
+      if (user?.role === "regional_admin" && user?.region?.name) {
+        return { ...item, title: user.region.name }
+      }
+      return item
+    })
 
   const handleNav = (e, url) => {
     e?.preventDefault?.()
