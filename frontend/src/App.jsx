@@ -9,15 +9,12 @@ import RegionDepartments from "@/pages/regionAdmin/RegionDepartments"
 import DepartmentAdminDashboard from "@/pages/departmentAdmin/departmentdashboard"
 import CitizenDashboard from "@/pages/citizen/citizensDashboard"
 import MyIssuesPage from "@/pages/citizen/myIssues"
-<<<<<<< HEAD
 import ProfilePage from "@/pages/SuperAdmin/profile"
 import AnalyticsPage from "@/pages/SuperAdmin/analytics"
 import NotificationsPage from "@/pages/Notifications"
-=======
 import AnnouncementsPage from "@/pages/SuperAdmin/announcements"
 import AnnouncementsList from "@/pages/shared/AnnouncementsList"
 import CreateAnnouncement from "@/pages/shared/CreateAnnouncement"
->>>>>>> dc9403b0c6ab565512abb98381f7b5776425b872
 import { AppSidebar } from "@/components/app-sidebar"
 import { SidebarProvider, SidebarInset, SidebarTrigger } from "@/components/ui/sidebar"
 import { useAuth } from "@/context/AuthContext"

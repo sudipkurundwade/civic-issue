@@ -11,11 +11,8 @@ import authRoutes from './routes/auth.js';
 import issuesRoutes from './routes/issues.js';
 import adminRoutes from './routes/admin.js';
 import departmentalRoutes from './routes/departmental.js';
-<<<<<<< HEAD
 import notificationRoutes from './routes/notifications.js';
-=======
 import announcementRoutes from './routes/announcements.js';
->>>>>>> dc9403b0c6ab565512abb98381f7b5776425b872
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -66,11 +63,8 @@ app.use('/api/auth', authRoutes);
 app.use('/api/issues', issuesRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/departmental', departmentalRoutes);
-<<<<<<< HEAD
 app.use('/api/notifications', notificationRoutes);
-=======
 app.use('/api/announcements', announcementRoutes);
->>>>>>> dc9403b0c6ab565512abb98381f7b5776425b872
 
 // 404
 app.use((req, res) => res.status(404).json({ error: 'Not found' }));
