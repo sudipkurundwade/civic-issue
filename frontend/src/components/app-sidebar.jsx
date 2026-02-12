@@ -10,7 +10,11 @@ import {
   MessageSquare,
   User,
   List,
+<<<<<<< HEAD
   Bell,
+=======
+  Megaphone,
+>>>>>>> dc9403b0c6ab565512abb98381f7b5776425b872
 } from "lucide-react"
 
 import { NavMain } from "@/components/nav-main"
@@ -28,24 +32,34 @@ const ROLE_NAV = {
     { title: "Super Admin Dashboard", url: "/super-dashboard", icon: LayoutDashboard },
     { title: "Notifications", url: "/notifications", icon: Bell },
     { title: "Analytics", url: "/analytics", icon: PieChart },
+    { title: "Announcements", url: "/announcements", icon: Megaphone },
+    { title: "My Announcements", url: "/my-announcements", icon: List },
     { title: "Messages", url: "/chat", icon: MessageSquare },
     { title: "Profile", url: "/profile", icon: User },
   ],
   regional_admin: [
     { title: "Region Dashboard", url: "/region-dashboard", icon: Map },
+<<<<<<< HEAD
     { title: "Departments", url: "/region-departments", icon: Building2 },
     { title: "Notifications", url: "/notifications", icon: Bell },
+=======
+>>>>>>> dc9403b0c6ab565512abb98381f7b5776425b872
     { title: "Messages", url: "/chat", icon: MessageSquare },
     { title: "Profile", url: "/profile", icon: User },
   ],
   departmental_admin: [
     { title: "Department Dashboard", url: "/dept-dashboard", icon: Building2 },
+<<<<<<< HEAD
     { title: "Notifications", url: "/notifications", icon: Bell },
+=======
+    { title: "Announcements", url: "/announcements", icon: Megaphone },
+>>>>>>> dc9403b0c6ab565512abb98381f7b5776425b872
     { title: "Messages", url: "/chat", icon: MessageSquare },
     { title: "Profile", url: "/profile", icon: User },
   ],
   civic: [
     { title: "Report Issue", url: "/civic-dashboard", icon: AlertCircle },
+    { title: "Announcements", url: "/announcements", icon: Megaphone },
     { title: "My Issues", url: "/my-issues", icon: List },
     { title: "Notifications", url: "/notifications", icon: Bell },
     { title: "Profile", url: "/profile", icon: User },
