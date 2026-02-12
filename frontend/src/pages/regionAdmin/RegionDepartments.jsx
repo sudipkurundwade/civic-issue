@@ -14,14 +14,6 @@ import {
     TableHeader,
     TableRow,
 } from "@/components/ui/table"
-import {
-    DropdownMenu,
-    DropdownMenuContent,
-    DropdownMenuItem,
-    DropdownMenuLabel,
-    DropdownMenuSeparator,
-    DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
 import { Button } from "@/components/ui/button"
 import { MoreHorizontal, Mail, User, Building2 } from "lucide-react"
 import { adminService } from "@/services/adminService"
@@ -44,8 +36,8 @@ export default function RegionDepartments() {
         } catch (err) {
             toast({
                 title: "Failed to load departments",
-                description: err.message,
-                variant: "destructive"
+                description: err?.message || "Something went wrong",
+                variant: "destructive",
             })
         } finally {
             setLoading(false)
@@ -70,6 +62,7 @@ export default function RegionDepartments() {
                         A list of all departments and their assigned administrators.
                     </CardDescription>
                 </CardHeader>
+
                 <CardContent>
                     {loading ? (
                         <div className="flex h-32 items-center justify-center">
@@ -85,19 +78,21 @@ export default function RegionDepartments() {
                                 <TableRow>
                                     <TableHead>Department Name</TableHead>
                                     <TableHead>Assigned Email</TableHead>
-                                    <TableHead>Admin Name</TableHead>
-                                    <TableHead className="text-right">Actions</TableHead>
                                 </TableRow>
                             </TableHeader>
+
                             <TableBody>
                                 {departments.map((dept) => (
                                     <TableRow key={dept.id}>
+                                        {/* Department Name */}
                                         <TableCell className="font-medium">
                                             <div className="flex items-center gap-2">
                                                 <Building2 className="h-4 w-4 text-muted-foreground" />
                                                 {dept.name}
                                             </div>
                                         </TableCell>
+
+                                        {/* Email */}
                                         <TableCell>
                                             {dept.assignedAdmin?.email ? (
                                                 <div className="flex items-center gap-2 font-medium">
@@ -105,37 +100,10 @@ export default function RegionDepartments() {
                                                     {dept.assignedAdmin.email}
                                                 </div>
                                             ) : (
-                                                <span className="text-muted-foreground italic">No Email</span>
+                                                <span className="text-muted-foreground italic">
+                                                    No Email
+                                                </span>
                                             )}
-                                        </TableCell>
-                                        <TableCell>
-                                            <div className="flex items-center gap-2 text-muted-foreground">
-                                                <User className="h-4 w-4" />
-                                                {dept.assignedAdmin?.name || "Unassigned"}
-                                            </div>
-                                        </TableCell>
-                                        <TableCell className="text-right">
-                                            <DropdownMenu>
-                                                <DropdownMenuTrigger asChild>
-                                                    <Button variant="ghost" className="h-8 w-8 p-0">
-                                                        <span className="sr-only">Open menu</span>
-                                                        <MoreHorizontal className="h-4 w-4" />
-                                                    </Button>
-                                                </DropdownMenuTrigger>
-                                                <DropdownMenuContent align="end">
-                                                    <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                                                    <DropdownMenuItem>
-                                                        View department
-                                                    </DropdownMenuItem>
-                                                    <DropdownMenuItem>
-                                                        Edit department
-                                                    </DropdownMenuItem>
-                                                    <DropdownMenuSeparator />
-                                                    <DropdownMenuItem className="text-destructive">
-                                                        Delete department
-                                                    </DropdownMenuItem>
-                                                </DropdownMenuContent>
-                                            </DropdownMenu>
                                         </TableCell>
                                     </TableRow>
                                 ))}

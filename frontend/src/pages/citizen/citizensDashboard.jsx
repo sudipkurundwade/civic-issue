@@ -58,11 +58,11 @@ export default function CitizenDashboard() {
     const uploadInputRef = React.useRef(null)
 
     React.useEffect(() => {
-        publicService.getDepartments().then(setDepartments).catch(() => {})
+        publicService.getDepartments().then(setDepartments).catch(() => { })
     }, [])
 
     React.useEffect(() => {
-        issueService.getMyIssues().then(setMyIssues).catch(() => {})
+        issueService.getMyIssues().then(setMyIssues).catch(() => { })
     }, [isReporting])
 
     React.useEffect(() => {
@@ -181,85 +181,85 @@ export default function CitizenDashboard() {
                                         setSubmitting(false)
                                     }
                                 }} className="space-y-6">
-                                <div className="space-y-3">
-                                    <Label>Department *</Label>
-                                    <select
-                                        value={reportForm.departmentId}
-                                        onChange={(e) => setReportForm((f) => ({ ...f, departmentId: e.target.value }))}
-                                        className="h-10 w-full rounded-md border px-3 text-sm"
-                                        required
-                                    >
-                                        <option value="">Select Department</option>
-                                        {departments.map((d) => (
-                                            <option key={d.id} value={d.id}>{d.name} ({d.region?.name})</option>
-                                        ))}
-                                    </select>
-                                </div>
-
-                                <div className="space-y-2">
-                                    <Label>Address (optional)</Label>
-                                    <Input
-                                        placeholder="Street, landmark, etc."
-                                        value={reportForm.address ?? ""}
-                                        onChange={(e) => setReportForm((f) => ({ ...f, address: e.target.value }))}
-                                    />
-                                    <p className="text-xs text-muted-foreground">Location is auto-tracked. Add address for easier navigation.</p>
-                                </div>
-
-                                <div className="space-y-2">
-                                    <Label>Issue Description *</Label>
-                                    <Textarea
-                                        placeholder="Describe the issue in detail..."
-                                        className="min-h-[100px]"
-                                        value={reportForm.description}
-                                        onChange={(e) => setReportForm((f) => ({ ...f, description: e.target.value }))}
-                                        required
-                                    />
-                                </div>
-
-                                <div className="space-y-2">
-                                    <Label>Issue Photo *</Label>
-                                    <p className="text-xs text-muted-foreground">Take a photo with camera or upload one. Location is captured automatically.</p>
-                                    <div className="flex gap-3">
-                                        <input
-                                            ref={uploadInputRef}
-                                            type="file"
-                                            accept="image/*"
-                                            className="hidden"
-                                            onChange={async (e) => {
-                                                const file = e.target.files?.[0]
-                                                if (!file) return
-                                                setLocationLoading(true)
-                                                const pos = await captureLocation()
-                                                if (pos) setLocation((l) => ({ ...l, ...pos }))
-                                                setLocationLoading(false)
-                                                setReportForm((f) => ({ ...f, photo: file, photoPreview: URL.createObjectURL(file) }))
-                                                e.target.value = ""
-                                            }}
-                                        />
-                                        <Button type="button" variant="outline" className="flex-1 gap-2" onClick={() => setCameraOpen(true)}>
-                                            <Camera className="h-4 w-4" /> Take Photo
-                                        </Button>
-                                        <Button type="button" variant="outline" className="flex-1 gap-2" onClick={() => uploadInputRef.current?.click()}>
-                                            <Upload className="h-4 w-4" /> Upload
-                                        </Button>
+                                    <div className="space-y-3">
+                                        <Label>Department *</Label>
+                                        <select
+                                            value={reportForm.departmentId}
+                                            onChange={(e) => setReportForm((f) => ({ ...f, departmentId: e.target.value }))}
+                                            className="h-10 w-full rounded-md border px-3 text-sm"
+                                            required
+                                        >
+                                            <option value="">Select Department</option>
+                                            {departments.map((d) => (
+                                                <option key={d.id} value={d.id}>{d.name} ({d.region?.name})</option>
+                                            ))}
+                                        </select>
                                     </div>
-                                    {reportForm.photoPreview && (
-                                        <div className="mt-2">
-                                            <img src={reportForm.photoPreview} alt="Preview" className="h-24 rounded border object-cover" />
-                                            <p className="text-xs text-green-600 mt-1">Photo added. Location captured.</p>
-                                        </div>
-                                    )}
-                                </div>
 
-                                <Button
-                                    type="submit"
-                                    className="w-full bg-green-600 hover:bg-green-700 text-white"
-                                    disabled={submitting || !reportForm.photo || !(mapSelected || (location.lat != null && location.lng != null))}
-                                    title={!(mapSelected || location.lat) ? "Select location on map if GPS is not available" : ""}
-                                >
-                                    <Share2 className="mr-2 h-4 w-4" /> {submitting ? "Submitting..." : "Submit Issue"}
-                                </Button>
+                                    <div className="space-y-2">
+                                        <Label>Address (optional)</Label>
+                                        <Input
+                                            placeholder="Street, landmark, etc."
+                                            value={reportForm.address ?? ""}
+                                            onChange={(e) => setReportForm((f) => ({ ...f, address: e.target.value }))}
+                                        />
+                                        <p className="text-xs text-muted-foreground">Location is auto-tracked. Add address for easier navigation.</p>
+                                    </div>
+
+                                    <div className="space-y-2">
+                                        <Label>Issue Description *</Label>
+                                        <Textarea
+                                            placeholder="Describe the issue in detail..."
+                                            className="min-h-[100px]"
+                                            value={reportForm.description}
+                                            onChange={(e) => setReportForm((f) => ({ ...f, description: e.target.value }))}
+                                            required
+                                        />
+                                    </div>
+
+                                    <div className="space-y-2">
+                                        <Label>Issue Photo *</Label>
+                                        <p className="text-xs text-muted-foreground">Take a photo with camera or upload one. Location is captured automatically.</p>
+                                        <div className="flex gap-3">
+                                            <input
+                                                ref={uploadInputRef}
+                                                type="file"
+                                                accept="image/*"
+                                                className="hidden"
+                                                onChange={async (e) => {
+                                                    const file = e.target.files?.[0]
+                                                    if (!file) return
+                                                    setLocationLoading(true)
+                                                    const pos = await captureLocation()
+                                                    if (pos) setLocation((l) => ({ ...l, ...pos }))
+                                                    setLocationLoading(false)
+                                                    setReportForm((f) => ({ ...f, photo: file, photoPreview: URL.createObjectURL(file) }))
+                                                    e.target.value = ""
+                                                }}
+                                            />
+                                            <Button type="button" variant="outline" className="flex-1 gap-2" onClick={() => setCameraOpen(true)}>
+                                                <Camera className="h-4 w-4" /> Take Photo
+                                            </Button>
+                                            <Button type="button" variant="outline" className="flex-1 gap-2" onClick={() => uploadInputRef.current?.click()}>
+                                                <Upload className="h-4 w-4" /> Upload
+                                            </Button>
+                                        </div>
+                                        {reportForm.photoPreview && (
+                                            <div className="mt-2">
+                                                <img src={reportForm.photoPreview} alt="Preview" className="h-24 rounded border object-cover" />
+                                                <p className="text-xs text-green-600 mt-1">Photo added. Location captured.</p>
+                                            </div>
+                                        )}
+                                    </div>
+
+                                    <Button
+                                        type="submit"
+                                        className="w-full bg-green-600 hover:bg-green-700 text-white"
+                                        disabled={submitting || !reportForm.photo || !(mapSelected || (location.lat != null && location.lng != null))}
+                                        title={!(mapSelected || location.lat) ? "Select location on map if GPS is not available" : ""}
+                                    >
+                                        <Share2 className="mr-2 h-4 w-4" /> {submitting ? "Submitting..." : "Submit Issue"}
+                                    </Button>
                                 </form>
                             </CardContent>
                         </Card>
