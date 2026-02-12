@@ -95,7 +95,15 @@ router.post('/departmental-admin', authenticate, requireRole('regional_admin'), 
       department = await Department.findOne({ _id: departmentId, region: regionId });
       if (!department) return res.status(404).json({ error: 'Department not found in your region' });
     } else if (departmentName) {
-      department = await Department.create({ name: departmentName, region: regionId });
+      const name = String(departmentName).trim();
+      if (!name) return res.status(400).json({ error: 'departmentName required' });
+
+      // Reuse existing department in this region if it already exists,
+      // so we don't create the same department twice.
+      department = await Department.findOne({ name, region: regionId });
+      if (!department) {
+        department = await Department.create({ name, region: regionId });
+      }
     } else {
       return res.status(400).json({ error: 'departmentId or departmentName required' });
     }
@@ -173,11 +181,17 @@ router.get('/departments', authenticate, requireRole('regional_admin'), async (r
 // Create department (regional admin)
 router.post('/departments', authenticate, requireRole('regional_admin'), async (req, res) => {
   try {
-    const { name } = req.body;
+    const name = String(req.body.name || '').trim();
     const regionId = req.user.region;
 
     if (!regionId) return res.status(403).json({ error: 'No region assigned' });
     if (!name) return res.status(400).json({ error: 'name required' });
+
+    // Prevent duplicate departments with the same name in this region.
+    let existing = await Department.findOne({ name, region: regionId });
+    if (existing) {
+      return res.status(400).json({ error: 'Department already exists in your region' });
+    }
 
     const department = await Department.create({ name, region: regionId });
     const d = await Department.findById(department._id).populate('region', 'name').lean();

@@ -33,6 +33,20 @@ import { issueService } from "@/services/issueService"
 import { useToast } from "@/components/ui/use-toast"
 import { IssueDetailDialog } from "@/components/IssueDetailDialog"
 
+// Standard department options for a region.
+const PREDEFINED_DEPARTMENTS = [
+  "Roads & Infrastructure",
+  "Water Supply",
+  "Sanitation & Garbage",
+  "Electricity / Street Lights",
+  "Drainage & Sewage",
+  "Public Health",
+  "Encroachment / Illegal Construction",
+  "Traffic & Public Safety",
+  "Parks & Public Spaces",
+  "Animal Control",
+]
+
 export default function DepartmentDashboard() {
   const { toast } = useToast()
   const [departments, setDepartments] = React.useState([])
@@ -50,6 +64,17 @@ export default function DepartmentDashboard() {
   const [detailOpen, setDetailOpen] = React.useState(false)
   const [pendingIssues, setPendingIssues] = React.useState([])
   const [assigningDept, setAssigningDept] = React.useState(null)
+
+  // Departments that have NOT yet been created in this region,
+  // based on the standard list above.
+  const availableDeptNames = React.useMemo(() => {
+    const existing = new Set(
+      departments.map((d) => String(d.name || "").toLowerCase().trim())
+    )
+    return PREDEFINED_DEPARTMENTS.filter(
+      (name) => !existing.has(name.toLowerCase().trim())
+    )
+  }, [departments])
 
   React.useEffect(() => {
     adminService.getDepartments().then(setDepartments).catch(() => toast({ title: "Failed to load departments", variant: "destructive" }))
@@ -166,22 +191,61 @@ export default function DepartmentDashboard() {
               <div className="grid gap-2">
                 <Label>Department</Label>
                 <label className="flex items-center gap-2 text-sm">
-                  <input type="checkbox" checked={isCreateNewDept} onChange={(e) => setIsCreateNewDept(e.target.checked)} />
+                  <input
+                    type="checkbox"
+                    checked={isCreateNewDept}
+                    onChange={(e) => {
+                      setIsCreateNewDept(e.target.checked)
+                      // Reset selection when switching modes
+                      setAdminDept("")
+                      setNewDeptName("")
+                    }}
+                  />
                   Create new department
                 </label>
                 {isCreateNewDept ? (
-                  <Input value={newDeptName} onChange={(e) => setNewDeptName(e.target.value)} placeholder="e.g. Road Department" required={isCreateNewDept} />
+                  availableDeptNames.length > 0 ? (
+                    <select
+                      value={newDeptName}
+                      onChange={(e) => setNewDeptName(e.target.value)}
+                      className="h-10 w-full rounded-md border px-3 text-sm"
+                      required
+                    >
+                      <option value="">Select Department</option>
+                      {availableDeptNames.map((name) => (
+                        <option key={name} value={name}>
+                          {name}
+                        </option>
+                      ))}
+                    </select>
+                  ) : (
+                    <p className="text-sm text-muted-foreground">
+                      All standard departments have already been created for this region.
+                    </p>
+                  )
                 ) : (
-                  <select value={adminDept} onChange={(e) => setAdminDept(e.target.value)} className="h-10 w-full rounded-md border px-3 text-sm" required={!isCreateNewDept}>
+                  <select
+                    value={adminDept}
+                    onChange={(e) => setAdminDept(e.target.value)}
+                    className="h-10 w-full rounded-md border px-3 text-sm"
+                    required
+                  >
                     <option value="">Select Department</option>
                     {departments.map((dept) => (
-                      <option key={dept.id} value={dept.id}>{dept.name}</option>
+                      <option key={dept.id} value={dept.id}>
+                        {dept.name}
+                      </option>
                     ))}
                   </select>
                 )}
               </div>
               <DialogFooter>
-                <Button type="submit" disabled={loading}>{loading ? "Creating..." : "Create Admin"}</Button>
+                <Button
+                  type="submit"
+                  disabled={loading || (isCreateNewDept && availableDeptNames.length === 0)}
+                >
+                  {loading ? "Creating..." : "Create Admin"}
+                </Button>
               </DialogFooter>
             </form>
           </DialogContent>
