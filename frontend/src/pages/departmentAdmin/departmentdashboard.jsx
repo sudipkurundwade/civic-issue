@@ -40,7 +40,7 @@ export default function DepartmentAdminDashboard() {
     const [filter, setFilter] = React.useState("all")
     const [complaints, setComplaints] = React.useState([])
     const [selectedIssue, setSelectedIssue] = React.useState(null)
-  const [selectedStatus, setSelectedStatus] = React.useState("assigned")
+    const [selectedStatus, setSelectedStatus] = React.useState("assigned")
     const [completionPhoto, setCompletionPhoto] = React.useState(null)
     const [loading, setLoading] = React.useState(false)
     const [sheetOpen, setSheetOpen] = React.useState(false)
@@ -248,30 +248,39 @@ export default function DepartmentAdminDashboard() {
             </div>
 
             <Sheet open={sheetOpen} onOpenChange={(open) => { setSheetOpen(open); if (!open) setCompletionPhoto(null) }}>
-                <SheetContent className="overflow-y-auto">
+                <SheetContent className="overflow-y-auto w-full sm:max-w-md md:max-w-xl lg:max-w-2xl p-6 sm:p-8">
                     <SheetHeader>
                         <SheetTitle>Complaint Details</SheetTitle>
                         <SheetDescription>Review details and update status.</SheetDescription>
                     </SheetHeader>
+
                     {selectedIssue && (
-                        <div className="mt-6 space-y-6">
+                        <div className="mt-6 flex flex-col gap-6">
+                            {/* 1. Image */}
                             <div className="aspect-video w-full bg-muted rounded-md overflow-hidden">
                                 <img src={selectedIssue.image} alt="Evidence" className="w-full h-full object-cover" />
                             </div>
-                            <div className="space-y-2">
-                                <h4 className="font-medium text-sm">Description</h4>
-                                <p className="text-sm text-muted-foreground">{selectedIssue.description}</p>
+
+                            {/* 2. Description and Title */}
+                            <div className="space-y-4">
+                                <div className="space-y-2">
+                                    <h3 className="font-semibold text-xl">{selectedIssue.title}</h3>
+                                    <h4 className="font-medium text-sm text-muted-foreground">Description</h4>
+                                    <p className="text-sm">{selectedIssue.description}</p>
+                                </div>
                             </div>
+
+                            {/* 3. Map and Link */}
                             <div className="space-y-2">
-                                <h4 className="font-medium text-sm">Location</h4>
-                                <p className="text-sm text-muted-foreground">{selectedIssue.location}</p>
+                                <h4 className="font-medium text-sm text-muted-foreground">Location</h4>
+                                <p className="text-sm">{selectedIssue.location}</p>
                                 {selectedIssue.latitude != null && selectedIssue.longitude != null && (
                                     <>
-                                        <div className="rounded-md overflow-hidden border h-32">
+                                        <div className="rounded-md overflow-hidden border h-64 w-full">
                                             <LocationMap
                                                 center={{ lat: selectedIssue.latitude, lng: selectedIssue.longitude }}
                                                 selected={{ lat: selectedIssue.latitude, lng: selectedIssue.longitude }}
-                                                height="128px"
+                                                height="100%"
                                             />
                                         </div>
                                         <a
@@ -287,49 +296,52 @@ export default function DepartmentAdminDashboard() {
                                     </>
                                 )}
                             </div>
-                            <div className="border-t pt-4 space-y-4">
-                                <h4 className="font-medium">Update Status</h4>
-                                <form onSubmit={handleUpdateStatus} className="space-y-4">
-                                    <RadioGroup value={selectedStatus} onValueChange={setSelectedStatus} className="flex gap-6">
-                                        <div className="flex items-center space-x-2">
-                                            <RadioGroupItem id="status-assigned" value="assigned" />
-                                            <Label htmlFor="status-assigned">Assigned</Label>
-                                        </div>
-                                        <div className="flex items-center space-x-2">
-                                            <RadioGroupItem id="status-in-progress" value="in-progress" />
-                                            <Label htmlFor="status-in-progress">In Progress</Label>
-                                        </div>
-                                    </RadioGroup>
-                                    <SheetFooter className="mt-4">
+
+                            {/* 4. Update Status and Resolve */}
+                            <div className="border-t pt-6 space-y-6">
+                                <div className="space-y-4">
+                                    <h4 className="font-medium text-lg">Update Status</h4>
+                                    <form onSubmit={handleUpdateStatus} className="space-y-4">
+                                        <RadioGroup value={selectedStatus} onValueChange={setSelectedStatus} className="flex flex-col sm:flex-row gap-4">
+                                            <div className="flex items-center space-x-2">
+                                                <RadioGroupItem id="status-assigned" value="assigned" />
+                                                <Label htmlFor="status-assigned">Assigned</Label>
+                                            </div>
+                                            <div className="flex items-center space-x-2">
+                                                <RadioGroupItem id="status-in-progress" value="in-progress" />
+                                                <Label htmlFor="status-in-progress">In Progress</Label>
+                                            </div>
+                                        </RadioGroup>
                                         <Button type="submit" className="w-full" disabled={loading}>Save Status</Button>
-                                    </SheetFooter>
-                                </form>
-                                <div className="space-y-3 border-t pt-4">
-                                    <h4 className="font-medium">Resolve</h4>
-                                    <p className="text-xs text-muted-foreground">Add an after-completion photo to close the issue.</p>
+                                    </form>
+                                </div>
+
+                                <div className="space-y-4 border-t pt-6">
+                                    <h4 className="font-medium text-lg">Resolve Issue</h4>
+                                    <p className="text-sm text-muted-foreground">Add an after-completion photo to mark the issue as resolved.</p>
                                     <form onSubmit={handleResolve} className="space-y-4">
                                         <div className="space-y-2">
                                             <Label htmlFor="completion-photo" className="text-xs font-semibold uppercase text-muted-foreground">Upload Completion Photo</Label>
                                             <Input id="completion-photo" type="file" required accept="image/*" onChange={(e) => setCompletionPhoto(e.target.files?.[0])} />
                                         </div>
-                                        <SheetFooter className="mt-2">
-                                            <Button type="submit" className="w-full" disabled={loading}>Mark as Resolved</Button>
-                                        </SheetFooter>
+                                        <Button type="submit" className="w-full" variant="secondary" disabled={loading}>Mark as Resolved</Button>
                                     </form>
                                 </div>
                             </div>
+
+                            {/* Before / After (if resolved) */}
                             {selectedIssue?.afterImage && (
-                                <div className="border-t pt-4 space-y-4">
-                                    <h4 className="font-medium">Before / After</h4>
-                                    <div className="grid grid-cols-2 gap-3">
+                                <div className="border-t pt-6 space-y-4">
+                                    <h4 className="font-medium text-lg">Resolution Evidence</h4>
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                         <div>
-                                            <Label className="text-xs text-muted-foreground">Before</Label>
+                                            <Label className="text-xs text-muted-foreground mb-1 block">Before</Label>
                                             <div className="aspect-video w-full bg-muted rounded-md overflow-hidden">
                                                 <img src={selectedIssue.beforeImage || selectedIssue.image} alt="Before" className="w-full h-full object-cover" />
                                             </div>
                                         </div>
                                         <div>
-                                            <Label className="text-xs text-muted-foreground">After</Label>
+                                            <Label className="text-xs text-muted-foreground mb-1 block">After</Label>
                                             <div className="aspect-video w-full bg-muted rounded-md overflow-hidden">
                                                 <img src={selectedIssue.afterImage} alt="After" className="w-full h-full object-cover" />
                                             </div>
@@ -339,6 +351,7 @@ export default function DepartmentAdminDashboard() {
                             )}
                         </div>
                     )}
+
                 </SheetContent>
             </Sheet>
         </div>
