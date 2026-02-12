@@ -84,11 +84,7 @@ export default function CitizenDashboard() {
     const uploadInputRef = React.useRef(null)
 
     React.useEffect(() => {
-<<<<<<< HEAD
-        publicService.getDepartments().then(setDepartments).catch(() => { })
-=======
-        issueService.getAllIssues().then(setAllIssues).catch(() => {})
->>>>>>> a9af1f67d28e3c20f2fc3d9b10e1e14cde77ec4f
+        issueService.getAllIssues().then(setAllIssues).catch(() => { })
     }, [])
     React.useEffect(() => {
         issueService.getMyIssues().then(setMyIssues).catch(() => { })
@@ -179,144 +175,86 @@ export default function CitizenDashboard() {
                                 <CardTitle>Issue Details</CardTitle>
                             </CardHeader>
                             <CardContent className="space-y-6">
-                                <form onSubmit={async (e) => {
-                                    e.preventDefault()
-                                    const pos = mapSelected || (location.lat != null ? location : null)
-                                    const lat = pos?.lat
-                                    const lng = pos?.lng
-                                    if (!reportForm.photo || !reportForm.description || !reportForm.regionName || !reportForm.departmentName) {
-                                        toast({ title: "Please add region, department, description, and photo.", variant: "destructive" })
-                                        return
-                                    }
-                                    if (lat == null || lng == null) {
-                                        toast({ title: "Please select location on map (could not get your current location)", variant: "destructive" })
-                                        return
-                                    }
-                                    setSubmitting(true)
-                                    try {
-                                        const fd = new FormData()
-                                        fd.append("photo", reportForm.photo)
-                                        fd.append("latitude", String(lat))
-                                        fd.append("longitude", String(lng))
-                                        fd.append("address", reportForm.address || "")
-                                        fd.append("description", reportForm.description)
-                                        fd.append("regionName", reportForm.regionName)
-                                        fd.append("departmentName", reportForm.departmentName)
-                                        const result = await issueService.submitIssue(fd)
-                                        if (result.status === "PENDING_DEPARTMENT") {
-                                            toast({ title: "Issue submitted. Awaiting department creation by regional admin.", description: `"${reportForm.departmentName}" will be created and your issue assigned.` })
-                                        } else {
-                                            toast({ title: "Issue submitted successfully" })
+                                <form
+                                    onSubmit={async (e) => {
+                                        e.preventDefault()
+                                        const pos = mapSelected || (location.lat != null ? location : null)
+                                        const lat = pos?.lat
+                                        const lng = pos?.lng
+                                        if (!reportForm.photo || !reportForm.description || !reportForm.regionName || !reportForm.departmentName) {
+                                            toast({ title: "Please add region, department, description, and photo.", variant: "destructive" })
+                                            return
                                         }
-                                        setIsReporting(false)
-                                        setReportForm({ description: "", regionName: "", departmentName: "", photo: null, photoPreview: null, address: "" })
-                                        setMapSelected(null)
-                                        issueService.getMyIssues().then(setMyIssues)
-                                        issueService.getAllIssues().then(setAllIssues)
-                                    } catch (err) {
-                                        toast({ title: err.message || "Failed to submit", variant: "destructive" })
-                                    } finally {
-                                        setSubmitting(false)
-                                    }
-                                }} className="space-y-6">
-<<<<<<< HEAD
+                                        if (lat == null || lng == null) {
+                                            toast({ title: "Please select location on map (could not get your current location)", variant: "destructive" })
+                                            return
+                                        }
+                                        setSubmitting(true)
+                                        try {
+                                            const fd = new FormData()
+                                            fd.append("photo", reportForm.photo)
+                                            fd.append("latitude", String(lat))
+                                            fd.append("longitude", String(lng))
+                                            fd.append("address", reportForm.address || "")
+                                            fd.append("description", reportForm.description)
+                                            fd.append("regionName", reportForm.regionName)
+                                            fd.append("departmentName", reportForm.departmentName)
+                                            const result = await issueService.submitIssue(fd)
+                                            if (result.status === "PENDING_DEPARTMENT") {
+                                                toast({
+                                                    title: "Issue submitted. Awaiting department creation by regional admin.",
+                                                    description: `"${reportForm.departmentName}" will be created and your issue assigned.`,
+                                                })
+                                            } else {
+                                                toast({ title: "Issue submitted successfully" })
+                                            }
+                                            setIsReporting(false)
+                                            setReportForm({ description: "", regionName: "", departmentName: "", photo: null, photoPreview: null, address: "" })
+                                            setMapSelected(null)
+                                            issueService.getMyIssues().then(setMyIssues)
+                                            issueService.getAllIssues().then(setAllIssues)
+                                        } catch (err) {
+                                            toast({ title: err.message || "Failed to submit", variant: "destructive" })
+                                        } finally {
+                                            setSubmitting(false)
+                                        }
+                                    }}
+                                    className="space-y-6"
+                                >
+                                    <div className="space-y-3">
+                                        <Label>Region *</Label>
+                                        <Input
+                                            list="region-suggestions"
+                                            placeholder="Type or select region"
+                                            value={reportForm.regionName}
+                                            onChange={(e) => setReportForm((f) => ({ ...f, regionName: e.target.value }))}
+                                            className="h-10 w-full rounded-md border px-3 text-sm"
+                                            required
+                                        />
+                                        <datalist id="region-suggestions">
+                                            {REGION_SUGGESTIONS.map((name) => (
+                                                <option key={name} value={name} />
+                                            ))}
+                                        </datalist>
+                                    </div>
+
                                     <div className="space-y-3">
                                         <Label>Department *</Label>
                                         <select
-                                            value={reportForm.departmentId}
-                                            onChange={(e) => setReportForm((f) => ({ ...f, departmentId: e.target.value }))}
+                                            value={reportForm.departmentName}
+                                            onChange={(e) => setReportForm((f) => ({ ...f, departmentName: e.target.value }))}
                                             className="h-10 w-full rounded-md border px-3 text-sm"
                                             required
                                         >
                                             <option value="">Select Department</option>
-                                            {departments.map((d) => (
-                                                <option key={d.id} value={d.id}>{d.name} ({d.region?.name})</option>
+                                            {DEPARTMENT_OPTIONS.map((name) => (
+                                                <option key={name} value={name}>
+                                                    {name}
+                                                </option>
                                             ))}
                                         </select>
-=======
-                                <div className="space-y-3">
-                                    <Label>Region *</Label>
-                                    <Input
-                                        list="region-suggestions"
-                                        placeholder="Type or select region"
-                                        value={reportForm.regionName}
-                                        onChange={(e) => setReportForm((f) => ({ ...f, regionName: e.target.value }))}
-                                        className="h-10 w-full rounded-md border px-3 text-sm"
-                                        required
-                                    />
-                                    <datalist id="region-suggestions">
-                                        {REGION_SUGGESTIONS.map((name) => (
-                                            <option key={name} value={name} />
-                                        ))}
-                                    </datalist>
-                                </div>
-
-                                <div className="space-y-3">
-                                    <Label>Department *</Label>
-                                    <select
-                                        value={reportForm.departmentName}
-                                        onChange={(e) => setReportForm((f) => ({ ...f, departmentName: e.target.value }))}
-                                        className="h-10 w-full rounded-md border px-3 text-sm"
-                                        required
-                                    >
-                                        <option value="">Select Department</option>
-                                        {DEPARTMENT_OPTIONS.map((name) => (
-                                            <option key={name} value={name}>{name}</option>
-                                        ))}
-                                    </select>
-                                </div>
-
-                                <div className="space-y-2">
-                                    <Label>Address (optional)</Label>
-                                    <Input
-                                        placeholder="Street, landmark, etc."
-                                        value={reportForm.address ?? ""}
-                                        onChange={(e) => setReportForm((f) => ({ ...f, address: e.target.value }))}
-                                    />
-                                    <p className="text-xs text-muted-foreground">Location is auto-tracked. Add address for easier navigation.</p>
-                                </div>
-
-                                <div className="space-y-2">
-                                    <Label>Issue Description *</Label>
-                                    <Textarea
-                                        placeholder="Describe the issue in detail..."
-                                        className="min-h-[100px]"
-                                        value={reportForm.description}
-                                        onChange={(e) => setReportForm((f) => ({ ...f, description: e.target.value }))}
-                                        required
-                                    />
-                                </div>
-
-                                <div className="space-y-2">
-                                    <Label>Issue Photo *</Label>
-                                    <p className="text-xs text-muted-foreground">Take a photo with camera or upload one. Location is captured automatically.</p>
-                                    <div className="flex gap-3">
-                                        <input
-                                            ref={uploadInputRef}
-                                            type="file"
-                                            accept="image/*"
-                                            className="hidden"
-                                            onChange={async (e) => {
-                                                const file = e.target.files?.[0]
-                                                if (!file) return
-                                                setLocationLoading(true)
-                                                const pos = await captureLocation()
-                                                if (pos) setLocation((l) => ({ ...l, ...pos }))
-                                                setLocationLoading(false)
-                                                setReportForm((f) => ({ ...f, photo: file, photoPreview: URL.createObjectURL(file) }))
-                                                e.target.value = ""
-                                            }}
-                                        />
-                                        <Button type="button" variant="outline" className="flex-1 gap-2" onClick={() => setCameraOpen(true)}>
-                                            <Camera className="h-4 w-4" /> Take Photo
-                                        </Button>
-                                        <Button type="button" variant="outline" className="flex-1 gap-2" onClick={() => uploadInputRef.current?.click()}>
-                                            <Upload className="h-4 w-4" /> Upload
-                                        </Button>
->>>>>>> a9af1f67d28e3c20f2fc3d9b10e1e14cde77ec4f
                                     </div>
 
-<<<<<<< HEAD
                                     <div className="space-y-2">
                                         <Label>Address (optional)</Label>
                                         <Input
@@ -324,7 +262,9 @@ export default function CitizenDashboard() {
                                             value={reportForm.address ?? ""}
                                             onChange={(e) => setReportForm((f) => ({ ...f, address: e.target.value }))}
                                         />
-                                        <p className="text-xs text-muted-foreground">Location is auto-tracked. Add address for easier navigation.</p>
+                                        <p className="text-xs text-muted-foreground">
+                                            Location is auto-tracked. Add address for easier navigation.
+                                        </p>
                                     </div>
 
                                     <div className="space-y-2">
@@ -340,7 +280,9 @@ export default function CitizenDashboard() {
 
                                     <div className="space-y-2">
                                         <Label>Issue Photo *</Label>
-                                        <p className="text-xs text-muted-foreground">Take a photo with camera or upload one. Location is captured automatically.</p>
+                                        <p className="text-xs text-muted-foreground">
+                                            Take a photo with camera or upload one. Location is captured automatically.
+                                        </p>
                                         <div className="flex gap-3">
                                             <input
                                                 ref={uploadInputRef}
@@ -354,21 +296,41 @@ export default function CitizenDashboard() {
                                                     const pos = await captureLocation()
                                                     if (pos) setLocation((l) => ({ ...l, ...pos }))
                                                     setLocationLoading(false)
-                                                    setReportForm((f) => ({ ...f, photo: file, photoPreview: URL.createObjectURL(file) }))
+                                                    setReportForm((f) => ({
+                                                        ...f,
+                                                        photo: file,
+                                                        photoPreview: URL.createObjectURL(file),
+                                                    }))
                                                     e.target.value = ""
                                                 }}
                                             />
-                                            <Button type="button" variant="outline" className="flex-1 gap-2" onClick={() => setCameraOpen(true)}>
+                                            <Button
+                                                type="button"
+                                                variant="outline"
+                                                className="flex-1 gap-2"
+                                                onClick={() => setCameraOpen(true)}
+                                            >
                                                 <Camera className="h-4 w-4" /> Take Photo
                                             </Button>
-                                            <Button type="button" variant="outline" className="flex-1 gap-2" onClick={() => uploadInputRef.current?.click()}>
+                                            <Button
+                                                type="button"
+                                                variant="outline"
+                                                className="flex-1 gap-2"
+                                                onClick={() => uploadInputRef.current?.click()}
+                                            >
                                                 <Upload className="h-4 w-4" /> Upload
                                             </Button>
                                         </div>
                                         {reportForm.photoPreview && (
                                             <div className="mt-2">
-                                                <img src={reportForm.photoPreview} alt="Preview" className="h-24 rounded border object-cover" />
-                                                <p className="text-xs text-green-600 mt-1">Photo added. Location captured.</p>
+                                                <img
+                                                    src={reportForm.photoPreview}
+                                                    alt="Preview"
+                                                    className="h-24 rounded border object-cover"
+                                                />
+                                                <p className="text-xs text-green-600 mt-1">
+                                                    Photo added. Location captured.
+                                                </p>
                                             </div>
                                         )}
                                     </div>
@@ -376,21 +338,22 @@ export default function CitizenDashboard() {
                                     <Button
                                         type="submit"
                                         className="w-full bg-green-600 hover:bg-green-700 text-white"
-                                        disabled={submitting || !reportForm.photo || !(mapSelected || (location.lat != null && location.lng != null))}
-                                        title={!(mapSelected || location.lat) ? "Select location on map if GPS is not available" : ""}
+                                        disabled={
+                                            submitting ||
+                                            !reportForm.photo ||
+                                            !reportForm.regionName ||
+                                            !reportForm.departmentName ||
+                                            !(mapSelected || (location.lat != null && location.lng != null))
+                                        }
+                                        title={
+                                            !(mapSelected || location.lat)
+                                                ? "Select location on map if GPS is not available"
+                                                : ""
+                                        }
                                     >
-                                        <Share2 className="mr-2 h-4 w-4" /> {submitting ? "Submitting..." : "Submit Issue"}
+                                        <Share2 className="mr-2 h-4 w-4" />{" "}
+                                        {submitting ? "Submitting..." : "Submit Issue"}
                                     </Button>
-=======
-                                <Button
-                                    type="submit"
-                                    className="w-full bg-green-600 hover:bg-green-700 text-white"
-                                    disabled={submitting || !reportForm.photo || !reportForm.regionName || !reportForm.departmentName || !(mapSelected || (location.lat != null && location.lng != null))}
-                                    title={!(mapSelected || location.lat) ? "Select location on map if GPS is not available" : ""}
-                                >
-                                    <Share2 className="mr-2 h-4 w-4" /> {submitting ? "Submitting..." : "Submit Issue"}
-                                </Button>
->>>>>>> a9af1f67d28e3c20f2fc3d9b10e1e14cde77ec4f
                                 </form>
                             </CardContent>
                         </Card>
