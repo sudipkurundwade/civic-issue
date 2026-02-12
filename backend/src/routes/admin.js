@@ -3,6 +3,7 @@ import bcrypt from 'bcryptjs';
 import User from '../models/User.js';
 import Region from '../models/Region.js';
 import Department from '../models/Department.js';
+import Issue from '../models/Issue.js';
 import { authenticate, requireRole } from '../middleware/auth.js';
 
 const router = express.Router();
@@ -94,7 +95,15 @@ router.post('/departmental-admin', authenticate, requireRole('regional_admin'), 
       department = await Department.findOne({ _id: departmentId, region: regionId });
       if (!department) return res.status(404).json({ error: 'Department not found in your region' });
     } else if (departmentName) {
-      department = await Department.create({ name: departmentName, region: regionId });
+      const name = String(departmentName).trim();
+      if (!name) return res.status(400).json({ error: 'departmentName required' });
+
+      // Reuse existing department in this region if it already exists,
+      // so we don't create the same department twice.
+      department = await Department.findOne({ name, region: regionId });
+      if (!department) {
+        department = await Department.create({ name, region: regionId });
+      }
     } else {
       return res.status(400).json({ error: 'departmentId or departmentName required' });
     }
@@ -109,6 +118,12 @@ router.post('/departmental-admin', authenticate, requireRole('regional_admin'), 
       role: 'departmental_admin',
       department: department._id,
     });
+
+    // Assign any pending issues that were waiting for this department name
+    await Issue.updateMany(
+      { status: 'PENDING_DEPARTMENT', requestedDepartmentName: department.name },
+      { $set: { department: department._id, status: 'PENDING' }, $unset: { requestedDepartmentName: 1 } }
+    );
 
     const u = await User.findById(user._id)
       .select('-password')
@@ -166,11 +181,17 @@ router.get('/departments', authenticate, requireRole('regional_admin'), async (r
 // Create department (regional admin)
 router.post('/departments', authenticate, requireRole('regional_admin'), async (req, res) => {
   try {
-    const { name } = req.body;
+    const name = String(req.body.name || '').trim();
     const regionId = req.user.region;
 
     if (!regionId) return res.status(403).json({ error: 'No region assigned' });
     if (!name) return res.status(400).json({ error: 'name required' });
+
+    // Prevent duplicate departments with the same name in this region.
+    let existing = await Department.findOne({ name, region: regionId });
+    if (existing) {
+      return res.status(400).json({ error: 'Department already exists in your region' });
+    }
 
     const department = await Department.create({ name, region: regionId });
     const d = await Department.findById(department._id).populate('region', 'name').lean();
@@ -178,6 +199,48 @@ router.post('/departments', authenticate, requireRole('regional_admin'), async (
   } catch (err) {
     console.error('Create department error:', err);
     res.status(500).json({ error: 'Failed to create department' });
+  }
+});
+
+// Regional admin: Get issues awaiting department creation (PENDING_DEPARTMENT)
+router.get('/pending-department-issues', authenticate, requireRole('regional_admin'), async (req, res) => {
+  try {
+    const issues = await Issue.find({ status: 'PENDING_DEPARTMENT' })
+      .populate('user', 'name email')
+      .sort({ createdAt: -1 })
+      .lean();
+    res.json(issues.map((i) => ({ ...i, id: i._id })));
+  } catch (err) {
+    console.error('Pending department issues error:', err);
+    res.status(500).json({ error: 'Failed to fetch' });
+  }
+});
+
+// Regional admin: Create department and assign pending issues with that name
+router.post('/create-department-and-assign', authenticate, requireRole('regional_admin'), async (req, res) => {
+  try {
+    const { departmentName } = req.body;
+    const regionId = req.user.region;
+    if (!regionId) return res.status(403).json({ error: 'No region assigned' });
+    if (!departmentName || !String(departmentName).trim()) {
+      return res.status(400).json({ error: 'departmentName required' });
+    }
+    const name = String(departmentName).trim();
+    let department = await Department.findOne({ name, region: regionId });
+    if (!department) {
+      department = await Department.create({ name, region: regionId });
+    }
+    const updated = await Issue.updateMany(
+      { status: 'PENDING_DEPARTMENT', requestedDepartmentName: name },
+      { $set: { department: department._id, status: 'PENDING', $unset: { requestedDepartmentName: 1 } } }
+    );
+    res.json({
+      department: { ...department.toObject(), id: department._id },
+      issuesAssigned: updated.modifiedCount,
+    });
+  } catch (err) {
+    console.error('Create department and assign error:', err);
+    res.status(500).json({ error: 'Failed to create and assign' });
   }
 });
 

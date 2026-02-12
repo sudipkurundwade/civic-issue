@@ -2,8 +2,6 @@ import * as React from "react"
 import {
     Card,
     CardContent,
-    CardHeader,
-    CardTitle,
 } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -15,37 +13,42 @@ import {
     Search
 } from "lucide-react"
 import { Input } from "@/components/ui/input"
+import { issueService } from "@/services/issueService"
+import { IssueDetailDialog } from "@/components/IssueDetailDialog"
+
+const statusMap = { PENDING: "pending", PENDING_DEPARTMENT: "awaiting-department", IN_PROGRESS: "in-progress", COMPLETED: "solved" }
 
 export default function MyIssuesPage() {
     const [searchTerm, setSearchTerm] = React.useState("")
+    const [myIssues, setMyIssues] = React.useState([])
+    const [loading, setLoading] = React.useState(true)
+    const [selectedIssue, setSelectedIssue] = React.useState(null)
+    const [detailOpen, setDetailOpen] = React.useState(false)
 
-    // Mock Data - In a real app, fetch issues where creatorId === currentUser.id
-    const myIssues = [
-        {
-            id: 1,
-            title: "Major Pothole near Rankala Lake",
-            description: "This pothole has been getting bigger for weeks. Very dangerous for bikers.",
-            region: "Kolhapur",
-            area: "Rankala Stand",
-            date: "2024-02-12",
-            status: "pending",
-            image: "/placeholder.svg",
-            ticketId: "TKT-2024-001"
-        },
-        {
-            id: 101,
-            title: "Overflowing Garbage Bin",
-            description: "Bin hasn't been collected for 3 days.",
-            region: "Kolhapur",
-            area: "Tarabai Park",
-            date: "2024-02-05",
-            status: "solved",
-            image: "/placeholder.svg",
-            ticketId: "TKT-2024-045"
-        }
-    ]
+    React.useEffect(() => {
+        issueService.getMyIssues()
+            .then((data) => setMyIssues(data))
+            .catch(() => setMyIssues([]))
+            .finally(() => setLoading(false))
+    }, [])
 
-    const filteredIssues = myIssues.filter(issue =>
+    const normalizedIssues = myIssues.map((i) => ({
+        id: i.id,
+        title: i.description?.slice(0, 60) || "Issue",
+        description: i.description,
+        region: i.department?.region?.name || "—",
+        area: i.address || `${i.latitude}, ${i.longitude}`,
+        date: i.createdAt ? new Date(i.createdAt).toLocaleDateString() : "",
+        status: statusMap[i.status] || "pending",
+        image: i.photoUrl || "/placeholder.svg",
+        ticketId: `TKT-${String(i.id ?? i._id ?? "").slice(-6).toUpperCase() || "------"}`,
+        latitude: i.latitude,
+        longitude: i.longitude,
+        likes: 0,
+        comments: 0,
+    }))
+
+    const filteredIssues = normalizedIssues.filter((issue) =>
         issue.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
         issue.ticketId.toLowerCase().includes(searchTerm.toLowerCase())
     )
@@ -54,6 +57,7 @@ export default function MyIssuesPage() {
         switch (status) {
             case "solved": return "bg-green-100 text-green-800 hover:bg-green-100"
             case "in-progress": return "bg-blue-100 text-blue-800 hover:bg-blue-100"
+            case "awaiting-department": return "bg-amber-100 text-amber-800 hover:bg-amber-100"
             default: return "bg-yellow-100 text-yellow-800 hover:bg-yellow-100"
         }
     }
@@ -62,6 +66,7 @@ export default function MyIssuesPage() {
         switch (status) {
             case "solved": return <CheckCircle className="h-4 w-4 mr-1" />
             case "in-progress": return <Clock className="h-4 w-4 mr-1" />
+            case "awaiting-department": return <AlertCircle className="h-4 w-4 mr-1" />
             default: return <AlertCircle className="h-4 w-4 mr-1" />
         }
     }
@@ -87,9 +92,18 @@ export default function MyIssuesPage() {
 
             {/* Issues List */}
             <div className="space-y-4">
-                {filteredIssues.length > 0 ? (
+                {loading ? (
+                    <div className="text-center py-12 text-muted-foreground">Loading your issues...</div>
+                ) : filteredIssues.length > 0 ? (
                     filteredIssues.map((issue) => (
-                        <Card key={issue.id} className="overflow-hidden hover:shadow-md transition-shadow">
+                        <Card
+                            key={issue.id}
+                            className="overflow-hidden hover:shadow-md transition-shadow cursor-pointer"
+                            onClick={() => { setSelectedIssue(issue); setDetailOpen(true) }}
+                            role="button"
+                            tabIndex={0}
+                            onKeyDown={(e) => e.key === "Enter" && (setSelectedIssue(issue), setDetailOpen(true))}
+                        >
                             <CardContent className="p-0">
                                 <div className="flex flex-col md:flex-row">
                                     {/* Image Section */}
@@ -134,7 +148,9 @@ export default function MyIssuesPage() {
                                         </div>
 
                                         <div className="mt-4 flex justify-end">
-                                            <Button variant="outline" size="sm">View Details</Button>
+                                            <Button variant="outline" size="sm" onClick={(e) => { e.stopPropagation(); setSelectedIssue(issue); setDetailOpen(true) }}>
+                                                View Details
+                                            </Button>
                                         </div>
                                     </div>
                                 </div>
@@ -151,6 +167,8 @@ export default function MyIssuesPage() {
                     </div>
                 )}
             </div>
+
+            <IssueDetailDialog open={detailOpen} onClose={() => setDetailOpen(false)} issue={selectedIssue} />
         </div>
     )
 }

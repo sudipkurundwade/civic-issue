@@ -24,11 +24,35 @@ import {
     Camera,
     Upload,
 } from "lucide-react"
-import { publicService } from "@/services/adminService"
 import { issueService } from "@/services/issueService"
 import { useToast } from "@/components/ui/use-toast"
 import { LocationMap } from "@/components/LocationMap"
 import { CameraCapture } from "@/components/CameraCapture"
+import { IssueDetailDialog } from "@/components/IssueDetailDialog"
+
+const DEPARTMENT_OPTIONS = [
+    "Roads & Infrastructure",
+    "Water Supply",
+    "Sanitation & Garbage",
+    "Electricity / Street Lights",
+    "Drainage & Sewage",
+    "Public Health",
+    "Encroachment / Illegal Construction",
+    "Traffic & Public Safety",
+    "Parks & Public Spaces",
+    "Animal Control",
+    "Other",
+]
+
+const REGION_SUGGESTIONS = [
+    "Kagal",
+    "Jaysingpur",
+    "Karvir",
+    "Gadhinglaj",
+    "Murgud",
+    "Panhala",
+    "Shirur",
+]
 
 const captureLocation = () => {
     return new Promise((resolve) => {
@@ -47,20 +71,25 @@ const captureLocation = () => {
 export default function CitizenDashboard() {
     const { toast } = useToast()
     const [isReporting, setIsReporting] = React.useState(false)
-    const [departments, setDepartments] = React.useState([])
+    const [allIssues, setAllIssues] = React.useState([])
     const [myIssues, setMyIssues] = React.useState([])
     const [location, setLocation] = React.useState({ lat: null, lng: null, address: "" })
     const [locationLoading, setLocationLoading] = React.useState(true)
     const [mapSelected, setMapSelected] = React.useState(null)
-    const [reportForm, setReportForm] = React.useState({ description: "", departmentId: "", photo: null, photoPreview: null, address: "" })
+    const [reportForm, setReportForm] = React.useState({ description: "", regionName: "", departmentName: "", photo: null, photoPreview: null, address: "" })
     const [submitting, setSubmitting] = React.useState(false)
     const [cameraOpen, setCameraOpen] = React.useState(false)
+    const [selectedIssue, setSelectedIssue] = React.useState(null)
+    const [detailOpen, setDetailOpen] = React.useState(false)
     const uploadInputRef = React.useRef(null)
 
     React.useEffect(() => {
+<<<<<<< HEAD
         publicService.getDepartments().then(setDepartments).catch(() => { })
+=======
+        issueService.getAllIssues().then(setAllIssues).catch(() => {})
+>>>>>>> a9af1f67d28e3c20f2fc3d9b10e1e14cde77ec4f
     }, [])
-
     React.useEffect(() => {
         issueService.getMyIssues().then(setMyIssues).catch(() => { })
     }, [isReporting])
@@ -83,7 +112,7 @@ export default function CitizenDashboard() {
         { title: "Unresolved", value: String(unresolved), description: "Pending attention", icon: AlertCircle },
     ]
 
-    const feedIssues = myIssues.map((i) => ({
+    const feedIssues = allIssues.map((i) => ({
         id: i.id,
         title: i.description?.slice(0, 50) || "Issue",
         description: i.description,
@@ -94,7 +123,10 @@ export default function CitizenDashboard() {
         image: i.photoUrl || "/placeholder.svg",
         likes: 0,
         comments: 0,
-    })).filter((i) => i.status !== "completed")
+        reporterName: i.user?.name || "Anonymous",
+        latitude: i.latitude,
+        longitude: i.longitude,
+    }))
 
     if (isReporting) {
         return (
@@ -152,8 +184,8 @@ export default function CitizenDashboard() {
                                     const pos = mapSelected || (location.lat != null ? location : null)
                                     const lat = pos?.lat
                                     const lng = pos?.lng
-                                    if (!reportForm.photo || !reportForm.description || !reportForm.departmentId) {
-                                        toast({ title: "Please add photo, description, and department.", variant: "destructive" })
+                                    if (!reportForm.photo || !reportForm.description || !reportForm.regionName || !reportForm.departmentName) {
+                                        toast({ title: "Please add region, department, description, and photo.", variant: "destructive" })
                                         return
                                     }
                                     if (lat == null || lng == null) {
@@ -168,19 +200,26 @@ export default function CitizenDashboard() {
                                         fd.append("longitude", String(lng))
                                         fd.append("address", reportForm.address || "")
                                         fd.append("description", reportForm.description)
-                                        fd.append("departmentId", reportForm.departmentId)
-                                        await issueService.submitIssue(fd)
-                                        toast({ title: "Issue submitted successfully" })
+                                        fd.append("regionName", reportForm.regionName)
+                                        fd.append("departmentName", reportForm.departmentName)
+                                        const result = await issueService.submitIssue(fd)
+                                        if (result.status === "PENDING_DEPARTMENT") {
+                                            toast({ title: "Issue submitted. Awaiting department creation by regional admin.", description: `"${reportForm.departmentName}" will be created and your issue assigned.` })
+                                        } else {
+                                            toast({ title: "Issue submitted successfully" })
+                                        }
                                         setIsReporting(false)
-                                        setReportForm({ description: "", departmentId: "", photo: null, photoPreview: null, address: "" })
+                                        setReportForm({ description: "", regionName: "", departmentName: "", photo: null, photoPreview: null, address: "" })
                                         setMapSelected(null)
                                         issueService.getMyIssues().then(setMyIssues)
+                                        issueService.getAllIssues().then(setAllIssues)
                                     } catch (err) {
                                         toast({ title: err.message || "Failed to submit", variant: "destructive" })
                                     } finally {
                                         setSubmitting(false)
                                     }
                                 }} className="space-y-6">
+<<<<<<< HEAD
                                     <div className="space-y-3">
                                         <Label>Department *</Label>
                                         <select
@@ -194,8 +233,90 @@ export default function CitizenDashboard() {
                                                 <option key={d.id} value={d.id}>{d.name} ({d.region?.name})</option>
                                             ))}
                                         </select>
+=======
+                                <div className="space-y-3">
+                                    <Label>Region *</Label>
+                                    <Input
+                                        list="region-suggestions"
+                                        placeholder="Type or select region"
+                                        value={reportForm.regionName}
+                                        onChange={(e) => setReportForm((f) => ({ ...f, regionName: e.target.value }))}
+                                        className="h-10 w-full rounded-md border px-3 text-sm"
+                                        required
+                                    />
+                                    <datalist id="region-suggestions">
+                                        {REGION_SUGGESTIONS.map((name) => (
+                                            <option key={name} value={name} />
+                                        ))}
+                                    </datalist>
+                                </div>
+
+                                <div className="space-y-3">
+                                    <Label>Department *</Label>
+                                    <select
+                                        value={reportForm.departmentName}
+                                        onChange={(e) => setReportForm((f) => ({ ...f, departmentName: e.target.value }))}
+                                        className="h-10 w-full rounded-md border px-3 text-sm"
+                                        required
+                                    >
+                                        <option value="">Select Department</option>
+                                        {DEPARTMENT_OPTIONS.map((name) => (
+                                            <option key={name} value={name}>{name}</option>
+                                        ))}
+                                    </select>
+                                </div>
+
+                                <div className="space-y-2">
+                                    <Label>Address (optional)</Label>
+                                    <Input
+                                        placeholder="Street, landmark, etc."
+                                        value={reportForm.address ?? ""}
+                                        onChange={(e) => setReportForm((f) => ({ ...f, address: e.target.value }))}
+                                    />
+                                    <p className="text-xs text-muted-foreground">Location is auto-tracked. Add address for easier navigation.</p>
+                                </div>
+
+                                <div className="space-y-2">
+                                    <Label>Issue Description *</Label>
+                                    <Textarea
+                                        placeholder="Describe the issue in detail..."
+                                        className="min-h-[100px]"
+                                        value={reportForm.description}
+                                        onChange={(e) => setReportForm((f) => ({ ...f, description: e.target.value }))}
+                                        required
+                                    />
+                                </div>
+
+                                <div className="space-y-2">
+                                    <Label>Issue Photo *</Label>
+                                    <p className="text-xs text-muted-foreground">Take a photo with camera or upload one. Location is captured automatically.</p>
+                                    <div className="flex gap-3">
+                                        <input
+                                            ref={uploadInputRef}
+                                            type="file"
+                                            accept="image/*"
+                                            className="hidden"
+                                            onChange={async (e) => {
+                                                const file = e.target.files?.[0]
+                                                if (!file) return
+                                                setLocationLoading(true)
+                                                const pos = await captureLocation()
+                                                if (pos) setLocation((l) => ({ ...l, ...pos }))
+                                                setLocationLoading(false)
+                                                setReportForm((f) => ({ ...f, photo: file, photoPreview: URL.createObjectURL(file) }))
+                                                e.target.value = ""
+                                            }}
+                                        />
+                                        <Button type="button" variant="outline" className="flex-1 gap-2" onClick={() => setCameraOpen(true)}>
+                                            <Camera className="h-4 w-4" /> Take Photo
+                                        </Button>
+                                        <Button type="button" variant="outline" className="flex-1 gap-2" onClick={() => uploadInputRef.current?.click()}>
+                                            <Upload className="h-4 w-4" /> Upload
+                                        </Button>
+>>>>>>> a9af1f67d28e3c20f2fc3d9b10e1e14cde77ec4f
                                     </div>
 
+<<<<<<< HEAD
                                     <div className="space-y-2">
                                         <Label>Address (optional)</Label>
                                         <Input
@@ -260,6 +381,16 @@ export default function CitizenDashboard() {
                                     >
                                         <Share2 className="mr-2 h-4 w-4" /> {submitting ? "Submitting..." : "Submit Issue"}
                                     </Button>
+=======
+                                <Button
+                                    type="submit"
+                                    className="w-full bg-green-600 hover:bg-green-700 text-white"
+                                    disabled={submitting || !reportForm.photo || !reportForm.regionName || !reportForm.departmentName || !(mapSelected || (location.lat != null && location.lng != null))}
+                                    title={!(mapSelected || location.lat) ? "Select location on map if GPS is not available" : ""}
+                                >
+                                    <Share2 className="mr-2 h-4 w-4" /> {submitting ? "Submitting..." : "Submit Issue"}
+                                </Button>
+>>>>>>> a9af1f67d28e3c20f2fc3d9b10e1e14cde77ec4f
                                 </form>
                             </CardContent>
                         </Card>
@@ -315,14 +446,21 @@ export default function CitizenDashboard() {
                 })}
             </div>
 
-            {/* My Submitted Issues */}
+            {/* All Issues (visible to all users) */}
             <div className="space-y-6">
-                <h3 className="text-xl font-semibold">My Submitted Issues</h3>
+                <h3 className="text-xl font-semibold">All Issues</h3>
 
                 <div className="grid gap-6 md:grid-cols-1 lg:max-w-2xl mx-auto">
                     {feedIssues.length > 0 ? (
                         feedIssues.map((issue) => (
-                            <Card key={issue.id} className="overflow-hidden shadow-md border-muted">
+                            <Card
+                                key={issue.id}
+                                className="overflow-hidden shadow-md border-muted cursor-pointer hover:shadow-lg transition-shadow"
+                                onClick={() => { setSelectedIssue(issue); setDetailOpen(true) }}
+                                role="button"
+                                tabIndex={0}
+                                onKeyDown={(e) => e.key === "Enter" && (setSelectedIssue(issue), setDetailOpen(true))}
+                            >
                                 {/* Post Header */}
                                 <div className="p-4 flex items-center gap-3 border-b bg-muted/20">
                                     <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
@@ -330,7 +468,7 @@ export default function CitizenDashboard() {
                                     </div>
                                     <div>
                                         <h4 className="font-semibold text-sm">{issue.area}, {issue.region}</h4>
-                                        <p className="text-xs text-muted-foreground">{issue.date}</p>
+                                        <p className="text-xs text-muted-foreground">{issue.date} · Reported by {issue.reporterName}</p>
                                     </div>
                                     <div className="ml-auto">
                                         <Badge variant={issue.status === "pending" ? "destructive" : "secondary"}>
@@ -375,11 +513,13 @@ export default function CitizenDashboard() {
                         <div className="text-center py-10">
                             <CheckCircle className="h-12 w-12 text-green-500 mx-auto mb-3" />
                             <h3 className="text-lg font-medium">No issues yet</h3>
-                            <p className="text-muted-foreground">Report a civic issue to see it here.</p>
+                            <p className="text-muted-foreground">Be the first to report a civic issue.</p>
                         </div>
                     )}
                 </div>
             </div>
+
+            <IssueDetailDialog open={detailOpen} onClose={() => setDetailOpen(false)} issue={selectedIssue} />
         </div>
     )
 }
