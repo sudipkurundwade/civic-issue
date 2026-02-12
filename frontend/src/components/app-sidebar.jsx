@@ -28,56 +28,10 @@ const ROLE_NAV = {
     { title: "Messages", url: "/chat", icon: MessageSquare },
     { title: "Profile", url: "/profile", icon: User },
   ],
-<<<<<<< HEAD
   regional_admin: [
     { title: "Region Dashboard", url: "/region-dashboard", icon: Map },
     { title: "Messages", url: "/chat", icon: MessageSquare },
     { title: "Profile", url: "/profile", icon: User },
-=======
-
-  navMain: [
-    {
-      title: "Dashboard",
-      url: "/dashboard",
-      icon: SquareTerminal,
-      isActive: true,
-    },
-    {
-      title: "Region Dashboard",
-      url: "/region-dashboard",
-      icon: Map,
-    },
-    {
-      title: "Dept. Admin",
-      url: "/department-admin",
-      icon: Command,
-    },
-    {
-      title: "Citizen View",
-      url: "/citizen",
-      icon: AudioWaveform,
-    },
-    {
-      title: "Messages",
-      url: "/chat",
-      icon: Bot,
-    },
-    {
-      title: "Investors",
-      url: "#",
-      icon: BookOpen,
-    },
-    {
-      title: "Pitch Deck",
-      url: "#",
-      icon: Settings2,
-    },
-    {
-      title: "Analytics",
-      url: "/analytics",
-      icon: PieChart,
-    },
->>>>>>> 18511e52e5f12a0000dcb995d1efba0ed8149239
   ],
   departmental_admin: [
     { title: "Department Dashboard", url: "/dept-dashboard", icon: Building2 },
