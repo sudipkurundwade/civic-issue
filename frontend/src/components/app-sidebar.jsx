@@ -33,15 +33,14 @@ const ROLE_NAV = {
     { title: "Analytics", url: "/analytics", icon: PieChart },
     { title: "Announcements", url: "/announcements", icon: Megaphone },
     { title: "My Announcements", url: "/my-announcements", icon: List },
-    { title: "Messages", url: "/chat", icon: MessageSquare },
     { title: "Profile", url: "/profile", icon: User },
   ],
   regional_admin: [
     { title: "Region Dashboard", url: "/region-dashboard", icon: Map },
     { title: "Departments", url: "/region-departments", icon: Building2 },
     { title: "Reports", url: "/reports", icon: FileText },
+    { title: "Analytics", url: "/analytics", icon: PieChart },
     { title: "Notifications", url: "/notifications", icon: Bell },
-    { title: "Messages", url: "/chat", icon: MessageSquare },
     { title: "Profile", url: "/profile", icon: User },
   ],
   departmental_admin: [
@@ -49,7 +48,6 @@ const ROLE_NAV = {
     { title: "Reports", url: "/reports", icon: FileText },
     { title: "Notifications", url: "/notifications", icon: Bell },
     { title: "Announcements", url: "/announcements", icon: Megaphone },
-    { title: "Messages", url: "/chat", icon: MessageSquare },
     { title: "Profile", url: "/profile", icon: User },
   ],
   civic: [

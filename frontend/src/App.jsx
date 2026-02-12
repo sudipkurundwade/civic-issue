@@ -164,7 +164,7 @@ function AppContent() {
             {page === "chat" && <ChatPage />}
             {page === "profile" && <ProfilePage />}
             {page === "profile" && <ProfilePage />}
-            {page === "analytics" && user?.role === "super_admin" && <AnalyticsPage />}
+            {page === "analytics" && (user?.role === "super_admin" || user?.role === "regional_admin") && <AnalyticsPage />}
             {page === "reports" && <ReportsPage />}
             {page === "announcements" && <AnnouncementsList />}
             {page === "my-announcements" && <AnnouncementsList mode="my" />}
