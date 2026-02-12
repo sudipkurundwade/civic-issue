@@ -60,7 +60,15 @@ const announcementSchema = new mongoose.Schema({
     createdAt: {
         type: Date,
         default: Date.now
-    }
+    },
+    views: {
+        type: Number,
+        default: 0
+    },
+    viewedBy: [{
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User'
+    }]
 });
 
 // Index for efficient querying of active/expired
