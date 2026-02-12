@@ -718,7 +718,7 @@ router.post('/create-department-and-assign', authenticate, requireRole('regional
       department = await Department.create({ name, region: regionId });
     }
     const updated = await Issue.updateMany(
-      { status: 'PENDING_DEPARTMENT', requestedDepartmentName: name },
+      { status: 'PENDING_DEPARTMENT', requestedDepartmentName: name, region: regionId },
       { $set: { department: department._id, status: 'PENDING', $unset: { requestedDepartmentName: 1 } } }
     );
 
