@@ -58,7 +58,13 @@ const ROLE_NAV = {
 }
 
 export function AppSidebar({ user, onLogout, page, onNavigate }) {
-  const navItems = ROLE_NAV[user?.role] || ROLE_NAV.civic
+  const baseNav = ROLE_NAV[user?.role] || ROLE_NAV.civic
+  const navItems =
+    user?.role === "departmental_admin" && user?.department?.name
+      ? baseNav.map((item, idx) =>
+          idx === 0 ? { ...item, title: user.department.name } : item
+        )
+      : baseNav
 
   const handleNav = (e, url) => {
     e?.preventDefault?.()

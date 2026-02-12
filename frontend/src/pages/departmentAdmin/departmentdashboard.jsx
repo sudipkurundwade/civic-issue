@@ -11,6 +11,7 @@ import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Checkbox } from "@/components/ui/checkbox"
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import {
     Sheet,
     SheetContent,
@@ -31,36 +32,46 @@ import {
 import { departmentalService } from "@/services/departmentalService"
 import { useToast } from "@/components/ui/use-toast"
 import { LocationMap } from "@/components/LocationMap"
+import { useAuth } from "@/context/AuthContext"
 
 export default function DepartmentAdminDashboard() {
+    const { user } = useAuth()
     const { toast } = useToast()
     const [filter, setFilter] = React.useState("all")
     const [complaints, setComplaints] = React.useState([])
     const [selectedIssue, setSelectedIssue] = React.useState(null)
-    const [completeChecked, setCompleteChecked] = React.useState(false)
-    const [inProgressChecked, setInProgressChecked] = React.useState(false)
+  const [selectedStatus, setSelectedStatus] = React.useState("assigned")
     const [completionPhoto, setCompletionPhoto] = React.useState(null)
     const [loading, setLoading] = React.useState(false)
     const [sheetOpen, setSheetOpen] = React.useState(false)
 
     React.useEffect(() => {
         departmentalService.getIssues().then((data) => {
-            setComplaints(data.map((i) => ({
-                id: i.id || i._id,
-                title: i.description?.slice(0, 50) || "Issue",
-                date: i.createdAt ? new Date(i.createdAt).toLocaleDateString() : "-",
-                location: i.address || `${i.latitude}, ${i.longitude}`,
-                latitude: i.latitude,
-                longitude: i.longitude,
-                status: (i.status === "COMPLETED" ? "completed" : i.status?.toLowerCase().replace("_", "-")) || "pending",
-                image: i.photoUrl || "/placeholder.svg",
-                description: i.description,
-            })))
+            setComplaints(data.map((i) => {
+                const statusKey = i.status || "PENDING"
+                const displayStatus =
+                    statusKey === "COMPLETED" ? "resolved" :
+                        statusKey === "IN_PROGRESS" ? "in-progress" :
+                            "assigned"
+                return ({
+                    id: i.id || i._id,
+                    title: i.description?.slice(0, 50) || "Issue",
+                    date: i.createdAt ? new Date(i.createdAt).toLocaleDateString() : "-",
+                    location: i.address || `${i.latitude}, ${i.longitude}`,
+                    latitude: i.latitude,
+                    longitude: i.longitude,
+                    status: displayStatus,
+                    image: i.photoUrl || "/placeholder.svg",
+                    beforeImage: i.photoUrl || "/placeholder.svg",
+                    afterImage: i.completionPhotoUrl || null,
+                    description: i.description,
+                })
+            }))
         }).catch(() => toast({ title: "Failed to load issues", variant: "destructive" }))
     }, [filter])
 
-    const pending = complaints.filter((c) => c.status !== "completed").length
-    const solved = complaints.filter((c) => c.status === "completed").length
+    const pending = complaints.filter((c) => c.status !== "resolved").length
+    const solved = complaints.filter((c) => c.status === "resolved").length
     const stats = [
         { title: "Total Complaints", value: String(complaints.length), description: "assigned to this department", icon: AlertCircle },
         { title: "Solved", value: String(solved), description: "successfully resolved", icon: CheckCircle },
@@ -77,20 +88,14 @@ export default function DepartmentAdminDashboard() {
     const handleUpdateStatus = async (e) => {
         e.preventDefault()
         if (!selectedIssue) return
-        if (completeChecked && !completionPhoto) {
-            toast({ title: "Completion photo is required", variant: "destructive" })
-            return
-        }
         setLoading(true)
         try {
-            if (completeChecked) {
-                const formData = new FormData()
-                formData.append("completionPhoto", completionPhoto)
-                await departmentalService.completeIssue(selectedIssue.id, formData)
-                toast({ title: "Issue marked as completed" })
+            if (selectedStatus === "assigned") {
+                await departmentalService.updateStatus(selectedIssue.id, "PENDING")
+                toast({ title: "Status updated to Assigned" })
                 setSheetOpen(false)
-                setComplaints((prev) => prev.map((c) => c.id === selectedIssue.id ? { ...c, status: "completed" } : c))
-            } else if (inProgressChecked) {
+                setComplaints((prev) => prev.map((c) => c.id === selectedIssue.id ? { ...c, status: "assigned" } : c))
+            } else if (selectedStatus === "in-progress") {
                 await departmentalService.updateStatus(selectedIssue.id, "IN_PROGRESS")
                 toast({ title: "Status updated to In Progress" })
                 setSheetOpen(false)
@@ -103,10 +108,43 @@ export default function DepartmentAdminDashboard() {
         }
     }
 
+    const handleResolve = async (e) => {
+        e.preventDefault()
+        if (!selectedIssue) return
+        if (!completionPhoto) {
+            toast({ title: "Completion photo is required", variant: "destructive" })
+            return
+        }
+        setLoading(true)
+        try {
+            const formData = new FormData()
+            formData.append("completionPhoto", completionPhoto)
+            const updated = await departmentalService.completeIssue(selectedIssue.id, formData)
+            toast({ title: "Issue marked as Resolved" })
+            setSheetOpen(false)
+            setComplaints((prev) => prev.map((c) =>
+                c.id === selectedIssue.id
+                    ? { ...c, status: "resolved", afterImage: updated.completionPhotoUrl || c.afterImage }
+                    : c
+            ))
+        } catch (err) {
+            toast({ title: err.message || "Failed to resolve", variant: "destructive" })
+        } finally {
+            setLoading(false)
+        }
+    }
+
     return (
         <div className="space-y-6 p-6">
             <div className="flex items-center justify-between">
-                <h2 className="text-3xl font-bold tracking-tight">Department Dashboard</h2>
+                <div className="space-y-1">
+                    <h2 className="text-3xl font-bold tracking-tight">
+                        {user?.department?.name ? user.department.name : "Department Dashboard"}
+                    </h2>
+                    <p className="text-muted-foreground">
+                        Manage issues assigned to your department.
+                    </p>
+                </div>
             </div>
 
             {/* Stats Grid */}
@@ -177,7 +215,7 @@ export default function DepartmentAdminDashboard() {
                                             <div>
                                                 <div className="flex justify-between items-start">
                                                     <h3 className="font-semibold text-lg">{complaint.title}</h3>
-                                                    <Badge variant={complaint.status === "completed" ? "default" : "secondary"}>
+                                                    <Badge variant={complaint.status === "resolved" ? "default" : "secondary"}>
                                                         {complaint.status}
                                                     </Badge>
                                                 </div>
@@ -191,8 +229,7 @@ export default function DepartmentAdminDashboard() {
                                             <div className="mt-4 flex justify-end">
                                                 <Button size="sm" onClick={() => {
                                                     setSelectedIssue(complaint)
-                                                    setCompleteChecked(complaint.status === "completed")
-                                                    setInProgressChecked(complaint.status === "in-progress")
+                                                    setSelectedStatus(complaint.status === "in-progress" ? "in-progress" : "assigned")
                                                     setCompletionPhoto(null)
                                                     setSheetOpen(true)
                                                 }}>View Details & Update</Button>
@@ -253,26 +290,53 @@ export default function DepartmentAdminDashboard() {
                             <div className="border-t pt-4 space-y-4">
                                 <h4 className="font-medium">Update Status</h4>
                                 <form onSubmit={handleUpdateStatus} className="space-y-4">
-                                    <div className="flex items-center space-x-2">
-                                        <Checkbox id="in-progress" checked={inProgressChecked} onCheckedChange={(c) => { setInProgressChecked(c); if (c) setCompleteChecked(false) }} />
-                                        <Label htmlFor="in-progress">In Progress</Label>
-                                    </div>
-                                    <div className="flex items-center space-x-2">
-                                        <Checkbox id="completed" checked={completeChecked} onCheckedChange={(c) => { setCompleteChecked(c); if (c) setInProgressChecked(false) }} />
-                                        <Label htmlFor="completed">Completed (Mark as Solved)</Label>
-                                    </div>
-                                    {completeChecked && (
-                                        <div className="space-y-2 border p-3 rounded-md bg-muted/50">
-                                            <Label htmlFor="completion-photo" className="text-xs font-semibold uppercase text-muted-foreground">Mandatory: Upload Completion Photo</Label>
-                                            <Input id="completion-photo" type="file" required={completeChecked} accept="image/*" onChange={(e) => setCompletionPhoto(e.target.files?.[0])} />
-                                            <p className="text-[10px] text-muted-foreground">You must upload a photo of the completed work to close this ticket.</p>
+                                    <RadioGroup value={selectedStatus} onValueChange={setSelectedStatus} className="flex gap-6">
+                                        <div className="flex items-center space-x-2">
+                                            <RadioGroupItem id="status-assigned" value="assigned" />
+                                            <Label htmlFor="status-assigned">Assigned</Label>
                                         </div>
-                                    )}
+                                        <div className="flex items-center space-x-2">
+                                            <RadioGroupItem id="status-in-progress" value="in-progress" />
+                                            <Label htmlFor="status-in-progress">In Progress</Label>
+                                        </div>
+                                    </RadioGroup>
                                     <SheetFooter className="mt-4">
-                                        <Button type="submit" className="w-full" disabled={loading}>Update Status</Button>
+                                        <Button type="submit" className="w-full" disabled={loading}>Save Status</Button>
                                     </SheetFooter>
                                 </form>
+                                <div className="space-y-3 border-t pt-4">
+                                    <h4 className="font-medium">Resolve</h4>
+                                    <p className="text-xs text-muted-foreground">Add an after-completion photo to close the issue.</p>
+                                    <form onSubmit={handleResolve} className="space-y-4">
+                                        <div className="space-y-2">
+                                            <Label htmlFor="completion-photo" className="text-xs font-semibold uppercase text-muted-foreground">Upload Completion Photo</Label>
+                                            <Input id="completion-photo" type="file" required accept="image/*" onChange={(e) => setCompletionPhoto(e.target.files?.[0])} />
+                                        </div>
+                                        <SheetFooter className="mt-2">
+                                            <Button type="submit" className="w-full" disabled={loading}>Mark as Resolved</Button>
+                                        </SheetFooter>
+                                    </form>
+                                </div>
                             </div>
+                            {selectedIssue?.afterImage && (
+                                <div className="border-t pt-4 space-y-4">
+                                    <h4 className="font-medium">Before / After</h4>
+                                    <div className="grid grid-cols-2 gap-3">
+                                        <div>
+                                            <Label className="text-xs text-muted-foreground">Before</Label>
+                                            <div className="aspect-video w-full bg-muted rounded-md overflow-hidden">
+                                                <img src={selectedIssue.beforeImage || selectedIssue.image} alt="Before" className="w-full h-full object-cover" />
+                                            </div>
+                                        </div>
+                                        <div>
+                                            <Label className="text-xs text-muted-foreground">After</Label>
+                                            <div className="aspect-video w-full bg-muted rounded-md overflow-hidden">
+                                                <img src={selectedIssue.afterImage} alt="After" className="w-full h-full object-cover" />
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
                         </div>
                     )}
                 </SheetContent>
