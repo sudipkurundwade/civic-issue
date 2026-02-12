@@ -5,6 +5,7 @@ import Region from '../models/Region.js';
 import Department from '../models/Department.js';
 import Issue from '../models/Issue.js';
 import { authenticate, requireRole } from '../middleware/auth.js';
+import { sendWelcomeEmail } from '../lib/email.js';
 import { notifyDepartmentNewIssue } from '../lib/notifications.js';
 
 const router = express.Router();
@@ -60,6 +61,18 @@ router.post('/regional-admin', authenticate, requireRole('super_admin'), async (
       .select('-password')
       .populate('region', 'name')
       .lean();
+
+    // Send email
+    await sendWelcomeEmail({
+      to: email,
+      name,
+      email,
+      password,
+      role: 'regional_admin',
+      creatorName: req.user.name,
+      creatorEmail: req.user.email,
+      creatorRole: req.user.role
+    });
 
     res.status(201).json({ ...u, id: u._id });
   } catch (err) {
@@ -322,6 +335,19 @@ router.post('/departmental-admin', authenticate, requireRole('regional_admin'), 
       .populate('department', 'name')
       .populate({ path: 'department', populate: { path: 'region', select: 'name' } })
       .lean();
+
+    // Send email
+    await sendWelcomeEmail({
+      to: email,
+      name,
+      email,
+      password,
+      role: 'departmental_admin',
+      creatorName: req.user.name,
+      creatorEmail: req.user.email,
+      creatorRole: req.user.role,
+      creatorRegion: u.department.region.name // We populated this
+    });
 
     // Notify this new departmental admin about any issues that were just
     // linked to their department because citizens had already reported them.
