@@ -3,9 +3,10 @@ import { LoginForm } from "@/components/login-form"
 import { SignupForm } from "@/components/signup-form"
 import { ThemeToggle } from "@/components/theme-toggle"
 import { ChatPage } from "@/components/chat/ChatPage"
-import Dashboard from "@/pages/dashboard"
-import ProfilePage from "@/pages/profile"
-import AnalyticsPage from "@/pages/analytics"
+import Dashboard from "@/pages/SuperAdmin/dashboard"
+import DepartmentDashboard from "@/pages/regionAdmin/regionDashboard"
+import ProfilePage from "@/pages/SuperAdmin/profile"
+import AnalyticsPage from "@/pages/SuperAdmin/analytics"
 import { AppSidebar } from "@/components/app-sidebar"
 import { SidebarProvider, SidebarInset, SidebarTrigger } from "@/components/ui/sidebar"
 
@@ -25,6 +26,9 @@ function App() {
     } else if (path === "/dashboard") {
       setIsAuthenticated(true)
       setPage("dashboard")
+    } else if (path === "/region-dashboard") {
+      setIsAuthenticated(true)
+      setPage("region-dashboard")
     } else if (path === "/chat") {
       setIsAuthenticated(true)
       setPage("chat")
@@ -93,13 +97,18 @@ function App() {
             <SidebarTrigger />
             <div className="flex-1">
               <h1 className="text-lg font-semibold">
-                {page === "dashboard" ? "Dashboard" : page === "chat" ? "Chat" : page === "profile" ? "Profile" : page === "analytics" ? "Analytics" : ""}
+                {page === "dashboard" ? "Dashboard" :
+                  page === "region-dashboard" ? "Region Dashboard" :
+                    page === "chat" ? "Chat" :
+                      page === "profile" ? "Profile" :
+                        page === "analytics" ? "Analytics" : ""}
               </h1>
             </div>
             <ThemeToggle />
           </header>
           <main className="flex-1 overflow-hidden min-h-0">
             {page === "dashboard" && <Dashboard />}
+            {page === "region-dashboard" && <DepartmentDashboard />}
             {page === "chat" && <ChatPage />}
             {page === "profile" && <ProfilePage />}
             {page === "analytics" && <AnalyticsPage />}

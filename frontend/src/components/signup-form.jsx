@@ -21,7 +21,7 @@ export function SignupForm({
       onSignup()
     }
   }
-  
+
   return (
     <div className={cn("flex flex-col gap-6", className)} {...props}>
       <Card className="overflow-hidden p-0">
@@ -34,6 +34,10 @@ export function SignupForm({
                   Enter your email below to create your account
                 </p>
               </div>
+              <Field>
+                <FieldLabel htmlFor="username">Username</FieldLabel>
+                <Input id="username" type="text" placeholder="johndoe" required />
+              </Field>
               <Field>
                 <FieldLabel htmlFor="email">Email</FieldLabel>
                 <Input id="email" type="email" placeholder="m@example.com" required />
