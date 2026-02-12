@@ -33,15 +33,20 @@ async function seed() {
   }
 
   // Departments
-  let roadDept = await Department.findOne({ name: 'Road Department', region: gokul._id });
-  if (!roadDept) {
-    roadDept = await Department.create({ name: 'Road Department', region: gokul._id });
+  const deptNames = [
+    'Water Supply Department',
+    'Electricity / Street Lighting Department',
+    'Roads & Public Works Department',
+    'Solid Waste Management Department'
+  ];
+
+  for (const name of deptNames) {
+    let dept = await Department.findOne({ name, region: gokul._id });
+    if (!dept) {
+      await Department.create({ name, region: gokul._id });
+      console.log(`Created department: ${name}`);
+    }
   }
-  let lightDept = await Department.findOne({ name: 'Light Department', region: gokul._id });
-  if (!lightDept) {
-    lightDept = await Department.create({ name: 'Light Department', region: gokul._id });
-  }
-  console.log('Created/updated departments: Road, Light');
 
   // Regional admin for Gokulshigaon
   const existingRegional = await User.findOne({ email: 'regional@gokul.com' });

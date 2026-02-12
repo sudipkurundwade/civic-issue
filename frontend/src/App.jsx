@@ -7,6 +7,7 @@ import SuperAdminDashboard from "@/pages/SuperAdmin/dashboard"
 import DepartmentDashboard from "@/pages/regionAdmin/regionDashboard"
 import DepartmentAdminDashboard from "@/pages/departmentAdmin/departmentdashboard"
 import CitizenDashboard from "@/pages/citizen/citizensDashboard"
+import MyIssuesPage from "@/pages/citizen/myIssues"
 import ProfilePage from "@/pages/SuperAdmin/profile"
 import AnalyticsPage from "@/pages/SuperAdmin/analytics"
 import { AppSidebar } from "@/components/app-sidebar"
@@ -124,9 +125,10 @@ function AppContent() {
         page.includes("region-dashboard") ? "Region Dashboard" :
           page.includes("dept-dashboard") ? "Department Dashboard" :
             page.includes("civic-dashboard") ? "Report Issue" :
-              page === "chat" ? "Chat" :
-                page === "profile" ? "Profile" :
-                  page === "analytics" ? "Analytics" : ""
+              page.includes("my-issues") ? "My Reported Issues" :
+                page === "chat" ? "Chat" :
+                  page === "profile" ? "Profile" :
+                    page === "analytics" ? "Analytics" : ""
 
     return (
       <SidebarProvider>
@@ -143,7 +145,8 @@ function AppContent() {
             {page.includes("super-dashboard") && user?.role === "super_admin" && <SuperAdminDashboard />}
             {page.includes("region-dashboard") && user?.role === "regional_admin" && <DepartmentDashboard />}
             {page.includes("dept-dashboard") && user?.role === "departmental_admin" && <DepartmentAdminDashboard />}
-            {(page.includes("civic-dashboard") || !["super_admin", "regional_admin", "departmental_admin"].includes(user?.role)) && <CitizenDashboard />}
+            {page.includes("civic-dashboard") && <CitizenDashboard />}
+            {page.includes("my-issues") && <MyIssuesPage />}
             {page === "chat" && <ChatPage />}
             {page === "profile" && <ProfilePage />}
             {page === "analytics" && user?.role === "super_admin" && <AnalyticsPage />}

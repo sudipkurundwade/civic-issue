@@ -9,6 +9,7 @@ import {
   PieChart,
   MessageSquare,
   User,
+  List,
 } from "lucide-react"
 
 import { NavMain } from "@/components/nav-main"
@@ -40,6 +41,7 @@ const ROLE_NAV = {
   ],
   civic: [
     { title: "Report Issue", url: "/civic-dashboard", icon: AlertCircle },
+    { title: "My Issues", url: "/my-issues", icon: List },
     { title: "Profile", url: "/profile", icon: User },
   ],
 }
