@@ -25,13 +25,30 @@ import {
   Clock,
   MapPin,
   ArrowUpRight,
-  MoreHorizontal,
   Plus,
 } from "lucide-react"
+import { adminService } from "@/services/adminService"
+import { useToast } from "@/components/ui/use-toast"
 
 export default function SuperAdminDashboard() {
-  const [selectedRegion, setSelectedRegion] = React.useState("Karveer")
+  const { toast } = useToast()
+  const [regions, setRegions] = React.useState([])
+  const [selectedRegion, setSelectedRegion] = React.useState("")
+  const [adminEmail, setAdminEmail] = React.useState("")
+  const [adminPassword, setAdminPassword] = React.useState("")
+  const [adminName, setAdminName] = React.useState("")
   const [adminRegion, setAdminRegion] = React.useState("")
+  const [newRegionName, setNewRegionName] = React.useState("")
+  const [isCreateNewRegion, setIsCreateNewRegion] = React.useState(false)
+  const [loading, setLoading] = React.useState(false)
+  const [dialogOpen, setDialogOpen] = React.useState(false)
+  const [regionsKey, setRegionsKey] = React.useState(0)
+
+  React.useEffect(() => {
+    adminService.getRegions()
+      .then(setRegions)
+      .catch(() => toast({ title: "Failed to load regions", variant: "destructive" }))
+  }, [regionsKey])
 
   const stats = [
     {
@@ -74,22 +91,36 @@ export default function SuperAdminDashboard() {
     { id: 7, title: "Illegal Dumping", department: "Waste Management", time: "4 hours ago", status: "in-progress", priority: "medium", region: "Panhala" },
   ]
 
-  const kolhapurRegions = [
-    { name: "Karveer", count: 125 },
-    { name: "Panhala", count: 84 },
-    { name: "Radhanagari", count: 45 },
-    { name: "Shirol", count: 62 },
-    { name: "Hatkanangale", count: 98 },
-  ]
+  const handleCreateRegionalAdmin = async (e) => {
+    e.preventDefault()
+    setLoading(true)
+    try {
+      await adminService.createRegionalAdmin({
+        email: adminEmail,
+        password: adminPassword,
+        name: adminName,
+        regionId: isCreateNewRegion ? null : adminRegion || null,
+        regionName: isCreateNewRegion ? newRegionName.trim() : null,
+      })
+      toast({ title: "Regional admin created successfully" })
+      setDialogOpen(false)
+      setRegionsKey((k) => k + 1)
+      setAdminEmail("")
+      setAdminPassword("")
+      setAdminName("")
+      setAdminRegion("")
+      setNewRegionName("")
+      setIsCreateNewRegion(false)
+    } catch (err) {
+      toast({ title: err.message || "Failed to create admin", variant: "destructive" })
+    } finally {
+      setLoading(false)
+    }
+  }
 
   const filteredIssues = recentIssues.filter(
     (issue) => issue.region === selectedRegion
   )
-
-  const handleSubmit = (e) => {
-    e.preventDefault()
-    console.log("Admin added for region:", adminRegion)
-  }
 
   return (
     <div className="space-y-6 p-6">
@@ -97,51 +128,91 @@ export default function SuperAdminDashboard() {
       <div className="flex items-center justify-between">
         <h2 className="text-3xl font-bold">SuperAdmin Dashboard</h2>
 
-        <Dialog>
+        <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
           <DialogTrigger asChild>
             <Button>
-              <Plus className="mr-2 h-4 w-4" /> Add Admin
+              <Plus className="mr-2 h-4 w-4" /> Add Regional Admin
             </Button>
           </DialogTrigger>
 
           <DialogContent>
             <DialogHeader>
-              <DialogTitle>Add New Admin</DialogTitle>
+              <DialogTitle>Create Regional Admin</DialogTitle>
               <DialogDescription>
-                Create a new administrator for a region.
+                Create a new administrator for a region. They can manage departments and create departmental admins.
               </DialogDescription>
             </DialogHeader>
 
-            <form onSubmit={handleSubmit} className="grid gap-4 py-4">
+            <form onSubmit={handleCreateRegionalAdmin} className="grid gap-4 py-4">
+              <div className="grid gap-2">
+                <Label>Name</Label>
+                <Input
+                  value={adminName}
+                  onChange={(e) => setAdminName(e.target.value)}
+                  placeholder="Admin name"
+                  required
+                />
+              </div>
               <div className="grid gap-2">
                 <Label>Email</Label>
-                <Input type="email" required />
+                <Input
+                  type="email"
+                  value={adminEmail}
+                  onChange={(e) => setAdminEmail(e.target.value)}
+                  placeholder="admin@region.com"
+                  required
+                />
               </div>
-
               <div className="grid gap-2">
                 <Label>Password</Label>
-                <Input type="password" required />
+                <Input
+                  type="password"
+                  value={adminPassword}
+                  onChange={(e) => setAdminPassword(e.target.value)}
+                  placeholder="••••••••"
+                  required
+                />
               </div>
-
               <div className="grid gap-2">
                 <Label>Region</Label>
-                <select
-                  value={adminRegion}
-                  onChange={(e) => setAdminRegion(e.target.value)}
-                  className="h-10 rounded-md border px-3 text-sm"
-                  required
-                >
-                  <option value="">Select Region</option>
-                  {kolhapurRegions.map((region) => (
-                    <option key={region.name} value={region.name}>
-                      {region.name}
-                    </option>
-                  ))}
-                </select>
+                <div className="space-y-2">
+                  <label className="flex items-center gap-2 text-sm">
+                    <input
+                      type="checkbox"
+                      checked={isCreateNewRegion}
+                      onChange={(e) => setIsCreateNewRegion(e.target.checked)}
+                    />
+                    Create new region
+                  </label>
+                  {isCreateNewRegion ? (
+                    <Input
+                      value={newRegionName}
+                      onChange={(e) => setNewRegionName(e.target.value)}
+                      placeholder="e.g. Gokulshigaon, Karveer"
+                      required={isCreateNewRegion}
+                    />
+                  ) : (
+                    <select
+                      value={adminRegion}
+                      onChange={(e) => setAdminRegion(e.target.value)}
+                      className="h-10 w-full rounded-md border px-3 text-sm"
+                      required={!isCreateNewRegion}
+                    >
+                      <option value="">Select Region</option>
+                      {regions.map((region) => (
+                        <option key={region.id} value={region.id}>
+                          {region.name}
+                        </option>
+                      ))}
+                    </select>
+                  )}
+                </div>
               </div>
 
               <DialogFooter>
-                <Button type="submit">Submit</Button>
+                <Button type="submit" disabled={loading}>
+                  {loading ? "Creating..." : "Create Admin"}
+                </Button>
               </DialogFooter>
             </form>
           </DialogContent>
@@ -175,28 +246,32 @@ export default function SuperAdminDashboard() {
         <Card className="md:col-span-4 lg:col-span-3">
           <CardHeader>
             <CardTitle>Regions</CardTitle>
+            <CardDescription>{regions.length} region(s)</CardDescription>
           </CardHeader>
           <CardContent className="space-y-2">
-            {kolhapurRegions.map((region) => (
-              <div
-                key={region.name}
-                onClick={() => setSelectedRegion(region.name)}
-                className={`flex justify-between p-3 rounded cursor-pointer ${selectedRegion === region.name
-                  ? "bg-primary text-white"
-                  : "hover:bg-accent"
-                  }`}
-              >
-                <span>{region.name}</span>
-                <Badge variant="outline">{region.count}</Badge>
-              </div>
-            ))}
+            {regions.length === 0 ? (
+              <p className="text-sm text-muted-foreground py-4">No regions yet. Create a regional admin and assign a new region.</p>
+            ) : (
+              regions.map((region) => (
+                <div
+                  key={region.id}
+                  onClick={() => setSelectedRegion(region.name)}
+                  className={`flex justify-between p-3 rounded cursor-pointer ${selectedRegion === region.name
+                    ? "bg-primary text-primary-foreground"
+                    : "hover:bg-accent"
+                    }`}
+                >
+                  <span>{region.name}</span>
+                </div>
+              ))
+            )}
           </CardContent>
         </Card>
 
         {/* Issues */}
         <Card className="md:col-span-8 lg:col-span-9">
           <CardHeader>
-            <CardTitle>Issues in {selectedRegion}</CardTitle>
+            <CardTitle>Issues in {selectedRegion || "selected region"}</CardTitle>
           </CardHeader>
           <CardContent>
             {filteredIssues.length > 0 ? (
