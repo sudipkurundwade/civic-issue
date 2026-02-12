@@ -40,4 +40,52 @@ export const adminService = {
     if (!res.ok) throw new Error(data.error || 'Failed to create regional admin');
     return data;
   },
+
+  // Regional admin
+  async getDepartments() {
+    const res = await fetch(`${API_URL}/admin/departments`, { headers: headers() });
+    if (!res.ok) throw new Error('Failed to fetch departments');
+    return res.json();
+  },
+
+  async createDepartment(name) {
+    const res = await fetch(`${API_URL}/admin/departments`, {
+      method: 'POST',
+      headers: headers(),
+      body: JSON.stringify({ name }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Failed to create department');
+    return data;
+  },
+
+  async createDepartmentalAdmin({ email, password, name, departmentId, departmentName }) {
+    const body = { email, password, name };
+    if (departmentId) body.departmentId = departmentId;
+    else if (departmentName) body.departmentName = departmentName;
+    else throw new Error('Select a department or enter a new department name');
+
+    const res = await fetch(`${API_URL}/admin/departmental-admin`, {
+      method: 'POST',
+      headers: headers(),
+      body: JSON.stringify(body),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Failed to create departmental admin');
+    return data;
+  },
+};
+
+// Public endpoints (no auth)
+export const publicService = {
+  async getRegions() {
+    const res = await fetch(`${API_URL}/admin/regions/public`);
+    if (!res.ok) throw new Error('Failed to fetch regions');
+    return res.json();
+  },
+  async getDepartments() {
+    const res = await fetch(`${API_URL}/admin/departments/public`);
+    if (!res.ok) throw new Error('Failed to fetch departments');
+    return res.json();
+  },
 };

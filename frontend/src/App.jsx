@@ -5,8 +5,8 @@ import { ThemeToggle } from "@/components/theme-toggle"
 import { ChatPage } from "@/components/chat/ChatPage"
 import SuperAdminDashboard from "@/pages/SuperAdmin/dashboard"
 import DepartmentDashboard from "@/pages/regionAdmin/regionDashboard"
-import DepartmentalDashboard from "@/pages/DepartmentalAdmin/departmentalDashboard"
-import CivicDashboard from "@/pages/Civic/civicDashboard"
+import DepartmentAdminDashboard from "@/pages/departmentAdmin/departmentdashboard"
+import CitizenDashboard from "@/pages/citizen/citizensDashboard"
 import ProfilePage from "@/pages/SuperAdmin/profile"
 import AnalyticsPage from "@/pages/SuperAdmin/analytics"
 import { AppSidebar } from "@/components/app-sidebar"
@@ -142,8 +142,8 @@ function AppContent() {
           <main className="flex-1 overflow-hidden min-h-0">
             {page.includes("super-dashboard") && user?.role === "super_admin" && <SuperAdminDashboard />}
             {page.includes("region-dashboard") && user?.role === "regional_admin" && <DepartmentDashboard />}
-            {page.includes("dept-dashboard") && user?.role === "departmental_admin" && <DepartmentalDashboard />}
-            {(page.includes("civic-dashboard") || !["super_admin", "regional_admin", "departmental_admin"].includes(user?.role)) && <CivicDashboard />}
+            {page.includes("dept-dashboard") && user?.role === "departmental_admin" && <DepartmentAdminDashboard />}
+            {(page.includes("civic-dashboard") || !["super_admin", "regional_admin", "departmental_admin"].includes(user?.role)) && <CitizenDashboard />}
             {page === "chat" && <ChatPage />}
             {page === "profile" && <ProfilePage />}
             {page === "analytics" && user?.role === "super_admin" && <AnalyticsPage />}

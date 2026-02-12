@@ -20,88 +20,58 @@ import {
     MessageSquare,
     Share2,
     Plus,
-    ArrowLeft
+    ArrowLeft,
 } from "lucide-react"
+import { publicService } from "@/services/adminService"
+import { issueService } from "@/services/issueService"
+import { useToast } from "@/components/ui/use-toast"
 
 export default function CitizenDashboard() {
+    const { toast } = useToast()
     const [isReporting, setIsReporting] = React.useState(false)
+    const [departments, setDepartments] = React.useState([])
+    const [myIssues, setMyIssues] = React.useState([])
+    const [location, setLocation] = React.useState({ lat: null, lng: null, address: "" })
+    const [reportForm, setReportForm] = React.useState({ title: "", description: "", departmentId: "", photo: null })
+    const [submitting, setSubmitting] = React.useState(false)
 
-    // Stats specific to Kolhapur Region
-    const stats = [
-        {
-            title: "Kolhapur Issues",
-            value: "156",
-            description: "Total reported in your city",
-            icon: MapPin,
-        },
-        {
-            title: "Resolved",
-            value: "98",
-            description: "Successfully fixed",
-            icon: CheckCircle,
-        },
-        {
-            title: "Unresolved",
-            value: "58",
-            description: "Pending attention",
-            icon: AlertCircle,
-        },
-    ]
+    React.useEffect(() => {
+        publicService.getDepartments().then(setDepartments).catch(() => {})
+    }, [])
 
-    // Mock Data
-    const allIssues = [
-        {
-            id: 1,
-            title: "Major Pothole near Rankala Lake",
-            description: "This pothole has been getting bigger for weeks. Very dangerous for bikers.",
-            region: "Kolhapur",
-            area: "Rankala Stand",
-            date: "2024-02-12",
-            status: "pending",
-            image: "/placeholder.svg",
-            likes: 45,
-            comments: 12
-        },
-        {
-            id: 2,
-            title: "Street Light Not Working",
-            description: "Whole street is dark at night.",
-            region: "Kolhapur",
-            area: "Rajarampuri",
-            date: "2024-02-11",
-            status: "in-progress",
-            image: "/placeholder.svg",
-            likes: 23,
-            comments: 5
-        },
-        {
-            id: 3,
-            title: "Water Leakage",
-            description: "Clean water wasting on the road.",
-            region: "Sangli",
-            area: "Vishrambag",
-            date: "2024-02-10",
-            status: "pending",
-            image: "/placeholder.svg",
-            likes: 5,
-            comments: 1
-        },
-        {
-            id: 4,
-            title: "Garbage Dumped",
-            description: "Cleared successfully.",
-            region: "Kolhapur",
-            area: "Shahupuri",
-            date: "2024-02-08",
-            status: "solved",
-            image: "/placeholder.svg",
-            likes: 89,
-            comments: 20
+    React.useEffect(() => {
+        issueService.getMyIssues().then(setMyIssues).catch(() => {})
+    }, [isReporting])
+
+    React.useEffect(() => {
+        if (navigator.geolocation) {
+            navigator.geolocation.getCurrentPosition(
+                (p) => setLocation((l) => ({ ...l, lat: p.coords.latitude, lng: p.coords.longitude })),
+                () => {}
+            )
         }
+    }, [])
+
+    const resolved = myIssues.filter((i) => i.status === "COMPLETED").length
+    const unresolved = myIssues.filter((i) => i.status !== "COMPLETED").length
+    const stats = [
+        { title: "My Issues", value: String(myIssues.length), description: "Total reported by you", icon: MapPin },
+        { title: "Resolved", value: String(resolved), description: "Successfully fixed", icon: CheckCircle },
+        { title: "Unresolved", value: String(unresolved), description: "Pending attention", icon: AlertCircle },
     ]
 
-    // Filter Logic: Region = Kolhapur AND Status != Solved
-    const feedIssues = allIssues.filter(i => i.region === "Kolhapur" && i.status !== "solved")
+    const feedIssues = myIssues.map((i) => ({
+        id: i.id,
+        title: i.description?.slice(0, 50) || "Issue",
+        description: i.description,
+        region: i.department?.region?.name || "—",
+        area: i.address || `${i.latitude}, ${i.longitude}`,
+        date: i.createdAt ? new Date(i.createdAt).toLocaleDateString() : "",
+        status: i.status?.toLowerCase() || "pending",
+        image: i.photoUrl || "/placeholder.svg",
+        likes: 0,
+        comments: 0,
+    })).filter((i) => i.status !== "completed")
 
     if (isReporting) {
         return (
@@ -139,43 +109,97 @@ export default function CitizenDashboard() {
                                 <CardTitle>Issue Details</CardTitle>
                             </CardHeader>
                             <CardContent className="space-y-6">
-                                <div className="space-y-2">
-                                    <Label>Issue Title *</Label>
-                                    <Input placeholder="Enter your issue title" />
-                                </div>
-
+                                <form onSubmit={async (e) => {
+                                    e.preventDefault()
+                                    const lat = location.lat
+                                    const lng = location.lng
+                                    if (!reportForm.photo || !reportForm.description || !reportForm.departmentId || lat == null || lng == null) {
+                                        toast({ title: "Please fill all required fields and allow location", variant: "destructive" })
+                                        return
+                                    }
+                                    setSubmitting(true)
+                                    try {
+                                        const fd = new FormData()
+                                        fd.append("photo", reportForm.photo)
+                                        fd.append("latitude", String(lat))
+                                        fd.append("longitude", String(lng))
+                                        fd.append("address", reportForm.address || "")
+                                        fd.append("description", reportForm.description)
+                                        fd.append("departmentId", reportForm.departmentId)
+                                        await issueService.submitIssue(fd)
+                                        toast({ title: "Issue submitted successfully" })
+                                        setIsReporting(false)
+                                        setReportForm({ title: "", description: "", departmentId: "", photo: null, address: "" })
+                                        issueService.getMyIssues().then(setMyIssues)
+                                    } catch (err) {
+                                        toast({ title: err.message || "Failed to submit", variant: "destructive" })
+                                    } finally {
+                                        setSubmitting(false)
+                                    }
+                                }} className="space-y-6">
                                 <div className="space-y-3">
-                                    <Label>Issue Type *</Label>
-                                    <div className="grid grid-cols-2 gap-4">
-                                        {["Road Infrastructure", "Waste Management", "Environmental Issues", "Utilities & Infrastructure", "Public Safety", "Other"].map((type) => (
-                                            <div key={type} className="flex items-center space-x-2">
-                                                <input type="radio" id={type} name="issueType" className="aspect-square h-4 w-4 rounded-full border border-primary text-primary ring-offset-background focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50" />
-                                                <Label htmlFor={type} className="font-normal cursor-pointer">{type}</Label>
-                                            </div>
+                                    <Label>Department *</Label>
+                                    <select
+                                        value={reportForm.departmentId}
+                                        onChange={(e) => setReportForm((f) => ({ ...f, departmentId: e.target.value }))}
+                                        className="h-10 w-full rounded-md border px-3 text-sm"
+                                        required
+                                    >
+                                        <option value="">Select Department</option>
+                                        {departments.map((d) => (
+                                            <option key={d.id} value={d.id}>{d.name} ({d.region?.name})</option>
                                         ))}
-                                    </div>
+                                    </select>
                                 </div>
 
                                 <div className="space-y-2">
-                                    <Label>Issue Location Address</Label>
-                                    <Input placeholder="Enter or select location on map" />
+                                    <Label>Location *</Label>
+                                    <Input
+                                        placeholder="Address (optional)"
+                                        value={reportForm.address ?? ""}
+                                        onChange={(e) => setReportForm((f) => ({ ...f, address: e.target.value }))}
+                                    />
+                                    {location.lat ? (
+                                        <p className="text-xs text-muted-foreground">GPS: {location.lat.toFixed(4)}, {location.lng.toFixed(4)}</p>
+                                    ) : (
+                                        <div className="grid grid-cols-2 gap-2">
+                                            <Input placeholder="Latitude" type="number" step="any" value={location.lat ?? ""} onChange={(e) => setLocation((l) => ({ ...l, lat: parseFloat(e.target.value) || null }))} />
+                                            <Input placeholder="Longitude" type="number" step="any" value={location.lng ?? ""} onChange={(e) => setLocation((l) => ({ ...l, lng: parseFloat(e.target.value) || null }))} />
+                                            <p className="col-span-2 text-xs text-muted-foreground">Or allow GPS access when prompted</p>
+                                        </div>
+                                    )}
                                 </div>
 
                                 <div className="space-y-2">
                                     <Label>Issue Description *</Label>
-                                    <Textarea placeholder="Describe the issue in detail..." className="min-h-[100px]" />
+                                    <Textarea
+                                        placeholder="Describe the issue in detail..."
+                                        className="min-h-[100px]"
+                                        value={reportForm.description}
+                                        onChange={(e) => setReportForm((f) => ({ ...f, description: e.target.value }))}
+                                        required
+                                    />
                                 </div>
 
                                 <div className="space-y-2">
-                                    <Label>Upload Media</Label>
-                                    <div className="flex items-center gap-2">
-                                        <Input type="file" className="cursor-pointer" />
-                                    </div>
+                                    <Label>Issue Photo *</Label>
+                                    <Input
+                                        type="file"
+                                        accept="image/*"
+                                        className="cursor-pointer"
+                                        onChange={(e) => setReportForm((f) => ({ ...f, photo: e.target.files?.[0] }))}
+                                        required
+                                    />
                                 </div>
 
-                                <Button className="w-full bg-green-600 hover:bg-green-700 text-white">
-                                    <Share2 className="mr-2 h-4 w-4" /> Submit Issue
+                                <Button
+                                    type="submit"
+                                    className="w-full bg-green-600 hover:bg-green-700 text-white"
+                                    disabled={submitting || location.lat == null || location.lng == null}
+                                >
+                                    <Share2 className="mr-2 h-4 w-4" /> {submitting ? "Submitting..." : "Submit Issue"}
                                 </Button>
+                                </form>
                             </CardContent>
                         </Card>
                     </div>
@@ -219,9 +243,9 @@ export default function CitizenDashboard() {
                 })}
             </div>
 
-            {/* Community Feed */}
+            {/* My Submitted Issues */}
             <div className="space-y-6">
-                <h3 className="text-xl font-semibold">Community Feed (Unresolved Issues)</h3>
+                <h3 className="text-xl font-semibold">My Submitted Issues</h3>
 
                 <div className="grid gap-6 md:grid-cols-1 lg:max-w-2xl mx-auto">
                     {feedIssues.length > 0 ? (
@@ -278,8 +302,8 @@ export default function CitizenDashboard() {
                     ) : (
                         <div className="text-center py-10">
                             <CheckCircle className="h-12 w-12 text-green-500 mx-auto mb-3" />
-                            <h3 className="text-lg font-medium">All Clear!</h3>
-                            <p className="text-muted-foreground">No unresolved issues in Kolhapur at the moment.</p>
+                            <h3 className="text-lg font-medium">No issues yet</h3>
+                            <p className="text-muted-foreground">Report a civic issue to see it here.</p>
                         </div>
                     )}
                 </div>

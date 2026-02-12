@@ -82,12 +82,10 @@ export function LoginForm({ className, onLogin, ...props }) {
                 Demo accounts
               </FieldSeparator>
               <FieldDescription className="text-sm text-muted-foreground">
-                Super Admin: super@civic.com / super123
-                <br />
-                Regional: regional@gokul.com / regional123
+                Super Admin: super@civic.com / super123 · Regional: regional@gokul.com / regional123
               </FieldDescription>
               <FieldDescription className="text-center">
-                Don&apos;t have an account? <a href="/signup">Sign up</a>
+                Citizen? <a href="/signup" className="font-medium underline">Sign up</a> to report issues
               </FieldDescription>
             </FieldGroup>
           </form>

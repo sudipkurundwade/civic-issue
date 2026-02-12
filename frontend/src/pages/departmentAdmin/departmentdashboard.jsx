@@ -25,82 +25,78 @@ import {
     CheckCircle,
     Clock,
     Filter,
-    ImageIcon,
     MapPin,
 } from "lucide-react"
+import { departmentalService } from "@/services/departmentalService"
+import { useToast } from "@/components/ui/use-toast"
 
 export default function DepartmentAdminDashboard() {
+    const { toast } = useToast()
     const [filter, setFilter] = React.useState("all")
+    const [complaints, setComplaints] = React.useState([])
     const [selectedIssue, setSelectedIssue] = React.useState(null)
     const [completeChecked, setCompleteChecked] = React.useState(false)
     const [inProgressChecked, setInProgressChecked] = React.useState(false)
+    const [completionPhoto, setCompletionPhoto] = React.useState(null)
+    const [loading, setLoading] = React.useState(false)
+    const [sheetOpen, setSheetOpen] = React.useState(false)
 
-    // Mock Data
+    React.useEffect(() => {
+        departmentalService.getIssues().then((data) => {
+            setComplaints(data.map((i) => ({
+                id: i.id || i._id,
+                title: i.description?.slice(0, 50) || "Issue",
+                date: i.createdAt ? new Date(i.createdAt).toLocaleDateString() : "-",
+                location: i.address || `${i.latitude}, ${i.longitude}`,
+                status: (i.status === "COMPLETED" ? "completed" : i.status?.toLowerCase().replace("_", "-")) || "pending",
+                image: i.photoUrl || "/placeholder.svg",
+                description: i.description,
+            })))
+        }).catch(() => toast({ title: "Failed to load issues", variant: "destructive" }))
+    }, [filter])
+
+    const pending = complaints.filter((c) => c.status !== "completed").length
+    const solved = complaints.filter((c) => c.status === "completed").length
     const stats = [
-        {
-            title: "Total Complaints",
-            value: "45",
-            description: "assigned to this department",
-            icon: AlertCircle,
-        },
-        {
-            title: "Solved",
-            value: "28",
-            description: "successfully resolved",
-            icon: CheckCircle,
-        },
-        {
-            title: "Unsolved",
-            value: "17",
-            description: "currently pending",
-            icon: Clock,
-        },
-    ]
-
-    const complaints = [
-        {
-            id: 1,
-            title: "Broken Pipe at Main Square",
-            date: "2024-02-10",
-            location: "Main Square, Ward 4",
-            status: "pending",
-            image: "/placeholder.svg",
-            description: "Large water leak detected near the central fountain.",
-        },
-        {
-            id: 2,
-            title: "Low Water Pressure",
-            date: "2024-02-11",
-            location: "Shivaji Park",
-            status: "in-progress",
-            image: "/placeholder.svg",
-            description: "Residents reporting low pressure since morning.",
-        },
-        {
-            id: 3,
-            title: "Contaminated Water Supply",
-            date: "2024-02-09",
-            location: "Market Yard",
-            status: "solved",
-            image: "/placeholder.svg",
-            description: "Water appearing muddy. Pipe flushed and fixed.",
-            completionParams: {
-                completionImage: "/placeholder.svg"
-            }
-        },
+        { title: "Total Complaints", value: String(complaints.length), description: "assigned to this department", icon: AlertCircle },
+        { title: "Solved", value: String(solved), description: "successfully resolved", icon: CheckCircle },
+        { title: "Unsolved", value: String(pending), description: "currently pending", icon: Clock },
     ]
 
     const filteredComplaints = complaints.filter((c) => {
         if (filter === "all") return true
-        if (filter === "solved") return c.status === "solved"
-        if (filter === "unsolved") return c.status !== "solved"
+        if (filter === "solved") return c.status === "completed"
+        if (filter === "unsolved") return c.status !== "completed"
         return true
     })
 
-    const handleUpdateStatus = (e) => {
+    const handleUpdateStatus = async (e) => {
         e.preventDefault()
-        console.log("Updating status...", { inProgressChecked, completeChecked })
-        // Logic to update status would go here
+        if (!selectedIssue) return
+        if (completeChecked && !completionPhoto) {
+            toast({ title: "Completion photo is required", variant: "destructive" })
+            return
+        }
+        setLoading(true)
+        try {
+            if (completeChecked) {
+                const formData = new FormData()
+                formData.append("completionPhoto", completionPhoto)
+                await departmentalService.completeIssue(selectedIssue.id, formData)
+                toast({ title: "Issue marked as completed" })
+                setSheetOpen(false)
+                setComplaints((prev) => prev.map((c) => c.id === selectedIssue.id ? { ...c, status: "completed" } : c))
+            } else if (inProgressChecked) {
+                await departmentalService.updateStatus(selectedIssue.id, "IN_PROGRESS")
+                toast({ title: "Status updated to In Progress" })
+                setSheetOpen(false)
+                setComplaints((prev) => prev.map((c) => c.id === selectedIssue.id ? { ...c, status: "in-progress" } : c))
+            }
+        } catch (err) {
+            toast({ title: err.message || "Failed to update", variant: "destructive" })
+        } finally {
+            setLoading(false)
+        }
     }
 
     return (
@@ -177,7 +173,7 @@ export default function DepartmentAdminDashboard() {
                                             <div>
                                                 <div className="flex justify-between items-start">
                                                     <h3 className="font-semibold text-lg">{complaint.title}</h3>
-                                                    <Badge variant={complaint.status === "solved" ? "default" : "secondary"}>
+                                                    <Badge variant={complaint.status === "completed" ? "default" : "secondary"}>
                                                         {complaint.status}
                                                     </Badge>
                                                 </div>
@@ -189,84 +185,13 @@ export default function DepartmentAdminDashboard() {
                                                 </p>
                                             </div>
                                             <div className="mt-4 flex justify-end">
-                                                <Sheet>
-                                                    <SheetTrigger asChild>
-                                                        <Button size="sm" onClick={() => {
-                                                            setSelectedIssue(complaint)
-                                                            setCompleteChecked(complaint.status === "solved")
-                                                            setInProgressChecked(complaint.status === "in-progress")
-                                                        }}>View Details & Update</Button>
-                                                    </SheetTrigger>
-                                                    <SheetContent className="overflow-y-auto">
-                                                        <SheetHeader>
-                                                            <SheetTitle>Complaint Details</SheetTitle>
-                                                            <SheetDescription>
-                                                                Review details and update status.
-                                                            </SheetDescription>
-                                                        </SheetHeader>
-
-                                                        <div className="mt-6 space-y-6">
-                                                            <div className="aspect-video w-full bg-muted rounded-md overflow-hidden">
-                                                                <img src={complaint.image} alt="Evidence" className="w-full h-full object-cover" />
-                                                            </div>
-
-                                                            <div className="space-y-2">
-                                                                <h4 className="font-medium text-sm">Description</h4>
-                                                                <p className="text-sm text-muted-foreground">{complaint.description}</p>
-                                                            </div>
-
-                                                            <div className="space-y-2">
-                                                                <h4 className="font-medium text-sm">Location</h4>
-                                                                <p className="text-sm text-muted-foreground">{complaint.location}</p>
-                                                            </div>
-
-                                                            <div className="border-t pt-4 space-y-4">
-                                                                <h4 className="font-medium">Update Status</h4>
-                                                                <form onSubmit={handleUpdateStatus} className="space-y-4">
-                                                                    <div className="flex items-center space-x-2">
-                                                                        <Checkbox
-                                                                            id="in-progress"
-                                                                            checked={inProgressChecked}
-                                                                            onCheckedChange={(checked) => {
-                                                                                setInProgressChecked(checked)
-                                                                                if (checked) setCompleteChecked(false)
-                                                                            }}
-                                                                        />
-                                                                        <Label htmlFor="in-progress">In Progress</Label>
-                                                                    </div>
-
-                                                                    <div className="flex items-center space-x-2">
-                                                                        <Checkbox
-                                                                            id="completed"
-                                                                            checked={completeChecked}
-                                                                            onCheckedChange={(checked) => {
-                                                                                setCompleteChecked(checked)
-                                                                                if (checked) setInProgressChecked(false)
-                                                                            }}
-                                                                        />
-                                                                        <Label htmlFor="completed">Completed (Mark as Solved)</Label>
-                                                                    </div>
-
-                                                                    {completeChecked && (
-                                                                        <div className="space-y-2 border p-3 rounded-md bg-muted/50">
-                                                                            <Label htmlFor="completion-photo" className="text-xs font-semibold uppercase text-muted-foreground">
-                                                                                Mandatory: Upload Completion Photo
-                                                                            </Label>
-                                                                            <Input id="completion-photo" type="file" required={completeChecked} accept="image/*" />
-                                                                            <p className="text-[10px] text-muted-foreground">
-                                                                                You must upload a photo of the completed work to close this ticket.
-                                                                            </p>
-                                                                        </div>
-                                                                    )}
-
-                                                                    <SheetFooter className="mt-4">
-                                                                        <Button type="submit" className="w-full">Update Status</Button>
-                                                                    </SheetFooter>
-                                                                </form>
-                                                            </div>
-                                                        </div>
-                                                    </SheetContent>
-                                                </Sheet>
+                                                <Button size="sm" onClick={() => {
+                                                    setSelectedIssue(complaint)
+                                                    setCompleteChecked(complaint.status === "completed")
+                                                    setInProgressChecked(complaint.status === "in-progress")
+                                                    setCompletionPhoto(null)
+                                                    setSheetOpen(true)
+                                                }}>View Details & Update</Button>
                                             </div>
                                         </div>
                                     </div>
@@ -280,6 +205,53 @@ export default function DepartmentAdminDashboard() {
                     )}
                 </div>
             </div>
+
+            <Sheet open={sheetOpen} onOpenChange={(open) => { setSheetOpen(open); if (!open) setCompletionPhoto(null) }}>
+                <SheetContent className="overflow-y-auto">
+                    <SheetHeader>
+                        <SheetTitle>Complaint Details</SheetTitle>
+                        <SheetDescription>Review details and update status.</SheetDescription>
+                    </SheetHeader>
+                    {selectedIssue && (
+                        <div className="mt-6 space-y-6">
+                            <div className="aspect-video w-full bg-muted rounded-md overflow-hidden">
+                                <img src={selectedIssue.image} alt="Evidence" className="w-full h-full object-cover" />
+                            </div>
+                            <div className="space-y-2">
+                                <h4 className="font-medium text-sm">Description</h4>
+                                <p className="text-sm text-muted-foreground">{selectedIssue.description}</p>
+                            </div>
+                            <div className="space-y-2">
+                                <h4 className="font-medium text-sm">Location</h4>
+                                <p className="text-sm text-muted-foreground">{selectedIssue.location}</p>
+                            </div>
+                            <div className="border-t pt-4 space-y-4">
+                                <h4 className="font-medium">Update Status</h4>
+                                <form onSubmit={handleUpdateStatus} className="space-y-4">
+                                    <div className="flex items-center space-x-2">
+                                        <Checkbox id="in-progress" checked={inProgressChecked} onCheckedChange={(c) => { setInProgressChecked(c); if (c) setCompleteChecked(false) }} />
+                                        <Label htmlFor="in-progress">In Progress</Label>
+                                    </div>
+                                    <div className="flex items-center space-x-2">
+                                        <Checkbox id="completed" checked={completeChecked} onCheckedChange={(c) => { setCompleteChecked(c); if (c) setInProgressChecked(false) }} />
+                                        <Label htmlFor="completed">Completed (Mark as Solved)</Label>
+                                    </div>
+                                    {completeChecked && (
+                                        <div className="space-y-2 border p-3 rounded-md bg-muted/50">
+                                            <Label htmlFor="completion-photo" className="text-xs font-semibold uppercase text-muted-foreground">Mandatory: Upload Completion Photo</Label>
+                                            <Input id="completion-photo" type="file" required={completeChecked} accept="image/*" onChange={(e) => setCompletionPhoto(e.target.files?.[0])} />
+                                            <p className="text-[10px] text-muted-foreground">You must upload a photo of the completed work to close this ticket.</p>
+                                        </div>
+                                    )}
+                                    <SheetFooter className="mt-4">
+                                        <Button type="submit" className="w-full" disabled={loading}>Update Status</Button>
+                                    </SheetFooter>
+                                </form>
+                            </div>
+                        </div>
+                    )}
+                </SheetContent>
+            </Sheet>
         </div>
     )
 }

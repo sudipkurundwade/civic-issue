@@ -24,42 +24,53 @@ import {
   CheckCircle,
   Clock,
   ArrowUpRight,
-  MoreHorizontal,
   Plus,
   Building2,
 } from "lucide-react"
+import { adminService } from "@/services/adminService"
+import { useToast } from "@/components/ui/use-toast"
 
 export default function DepartmentDashboard() {
-  const [selectedDepartment, setSelectedDepartment] = React.useState("Water Supply")
-  const [newDepartment, setNewDepartment] = React.useState("")
+  const { toast } = useToast()
+  const [departments, setDepartments] = React.useState([])
+  const [selectedDepartment, setSelectedDepartment] = React.useState("")
+  const [adminName, setAdminName] = React.useState("")
+  const [adminEmail, setAdminEmail] = React.useState("")
+  const [adminPassword, setAdminPassword] = React.useState("")
+  const [adminDept, setAdminDept] = React.useState("")
+  const [newDeptName, setNewDeptName] = React.useState("")
+  const [isCreateNewDept, setIsCreateNewDept] = React.useState(false)
+  const [loading, setLoading] = React.useState(false)
+  const [dialogOpen, setDialogOpen] = React.useState(false)
+  const [issues, setIssues] = React.useState([])
 
-  // Departments List
-  const departments = [
-    { name: "Water Supply", count: 125 },
-    { name: "Electricity", count: 84 },
-    { name: "Roads", count: 62 },
-    { name: "Waste Management", count: 98 },
-    { name: "Parks", count: 34 },
-    { name: "Sewerage", count: 41 },
-  ]
+  React.useEffect(() => {
+    adminService.getDepartments().then(setDepartments).catch(() => toast({ title: "Failed to load departments", variant: "destructive" }))
+  }, [dialogOpen])
 
-  // Issues Data
-  const issues = [
-    { id: 1, title: "Water Leakage in Sector 4", department: "Water Supply", time: "2 hours ago", status: "pending" },
-    { id: 2, title: "Street Light Malfunction", department: "Electricity", time: "5 hours ago", status: "solved" },
-    { id: 3, title: "Pothole on Main Road", department: "Roads", time: "1 day ago", status: "in-progress" },
-    { id: 4, title: "Garbage Collection Delayed", department: "Waste Management", time: "1 day ago", status: "solved" },
-    { id: 5, title: "Broken Park Bench", department: "Parks", time: "2 days ago", status: "pending" },
-    { id: 6, title: "Drain Blockage", department: "Sewerage", time: "3 hours ago", status: "pending" },
-  ]
+  const filteredIssues = issues.filter((i) => i.department?.name === selectedDepartment)
 
-  const filteredIssues = issues.filter(
-    (issue) => issue.department === selectedDepartment
-  )
-
-  const handleSubmit = (e) => {
+  const handleCreateDepartmentalAdmin = async (e) => {
     e.preventDefault()
-    console.log("New Department Added:", newDepartment)
+    setLoading(true)
+    try {
+      await adminService.createDepartmentalAdmin({
+        email: adminEmail,
+        password: adminPassword,
+        name: adminName,
+        departmentId: isCreateNewDept ? null : adminDept || null,
+        departmentName: isCreateNewDept ? newDeptName.trim() : null,
+      })
+      toast({ title: "Departmental admin created successfully" })
+      setDialogOpen(false)
+      setAdminName(""); setAdminEmail(""); setAdminPassword("")
+      setAdminDept(""); setNewDeptName(""); setIsCreateNewDept(false)
+      adminService.getDepartments().then(setDepartments)
+    } catch (err) {
+      toast({ title: err.message || "Failed to create admin", variant: "destructive" })
+    } finally {
+      setLoading(false)
+    }
   }
 
   return (
@@ -69,49 +80,53 @@ export default function DepartmentDashboard() {
       <div className="flex items-center justify-between">
         <h2 className="text-3xl font-bold">Department Dashboard</h2>
 
-        <Dialog>
+        <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
           <DialogTrigger asChild>
             <Button>
-              <Plus className="mr-2 h-4 w-4" /> Add Department
+              <Plus className="mr-2 h-4 w-4" /> Add Departmental Admin
             </Button>
           </DialogTrigger>
 
           <DialogContent>
             <DialogHeader>
-              <DialogTitle>Add New Department Admin</DialogTitle>
+              <DialogTitle>Create Departmental Admin</DialogTitle>
               <DialogDescription>
-                Create a new administrator for a department.
+                Create a new administrator for a department. They can receive and resolve issues.
               </DialogDescription>
             </DialogHeader>
 
-            <form onSubmit={handleSubmit} className="grid gap-4 py-4">
+            <form onSubmit={handleCreateDepartmentalAdmin} className="grid gap-4 py-4">
+              <div className="grid gap-2">
+                <Label>Name</Label>
+                <Input value={adminName} onChange={(e) => setAdminName(e.target.value)} placeholder="Admin name" required />
+              </div>
               <div className="grid gap-2">
                 <Label>Email</Label>
-                <Input type="email" placeholder="admin@example.com" required />
+                <Input type="email" value={adminEmail} onChange={(e) => setAdminEmail(e.target.value)} placeholder="admin@dept.com" required />
               </div>
               <div className="grid gap-2">
                 <Label>Password</Label>
-                <Input type="password" required />
+                <Input type="password" value={adminPassword} onChange={(e) => setAdminPassword(e.target.value)} required />
               </div>
               <div className="grid gap-2">
                 <Label>Department</Label>
-                <select
-                  value={newDepartment}
-                  onChange={(e) => setNewDepartment(e.target.value)}
-                  className="h-10 rounded-md border px-3 text-sm"
-                  required
-                >
-                  <option value="">Select Department</option>
-                  {departments.map((dept) => (
-                    <option key={dept.name} value={dept.name}>
-                      {dept.name}
-                    </option>
-                  ))}
-                </select>
+                <label className="flex items-center gap-2 text-sm">
+                  <input type="checkbox" checked={isCreateNewDept} onChange={(e) => setIsCreateNewDept(e.target.checked)} />
+                  Create new department
+                </label>
+                {isCreateNewDept ? (
+                  <Input value={newDeptName} onChange={(e) => setNewDeptName(e.target.value)} placeholder="e.g. Road Department" required={isCreateNewDept} />
+                ) : (
+                  <select value={adminDept} onChange={(e) => setAdminDept(e.target.value)} className="h-10 w-full rounded-md border px-3 text-sm" required={!isCreateNewDept}>
+                    <option value="">Select Department</option>
+                    {departments.map((dept) => (
+                      <option key={dept.id} value={dept.id}>{dept.name}</option>
+                    ))}
+                  </select>
+                )}
               </div>
-
               <DialogFooter>
-                <Button type="submit">Submit</Button>
+                <Button type="submit" disabled={loading}>{loading ? "Creating..." : "Create Admin"}</Button>
               </DialogFooter>
             </form>
           </DialogContent>
@@ -129,22 +144,22 @@ export default function DepartmentDashboard() {
           </CardHeader>
 
           <CardContent className="space-y-2">
-            {departments.map((dept) => (
-              <div
-                key={dept.name}
-                onClick={() => setSelectedDepartment(dept.name)}
-                className={`flex justify-between p-3 rounded cursor-pointer ${selectedDepartment === dept.name
-                  ? "bg-primary text-white"
-                  : "hover:bg-accent"
-                  }`}
-              >
-                <div className="flex items-center gap-2">
-                  <Building2 className="h-4 w-4" />
-                  <span>{dept.name}</span>
+            {departments.length === 0 ? (
+              <p className="text-sm text-muted-foreground py-4">No departments yet. Create a departmental admin and assign a new department.</p>
+            ) : (
+              departments.map((dept) => (
+                <div
+                  key={dept.id}
+                  onClick={() => setSelectedDepartment(dept.name)}
+                  className={`flex justify-between p-3 rounded cursor-pointer ${selectedDepartment === dept.name ? "bg-primary text-primary-foreground" : "hover:bg-accent"}`}
+                >
+                  <div className="flex items-center gap-2">
+                    <Building2 className="h-4 w-4" />
+                    <span>{dept.name}</span>
+                  </div>
                 </div>
-                <Badge variant="outline">{dept.count}</Badge>
-              </div>
-            ))}
+              ))
+            )}
           </CardContent>
         </Card>
 
