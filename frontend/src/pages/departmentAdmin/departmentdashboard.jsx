@@ -26,9 +26,11 @@ import {
     Clock,
     Filter,
     MapPin,
+    ExternalLink,
 } from "lucide-react"
 import { departmentalService } from "@/services/departmentalService"
 import { useToast } from "@/components/ui/use-toast"
+import { LocationMap } from "@/components/LocationMap"
 
 export default function DepartmentAdminDashboard() {
     const { toast } = useToast()
@@ -48,6 +50,8 @@ export default function DepartmentAdminDashboard() {
                 title: i.description?.slice(0, 50) || "Issue",
                 date: i.createdAt ? new Date(i.createdAt).toLocaleDateString() : "-",
                 location: i.address || `${i.latitude}, ${i.longitude}`,
+                latitude: i.latitude,
+                longitude: i.longitude,
                 status: (i.status === "COMPLETED" ? "completed" : i.status?.toLowerCase().replace("_", "-")) || "pending",
                 image: i.photoUrl || "/placeholder.svg",
                 description: i.description,
@@ -224,6 +228,27 @@ export default function DepartmentAdminDashboard() {
                             <div className="space-y-2">
                                 <h4 className="font-medium text-sm">Location</h4>
                                 <p className="text-sm text-muted-foreground">{selectedIssue.location}</p>
+                                {selectedIssue.latitude != null && selectedIssue.longitude != null && (
+                                    <>
+                                        <div className="rounded-md overflow-hidden border h-32">
+                                            <LocationMap
+                                                center={{ lat: selectedIssue.latitude, lng: selectedIssue.longitude }}
+                                                selected={{ lat: selectedIssue.latitude, lng: selectedIssue.longitude }}
+                                                height="128px"
+                                            />
+                                        </div>
+                                        <a
+                                            href={`https://www.google.com/maps?q=${selectedIssue.latitude},${selectedIssue.longitude}`}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="inline-flex items-center gap-2 text-sm text-primary hover:underline"
+                                        >
+                                            <MapPin className="h-4 w-4" />
+                                            Get Directions / Open in Google Maps
+                                            <ExternalLink className="h-3 w-3" />
+                                        </a>
+                                    </>
+                                )}
                             </div>
                             <div className="border-t pt-4 space-y-4">
                                 <h4 className="font-medium">Update Status</h4>

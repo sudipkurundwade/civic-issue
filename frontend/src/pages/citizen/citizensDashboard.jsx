@@ -21,10 +21,27 @@ import {
     Share2,
     Plus,
     ArrowLeft,
+    Camera,
+    Upload,
 } from "lucide-react"
 import { publicService } from "@/services/adminService"
 import { issueService } from "@/services/issueService"
 import { useToast } from "@/components/ui/use-toast"
+import { LocationMap } from "@/components/LocationMap"
+
+const captureLocation = () => {
+    return new Promise((resolve) => {
+        if (!navigator.geolocation) {
+            resolve(null)
+            return
+        }
+        navigator.geolocation.getCurrentPosition(
+            (p) => resolve({ lat: p.coords.latitude, lng: p.coords.longitude }),
+            () => resolve(null),
+            { enableHighAccuracy: true }
+        )
+    })
+}
 
 export default function CitizenDashboard() {
     const { toast } = useToast()
@@ -32,8 +49,12 @@ export default function CitizenDashboard() {
     const [departments, setDepartments] = React.useState([])
     const [myIssues, setMyIssues] = React.useState([])
     const [location, setLocation] = React.useState({ lat: null, lng: null, address: "" })
-    const [reportForm, setReportForm] = React.useState({ title: "", description: "", departmentId: "", photo: null })
+    const [locationLoading, setLocationLoading] = React.useState(true)
+    const [mapSelected, setMapSelected] = React.useState(null)
+    const [reportForm, setReportForm] = React.useState({ description: "", departmentId: "", photo: null, photoPreview: null, address: "" })
     const [submitting, setSubmitting] = React.useState(false)
+    const cameraInputRef = React.useRef(null)
+    const uploadInputRef = React.useRef(null)
 
     React.useEffect(() => {
         publicService.getDepartments().then(setDepartments).catch(() => {})
@@ -44,13 +65,14 @@ export default function CitizenDashboard() {
     }, [isReporting])
 
     React.useEffect(() => {
-        if (navigator.geolocation) {
-            navigator.geolocation.getCurrentPosition(
-                (p) => setLocation((l) => ({ ...l, lat: p.coords.latitude, lng: p.coords.longitude })),
-                () => {}
-            )
-        }
-    }, [])
+        if (isReporting && navigator.geolocation) {
+            setLocationLoading(true)
+            captureLocation().then((pos) => {
+                if (pos) setLocation((l) => ({ ...l, ...pos }))
+                setLocationLoading(false)
+            })
+        } else if (isReporting) setLocationLoading(false)
+    }, [isReporting])
 
     const resolved = myIssues.filter((i) => i.status === "COMPLETED").length
     const unresolved = myIssues.filter((i) => i.status !== "COMPLETED").length
@@ -87,18 +109,30 @@ export default function CitizenDashboard() {
                     </div>
 
                     <div className="grid md:grid-cols-2 gap-6">
-                        {/* Left Column: Map Placeholder */}
+                        {/* Left Column: Map - Auto-tracked, click to adjust */}
                         <Card className="h-full min-h-[500px] flex flex-col">
                             <CardHeader>
                                 <CardTitle className="flex items-center gap-2">
-                                    <MapPin className="h-5 w-5 text-green-600" /> Select Issue Location
+                                    <MapPin className="h-5 w-5 text-green-600" /> Issue Location
                                 </CardTitle>
+                                <CardDescription>Your location is tracked automatically. Click on the map to adjust if the marker is wrong.</CardDescription>
                             </CardHeader>
-                            <CardContent className="flex-1 bg-muted/30 m-4 rounded-lg flex items-center justify-center border-2 border-dashed">
-                                <div className="text-center text-muted-foreground">
-                                    <MapPin className="h-12 w-12 mx-auto mb-2 opacity-50" />
-                                    <p>Interactive Map</p>
-                                    <p className="text-xs">(Mapbox Integration Placeholder)</p>
+                            <CardContent className="flex-1 p-4">
+                                <LocationMap
+                                    center={location.lat ? { lat: location.lat, lng: location.lng } : null}
+                                    selected={mapSelected}
+                                    onSelect={(pos) => setMapSelected(pos)}
+                                    height="400px"
+                                />
+                                <div className="mt-2 space-y-1">
+                                    {locationLoading && !(mapSelected || location.lat) && (
+                                        <p className="text-xs text-amber-600">Getting your location... Allow GPS when prompted.</p>
+                                    )}
+                                    {(mapSelected || (location.lat != null)) && (
+                                        <p className="text-xs text-green-600">
+                                            ✓ Location: {mapSelected ? `${mapSelected.lat.toFixed(5)}, ${mapSelected.lng.toFixed(5)}` : `${location.lat.toFixed(5)}, ${location.lng.toFixed(5)}`}
+                                        </p>
+                                    )}
                                 </div>
                             </CardContent>
                         </Card>
@@ -111,10 +145,11 @@ export default function CitizenDashboard() {
                             <CardContent className="space-y-6">
                                 <form onSubmit={async (e) => {
                                     e.preventDefault()
-                                    const lat = location.lat
-                                    const lng = location.lng
+                                    const pos = mapSelected || (location.lat != null ? location : null)
+                                    const lat = pos?.lat
+                                    const lng = pos?.lng
                                     if (!reportForm.photo || !reportForm.description || !reportForm.departmentId || lat == null || lng == null) {
-                                        toast({ title: "Please fill all required fields and allow location", variant: "destructive" })
+                                        toast({ title: "Please add photo, description, department. Allow location access for auto-tracking.", variant: "destructive" })
                                         return
                                     }
                                     setSubmitting(true)
@@ -129,7 +164,8 @@ export default function CitizenDashboard() {
                                         await issueService.submitIssue(fd)
                                         toast({ title: "Issue submitted successfully" })
                                         setIsReporting(false)
-                                        setReportForm({ title: "", description: "", departmentId: "", photo: null, address: "" })
+                                        setReportForm({ description: "", departmentId: "", photo: null, photoPreview: null, address: "" })
+                                        setMapSelected(null)
                                         issueService.getMyIssues().then(setMyIssues)
                                     } catch (err) {
                                         toast({ title: err.message || "Failed to submit", variant: "destructive" })
@@ -153,21 +189,13 @@ export default function CitizenDashboard() {
                                 </div>
 
                                 <div className="space-y-2">
-                                    <Label>Location *</Label>
+                                    <Label>Address (optional)</Label>
                                     <Input
-                                        placeholder="Address (optional)"
+                                        placeholder="Street, landmark, etc."
                                         value={reportForm.address ?? ""}
                                         onChange={(e) => setReportForm((f) => ({ ...f, address: e.target.value }))}
                                     />
-                                    {location.lat ? (
-                                        <p className="text-xs text-muted-foreground">GPS: {location.lat.toFixed(4)}, {location.lng.toFixed(4)}</p>
-                                    ) : (
-                                        <div className="grid grid-cols-2 gap-2">
-                                            <Input placeholder="Latitude" type="number" step="any" value={location.lat ?? ""} onChange={(e) => setLocation((l) => ({ ...l, lat: parseFloat(e.target.value) || null }))} />
-                                            <Input placeholder="Longitude" type="number" step="any" value={location.lng ?? ""} onChange={(e) => setLocation((l) => ({ ...l, lng: parseFloat(e.target.value) || null }))} />
-                                            <p className="col-span-2 text-xs text-muted-foreground">Or allow GPS access when prompted</p>
-                                        </div>
-                                    )}
+                                    <p className="text-xs text-muted-foreground">Location is auto-tracked. Add address for easier navigation.</p>
                                 </div>
 
                                 <div className="space-y-2">
@@ -183,19 +211,61 @@ export default function CitizenDashboard() {
 
                                 <div className="space-y-2">
                                     <Label>Issue Photo *</Label>
-                                    <Input
-                                        type="file"
-                                        accept="image/*"
-                                        className="cursor-pointer"
-                                        onChange={(e) => setReportForm((f) => ({ ...f, photo: e.target.files?.[0] }))}
-                                        required
-                                    />
+                                    <p className="text-xs text-muted-foreground">Take a photo or upload one. Your location is captured automatically.</p>
+                                    <div className="flex gap-3">
+                                        <input
+                                            ref={cameraInputRef}
+                                            type="file"
+                                            accept="image/*"
+                                            capture="environment"
+                                            className="hidden"
+                                            onChange={async (e) => {
+                                                const file = e.target.files?.[0]
+                                                if (!file) return
+                                                setLocationLoading(true)
+                                                const pos = await captureLocation()
+                                                if (pos) setLocation((l) => ({ ...l, ...pos }))
+                                                setLocationLoading(false)
+                                                setReportForm((f) => ({ ...f, photo: file, photoPreview: URL.createObjectURL(file) }))
+                                                e.target.value = ""
+                                            }}
+                                        />
+                                        <input
+                                            ref={uploadInputRef}
+                                            type="file"
+                                            accept="image/*"
+                                            className="hidden"
+                                            onChange={async (e) => {
+                                                const file = e.target.files?.[0]
+                                                if (!file) return
+                                                setLocationLoading(true)
+                                                const pos = await captureLocation()
+                                                if (pos) setLocation((l) => ({ ...l, ...pos }))
+                                                setLocationLoading(false)
+                                                setReportForm((f) => ({ ...f, photo: file, photoPreview: URL.createObjectURL(file) }))
+                                                e.target.value = ""
+                                            }}
+                                        />
+                                        <Button type="button" variant="outline" className="flex-1 gap-2" onClick={() => cameraInputRef.current?.click()}>
+                                            <Camera className="h-4 w-4" /> Take Photo
+                                        </Button>
+                                        <Button type="button" variant="outline" className="flex-1 gap-2" onClick={() => uploadInputRef.current?.click()}>
+                                            <Upload className="h-4 w-4" /> Upload
+                                        </Button>
+                                    </div>
+                                    {reportForm.photoPreview && (
+                                        <div className="mt-2">
+                                            <img src={reportForm.photoPreview} alt="Preview" className="h-24 rounded border object-cover" />
+                                            <p className="text-xs text-green-600 mt-1">Photo added. Location captured.</p>
+                                        </div>
+                                    )}
                                 </div>
 
                                 <Button
                                     type="submit"
                                     className="w-full bg-green-600 hover:bg-green-700 text-white"
-                                    disabled={submitting || location.lat == null || location.lng == null}
+                                    disabled={submitting || !reportForm.photo || !(mapSelected || (location.lat != null && location.lng != null))}
+                                    title={!(mapSelected || location.lat) ? "Waiting for location... Allow GPS access or click on map" : ""}
                                 >
                                     <Share2 className="mr-2 h-4 w-4" /> {submitting ? "Submitting..." : "Submit Issue"}
                                 </Button>
