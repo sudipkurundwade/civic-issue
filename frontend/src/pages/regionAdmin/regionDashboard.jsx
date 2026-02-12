@@ -78,7 +78,7 @@ export default function DepartmentDashboard() {
 
       {/* Header */}
       <div className="flex items-center justify-between">
-        <h2 className="text-3xl font-bold">Department Dashboard</h2>
+        <h2 className="text-3xl font-bold">Region Admin Dashboard</h2>
 
         <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
           <DialogTrigger asChild>

@@ -5,6 +5,7 @@ import { ThemeToggle } from "@/components/theme-toggle"
 import { ChatPage } from "@/components/chat/ChatPage"
 import SuperAdminDashboard from "@/pages/SuperAdmin/dashboard"
 import DepartmentDashboard from "@/pages/regionAdmin/regionDashboard"
+import RegionDepartments from "@/pages/regionAdmin/RegionDepartments"
 import DepartmentAdminDashboard from "@/pages/departmentAdmin/departmentdashboard"
 import CitizenDashboard from "@/pages/citizen/citizensDashboard"
 import MyIssuesPage from "@/pages/citizen/myIssues"
@@ -123,12 +124,13 @@ function AppContent() {
     const pageTitle =
       page.includes("super-dashboard") ? "Super Admin" :
         page.includes("region-dashboard") ? "Region Dashboard" :
-          page.includes("dept-dashboard") ? "Department Dashboard" :
-            page.includes("civic-dashboard") ? "Report Issue" :
-              page.includes("my-issues") ? "My Reported Issues" :
-                page === "chat" ? "Chat" :
-                  page === "profile" ? "Profile" :
-                    page === "analytics" ? "Analytics" : ""
+          page.includes("region-departments") ? "Departments" :
+            page.includes("dept-dashboard") ? "Department Dashboard" :
+              page.includes("civic-dashboard") ? "Report Issue" :
+                page.includes("my-issues") ? "My Reported Issues" :
+                  page === "chat" ? "Chat" :
+                    page === "profile" ? "Profile" :
+                      page === "analytics" ? "Analytics" : ""
 
     return (
       <SidebarProvider>
@@ -144,6 +146,7 @@ function AppContent() {
           <main className="flex-1 overflow-hidden min-h-0">
             {page.includes("super-dashboard") && user?.role === "super_admin" && <SuperAdminDashboard />}
             {page.includes("region-dashboard") && user?.role === "regional_admin" && <DepartmentDashboard />}
+            {page.includes("region-departments") && user?.role === "regional_admin" && <RegionDepartments />}
             {page.includes("dept-dashboard") && user?.role === "departmental_admin" && <DepartmentAdminDashboard />}
             {page.includes("civic-dashboard") && <CitizenDashboard />}
             {page.includes("my-issues") && <MyIssuesPage />}
