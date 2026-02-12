@@ -9,13 +9,14 @@ const issueSchema = new mongoose.Schema(
     description: { type: String, required: true },
     status: {
       type: String,
-      enum: ['PENDING', 'IN_PROGRESS', 'COMPLETED'],
+      enum: ['PENDING', 'PENDING_DEPARTMENT', 'IN_PROGRESS', 'COMPLETED'],
       default: 'PENDING',
     },
     completionPhotoUrl: { type: String },
     completedAt: { type: Date },
     completedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
-    department: { type: mongoose.Schema.Types.ObjectId, ref: 'Department', required: true },
+    department: { type: mongoose.Schema.Types.ObjectId, ref: 'Department' },
+    requestedDepartmentName: { type: String },
     user: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
   },
   { timestamps: true }

@@ -6,6 +6,7 @@ import { fileURLToPath } from 'url';
 
 import { connectDB } from './lib/db.js';
 import User from './models/User.js';
+import Issue from './models/Issue.js';
 import authRoutes from './routes/auth.js';
 import issuesRoutes from './routes/issues.js';
 import adminRoutes from './routes/admin.js';
@@ -17,6 +18,18 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 // Predefined Super Admin credentials (change in production!)
 const SUPER_ADMIN_EMAIL = process.env.SUPER_ADMIN_EMAIL || 'super@civic.com';
 const SUPER_ADMIN_PASSWORD = process.env.SUPER_ADMIN_PASSWORD || 'super123';
+
+async function dropInvalidIssueIndex() {
+  try {
+    const indexes = await Issue.collection.indexes();
+    if (indexes.some((i) => i.name === 'title_1')) {
+      await Issue.collection.dropIndex('title_1');
+      console.log('Dropped invalid title_1 index from issues');
+    }
+  } catch (err) {
+    if (err.codeName !== 'IndexNotFound') console.warn('Index drop:', err.message);
+  }
+}
 
 async function ensureSuperAdmin() {
   const existing = await User.findOne({ email: SUPER_ADMIN_EMAIL });
@@ -61,6 +74,7 @@ app.use((err, req, res, next) => {
 });
 
 connectDB()
+  .then(() => dropInvalidIssueIndex())
   .then(() => ensureSuperAdmin())
   .then(() => {
     app.listen(PORT, () => {

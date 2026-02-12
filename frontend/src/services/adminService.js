@@ -59,6 +59,23 @@ export const adminService = {
     return data;
   },
 
+  async getPendingDepartmentIssues() {
+    const res = await fetch(`${API_URL}/admin/pending-department-issues`, { headers: headers() });
+    if (!res.ok) throw new Error('Failed to fetch pending issues');
+    return res.json();
+  },
+
+  async createDepartmentAndAssign(departmentName) {
+    const res = await fetch(`${API_URL}/admin/create-department-and-assign`, {
+      method: 'POST',
+      headers: headers(),
+      body: JSON.stringify({ departmentName }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Failed to create and assign');
+    return data;
+  },
+
   async createDepartmentalAdmin({ email, password, name, departmentId, departmentName }) {
     const body = { email, password, name };
     if (departmentId) body.departmentId = departmentId;
