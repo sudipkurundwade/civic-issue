@@ -28,6 +28,7 @@ import { publicService } from "@/services/adminService"
 import { issueService } from "@/services/issueService"
 import { useToast } from "@/components/ui/use-toast"
 import { LocationMap } from "@/components/LocationMap"
+import { CameraCapture } from "@/components/CameraCapture"
 
 const captureLocation = () => {
     return new Promise((resolve) => {
@@ -53,7 +54,7 @@ export default function CitizenDashboard() {
     const [mapSelected, setMapSelected] = React.useState(null)
     const [reportForm, setReportForm] = React.useState({ description: "", departmentId: "", photo: null, photoPreview: null, address: "" })
     const [submitting, setSubmitting] = React.useState(false)
-    const cameraInputRef = React.useRef(null)
+    const [cameraOpen, setCameraOpen] = React.useState(false)
     const uploadInputRef = React.useRef(null)
 
     React.useEffect(() => {
@@ -115,7 +116,7 @@ export default function CitizenDashboard() {
                                 <CardTitle className="flex items-center gap-2">
                                     <MapPin className="h-5 w-5 text-green-600" /> Issue Location
                                 </CardTitle>
-                                <CardDescription>Your location is tracked automatically. Click on the map to adjust if the marker is wrong.</CardDescription>
+                                <CardDescription>Your current location is pinned by default. Click on the map to change it if needed.</CardDescription>
                             </CardHeader>
                             <CardContent className="flex-1 p-4">
                                 <LocationMap
@@ -126,11 +127,14 @@ export default function CitizenDashboard() {
                                 />
                                 <div className="mt-2 space-y-1">
                                     {locationLoading && !(mapSelected || location.lat) && (
-                                        <p className="text-xs text-amber-600">Getting your location... Allow GPS when prompted.</p>
+                                        <p className="text-xs text-amber-600">Getting your current location... Allow GPS when prompted.</p>
+                                    )}
+                                    {!locationLoading && !(mapSelected || location.lat) && (
+                                        <p className="text-xs text-destructive font-medium">Required: Select location on map (could not get your current location)</p>
                                     )}
                                     {(mapSelected || (location.lat != null)) && (
                                         <p className="text-xs text-green-600">
-                                            ✓ Location: {mapSelected ? `${mapSelected.lat.toFixed(5)}, ${mapSelected.lng.toFixed(5)}` : `${location.lat.toFixed(5)}, ${location.lng.toFixed(5)}`}
+                                            ✓ {mapSelected ? "Location updated" : "Your current location"}: {mapSelected ? `${mapSelected.lat.toFixed(5)}, ${mapSelected.lng.toFixed(5)}` : `${location.lat.toFixed(5)}, ${location.lng.toFixed(5)}`}
                                         </p>
                                     )}
                                 </div>
@@ -148,8 +152,12 @@ export default function CitizenDashboard() {
                                     const pos = mapSelected || (location.lat != null ? location : null)
                                     const lat = pos?.lat
                                     const lng = pos?.lng
-                                    if (!reportForm.photo || !reportForm.description || !reportForm.departmentId || lat == null || lng == null) {
-                                        toast({ title: "Please add photo, description, department. Allow location access for auto-tracking.", variant: "destructive" })
+                                    if (!reportForm.photo || !reportForm.description || !reportForm.departmentId) {
+                                        toast({ title: "Please add photo, description, and department.", variant: "destructive" })
+                                        return
+                                    }
+                                    if (lat == null || lng == null) {
+                                        toast({ title: "Please select location on map (could not get your current location)", variant: "destructive" })
                                         return
                                     }
                                     setSubmitting(true)
@@ -211,25 +219,8 @@ export default function CitizenDashboard() {
 
                                 <div className="space-y-2">
                                     <Label>Issue Photo *</Label>
-                                    <p className="text-xs text-muted-foreground">Take a photo or upload one. Your location is captured automatically.</p>
+                                    <p className="text-xs text-muted-foreground">Take a photo with camera or upload one. Location is captured automatically.</p>
                                     <div className="flex gap-3">
-                                        <input
-                                            ref={cameraInputRef}
-                                            type="file"
-                                            accept="image/*"
-                                            capture="environment"
-                                            className="hidden"
-                                            onChange={async (e) => {
-                                                const file = e.target.files?.[0]
-                                                if (!file) return
-                                                setLocationLoading(true)
-                                                const pos = await captureLocation()
-                                                if (pos) setLocation((l) => ({ ...l, ...pos }))
-                                                setLocationLoading(false)
-                                                setReportForm((f) => ({ ...f, photo: file, photoPreview: URL.createObjectURL(file) }))
-                                                e.target.value = ""
-                                            }}
-                                        />
                                         <input
                                             ref={uploadInputRef}
                                             type="file"
@@ -246,7 +237,7 @@ export default function CitizenDashboard() {
                                                 e.target.value = ""
                                             }}
                                         />
-                                        <Button type="button" variant="outline" className="flex-1 gap-2" onClick={() => cameraInputRef.current?.click()}>
+                                        <Button type="button" variant="outline" className="flex-1 gap-2" onClick={() => setCameraOpen(true)}>
                                             <Camera className="h-4 w-4" /> Take Photo
                                         </Button>
                                         <Button type="button" variant="outline" className="flex-1 gap-2" onClick={() => uploadInputRef.current?.click()}>
@@ -265,7 +256,7 @@ export default function CitizenDashboard() {
                                     type="submit"
                                     className="w-full bg-green-600 hover:bg-green-700 text-white"
                                     disabled={submitting || !reportForm.photo || !(mapSelected || (location.lat != null && location.lng != null))}
-                                    title={!(mapSelected || location.lat) ? "Waiting for location... Allow GPS access or click on map" : ""}
+                                    title={!(mapSelected || location.lat) ? "Select location on map if GPS is not available" : ""}
                                 >
                                     <Share2 className="mr-2 h-4 w-4" /> {submitting ? "Submitting..." : "Submit Issue"}
                                 </Button>
@@ -273,6 +264,17 @@ export default function CitizenDashboard() {
                             </CardContent>
                         </Card>
                     </div>
+                    <CameraCapture
+                        open={cameraOpen}
+                        onClose={() => setCameraOpen(false)}
+                        onCapture={async (file) => {
+                            setLocationLoading(true)
+                            const pos = await captureLocation()
+                            if (pos) setLocation((l) => ({ ...l, ...pos }))
+                            setLocationLoading(false)
+                            setReportForm((f) => ({ ...f, photo: file, photoPreview: URL.createObjectURL(file) }))
+                        }}
+                    />
                 </div>
             </div>
         )
