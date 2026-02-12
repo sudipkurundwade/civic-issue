@@ -7,6 +7,12 @@ const headers = () => ({
 });
 
 export const issueService = {
+  async getAllIssues() {
+    const res = await fetch(`${API_URL}/issues`, { headers: headers() });
+    if (!res.ok) throw new Error('Failed to fetch issues');
+    return res.json();
+  },
+
   async getMyIssues() {
     const res = await fetch(`${API_URL}/issues/my`, { headers: headers() });
     if (!res.ok) throw new Error('Failed to fetch issues');

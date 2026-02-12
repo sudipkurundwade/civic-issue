@@ -19,7 +19,7 @@ const ROLE_HOME = {
   super_admin: "/super-dashboard",
   regional_admin: "/region-dashboard",
   departmental_admin: "/dept-dashboard",
-  civic: "/civic-dashboard",
+  civic: "/citizen-dashboard",
 }
 
 function AppContent() {
@@ -125,7 +125,7 @@ function AppContent() {
         page.includes("region-dashboard") ? "Region Dashboard" :
           page.includes("dept-dashboard") ? "Department Dashboard" :
             page.includes("civic-dashboard") ? "Report Issue" :
-              page.includes("my-issues") ? "My Reported Issues" :
+              page.includes("my-issues") ? "My Issues" :
                 page === "chat" ? "Chat" :
                   page === "profile" ? "Profile" :
                     page === "analytics" ? "Analytics" : ""
@@ -145,8 +145,8 @@ function AppContent() {
             {page.includes("super-dashboard") && user?.role === "super_admin" && <SuperAdminDashboard />}
             {page.includes("region-dashboard") && user?.role === "regional_admin" && <DepartmentDashboard />}
             {page.includes("dept-dashboard") && user?.role === "departmental_admin" && <DepartmentAdminDashboard />}
-            {page.includes("civic-dashboard") && <CitizenDashboard />}
-            {page.includes("my-issues") && <MyIssuesPage />}
+            {(page.includes("civic-dashboard") || page.includes("citizen-dashboard")) && user?.role === "civic" && <CitizenDashboard />}
+            {page.includes("my-issues") && user?.role === "civic" && <MyIssuesPage />}
             {page === "chat" && <ChatPage />}
             {page === "profile" && <ProfilePage />}
             {page === "analytics" && user?.role === "super_admin" && <AnalyticsPage />}

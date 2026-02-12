@@ -29,6 +29,7 @@ import { issueService } from "@/services/issueService"
 import { useToast } from "@/components/ui/use-toast"
 import { LocationMap } from "@/components/LocationMap"
 import { CameraCapture } from "@/components/CameraCapture"
+import { IssueDetailDialog } from "@/components/IssueDetailDialog"
 
 const captureLocation = () => {
     return new Promise((resolve) => {
@@ -48,6 +49,7 @@ export default function CitizenDashboard() {
     const { toast } = useToast()
     const [isReporting, setIsReporting] = React.useState(false)
     const [departments, setDepartments] = React.useState([])
+    const [allIssues, setAllIssues] = React.useState([])
     const [myIssues, setMyIssues] = React.useState([])
     const [location, setLocation] = React.useState({ lat: null, lng: null, address: "" })
     const [locationLoading, setLocationLoading] = React.useState(true)
@@ -55,12 +57,17 @@ export default function CitizenDashboard() {
     const [reportForm, setReportForm] = React.useState({ description: "", departmentId: "", photo: null, photoPreview: null, address: "" })
     const [submitting, setSubmitting] = React.useState(false)
     const [cameraOpen, setCameraOpen] = React.useState(false)
+    const [selectedIssue, setSelectedIssue] = React.useState(null)
+    const [detailOpen, setDetailOpen] = React.useState(false)
     const uploadInputRef = React.useRef(null)
 
     React.useEffect(() => {
         publicService.getDepartments().then(setDepartments).catch(() => {})
     }, [])
 
+    React.useEffect(() => {
+        issueService.getAllIssues().then(setAllIssues).catch(() => {})
+    }, [])
     React.useEffect(() => {
         issueService.getMyIssues().then(setMyIssues).catch(() => {})
     }, [isReporting])
@@ -83,7 +90,7 @@ export default function CitizenDashboard() {
         { title: "Unresolved", value: String(unresolved), description: "Pending attention", icon: AlertCircle },
     ]
 
-    const feedIssues = myIssues.map((i) => ({
+    const feedIssues = allIssues.map((i) => ({
         id: i.id,
         title: i.description?.slice(0, 50) || "Issue",
         description: i.description,
@@ -94,7 +101,10 @@ export default function CitizenDashboard() {
         image: i.photoUrl || "/placeholder.svg",
         likes: 0,
         comments: 0,
-    })).filter((i) => i.status !== "completed")
+        reporterName: i.user?.name || "Anonymous",
+        latitude: i.latitude,
+        longitude: i.longitude,
+    }))
 
     if (isReporting) {
         return (
@@ -175,6 +185,7 @@ export default function CitizenDashboard() {
                                         setReportForm({ description: "", departmentId: "", photo: null, photoPreview: null, address: "" })
                                         setMapSelected(null)
                                         issueService.getMyIssues().then(setMyIssues)
+                                        issueService.getAllIssues().then(setAllIssues)
                                     } catch (err) {
                                         toast({ title: err.message || "Failed to submit", variant: "destructive" })
                                     } finally {
@@ -315,14 +326,21 @@ export default function CitizenDashboard() {
                 })}
             </div>
 
-            {/* My Submitted Issues */}
+            {/* All Issues (visible to all users) */}
             <div className="space-y-6">
-                <h3 className="text-xl font-semibold">My Submitted Issues</h3>
+                <h3 className="text-xl font-semibold">All Issues</h3>
 
                 <div className="grid gap-6 md:grid-cols-1 lg:max-w-2xl mx-auto">
                     {feedIssues.length > 0 ? (
                         feedIssues.map((issue) => (
-                            <Card key={issue.id} className="overflow-hidden shadow-md border-muted">
+                            <Card
+                                key={issue.id}
+                                className="overflow-hidden shadow-md border-muted cursor-pointer hover:shadow-lg transition-shadow"
+                                onClick={() => { setSelectedIssue(issue); setDetailOpen(true) }}
+                                role="button"
+                                tabIndex={0}
+                                onKeyDown={(e) => e.key === "Enter" && (setSelectedIssue(issue), setDetailOpen(true))}
+                            >
                                 {/* Post Header */}
                                 <div className="p-4 flex items-center gap-3 border-b bg-muted/20">
                                     <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
@@ -330,7 +348,7 @@ export default function CitizenDashboard() {
                                     </div>
                                     <div>
                                         <h4 className="font-semibold text-sm">{issue.area}, {issue.region}</h4>
-                                        <p className="text-xs text-muted-foreground">{issue.date}</p>
+                                        <p className="text-xs text-muted-foreground">{issue.date} · Reported by {issue.reporterName}</p>
                                     </div>
                                     <div className="ml-auto">
                                         <Badge variant={issue.status === "pending" ? "destructive" : "secondary"}>
@@ -375,11 +393,13 @@ export default function CitizenDashboard() {
                         <div className="text-center py-10">
                             <CheckCircle className="h-12 w-12 text-green-500 mx-auto mb-3" />
                             <h3 className="text-lg font-medium">No issues yet</h3>
-                            <p className="text-muted-foreground">Report a civic issue to see it here.</p>
+                            <p className="text-muted-foreground">Be the first to report a civic issue.</p>
                         </div>
                     )}
                 </div>
             </div>
+
+            <IssueDetailDialog open={detailOpen} onClose={() => setDetailOpen(false)} issue={selectedIssue} />
         </div>
     )
 }

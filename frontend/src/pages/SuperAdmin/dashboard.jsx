@@ -28,12 +28,23 @@ import {
   Plus,
 } from "lucide-react"
 import { adminService } from "@/services/adminService"
+import { issueService } from "@/services/issueService"
 import { useToast } from "@/components/ui/use-toast"
+import { IssueDetailDialog } from "@/components/IssueDetailDialog"
+
+const formatTimeAgo = (date) => {
+  const sec = Math.floor((Date.now() - date) / 1000)
+  if (sec < 60) return "Just now"
+  if (sec < 3600) return `${Math.floor(sec / 60)} min ago`
+  if (sec < 86400) return `${Math.floor(sec / 3600)} hours ago`
+  if (sec < 604800) return `${Math.floor(sec / 86400)} days ago`
+  return date.toLocaleDateString()
+}
 
 export default function SuperAdminDashboard() {
   const { toast } = useToast()
   const [regions, setRegions] = React.useState([])
-  const [selectedRegion, setSelectedRegion] = React.useState("")
+  const [selectedRegion, setSelectedRegion] = React.useState("all")
   const [adminEmail, setAdminEmail] = React.useState("")
   const [adminPassword, setAdminPassword] = React.useState("")
   const [adminName, setAdminName] = React.useState("")
@@ -43,6 +54,9 @@ export default function SuperAdminDashboard() {
   const [loading, setLoading] = React.useState(false)
   const [dialogOpen, setDialogOpen] = React.useState(false)
   const [regionsKey, setRegionsKey] = React.useState(0)
+  const [allIssues, setAllIssues] = React.useState([])
+  const [selectedIssue, setSelectedIssue] = React.useState(null)
+  const [detailOpen, setDetailOpen] = React.useState(false)
 
   React.useEffect(() => {
     adminService.getRegions()
@@ -50,45 +64,27 @@ export default function SuperAdminDashboard() {
       .catch(() => toast({ title: "Failed to load regions", variant: "destructive" }))
   }, [regionsKey])
 
-  const stats = [
-    {
-      title: "Total Regions",
-      value: "12",
-      change: "",
-      icon: MapPin,
-      description: "active administrative wards",
-    },
-    {
-      title: "Total Issues",
-      value: "1,248",
-      change: "+12%",
-      icon: AlertCircle,
-      description: "reported this month",
-    },
-    {
-      title: "Pending",
-      value: "432",
-      change: "+5%",
-      icon: Clock,
-      description: "currently active",
-    },
-    {
-      title: "Solved",
-      value: "816",
-      change: "+18%",
-      icon: CheckCircle,
-      description: "resolved this month",
-    },
-  ]
+  React.useEffect(() => {
+    issueService.getAllIssues()
+      .then(setAllIssues)
+      .catch(() => setAllIssues([]))
+  }, [])
 
-  const recentIssues = [
-    { id: 1, title: "Water Leakage in Sector 4", department: "Water Supply", time: "2 hours ago", status: "pending", priority: "high", region: "Karveer" },
-    { id: 2, title: "Street Light Malfunction", department: "Electricity", time: "5 hours ago", status: "solved", priority: "medium", region: "Panhala" },
-    { id: 3, title: "Pothole on Main Road", department: "Roads", time: "1 day ago", status: "in-progress", priority: "high", region: "Karveer" },
-    { id: 4, title: "Garbage Collection Delayed", department: "Waste Management", time: "1 day ago", status: "solved", priority: "low", region: "Shirol" },
-    { id: 5, title: "Broken Park Bench", department: "Parks", time: "2 days ago", status: "pending", priority: "low", region: "Hatkanangale" },
-    { id: 6, title: "Pipeline Burst", department: "Water Supply", time: "3 hours ago", status: "pending", priority: "critical", region: "Karveer" },
-    { id: 7, title: "Illegal Dumping", department: "Waste Management", time: "4 hours ago", status: "in-progress", priority: "medium", region: "Panhala" },
+  const recentIssues = allIssues.map((i) => ({
+    id: i.id,
+    title: i.description?.slice(0, 60) || "Issue",
+    department: i.department?.name || "—",
+    time: i.createdAt ? formatTimeAgo(new Date(i.createdAt)) : "",
+    status: (i.status || "PENDING").toLowerCase().replace("_", "-"),
+    region: i.department?.region?.name || "—",
+  }))
+  const totalPending = recentIssues.filter((i) => i.status !== "completed").length
+  const totalSolved = recentIssues.filter((i) => i.status === "completed").length
+  const stats = [
+    { title: "Total Regions", value: String(regions.length), change: "", icon: MapPin, description: "administrative regions" },
+    { title: "Total Issues", value: String(allIssues.length), change: "", icon: AlertCircle, description: "all reported issues" },
+    { title: "Pending", value: String(totalPending), change: "", icon: Clock, description: "awaiting resolution" },
+    { title: "Solved", value: String(totalSolved), change: "", icon: CheckCircle, description: "resolved" },
   ]
 
   const handleCreateRegionalAdmin = async (e) => {
@@ -118,9 +114,9 @@ export default function SuperAdminDashboard() {
     }
   }
 
-  const filteredIssues = recentIssues.filter(
-    (issue) => issue.region === selectedRegion
-  )
+  const filteredIssues = !selectedRegion || selectedRegion === "all"
+    ? recentIssues
+    : recentIssues.filter((issue) => issue.region === selectedRegion)
 
   return (
     <div className="space-y-6 p-6">
@@ -245,55 +241,67 @@ export default function SuperAdminDashboard() {
         {/* Regions */}
         <Card className="md:col-span-4 lg:col-span-3">
           <CardHeader>
-            <CardTitle>Regions</CardTitle>
-            <CardDescription>{regions.length} region(s)</CardDescription>
+            <CardTitle>Select Region</CardTitle>
+            <CardDescription>Filter issues by region or view all</CardDescription>
           </CardHeader>
           <CardContent className="space-y-2">
-            {regions.length === 0 ? (
-              <p className="text-sm text-muted-foreground py-4">No regions yet. Create a regional admin and assign a new region.</p>
-            ) : (
-              regions.map((region) => (
-                <div
-                  key={region.id}
-                  onClick={() => setSelectedRegion(region.name)}
-                  className={`flex justify-between p-3 rounded cursor-pointer ${selectedRegion === region.name
-                    ? "bg-primary text-primary-foreground"
-                    : "hover:bg-accent"
-                    }`}
-                >
-                  <span>{region.name}</span>
-                </div>
-              ))
-            )}
+            <div
+              onClick={() => setSelectedRegion("all")}
+              className={`flex justify-between p-3 rounded cursor-pointer ${(!selectedRegion || selectedRegion === "all")
+                ? "bg-primary text-primary-foreground"
+                : "hover:bg-accent"
+                }`}
+            >
+              <span>All Issues</span>
+            </div>
+            {regions.map((region) => (
+              <div
+                key={region.id}
+                onClick={() => setSelectedRegion(region.name)}
+                className={`flex justify-between p-3 rounded cursor-pointer ${selectedRegion === region.name
+                  ? "bg-primary text-primary-foreground"
+                  : "hover:bg-accent"
+                  }`}
+              >
+                <span>{region.name}</span>
+              </div>
+            ))}
           </CardContent>
         </Card>
 
         {/* Issues */}
         <Card className="md:col-span-8 lg:col-span-9">
           <CardHeader>
-            <CardTitle>Issues in {selectedRegion || "selected region"}</CardTitle>
+            <CardTitle>Issues {selectedRegion && selectedRegion !== "all" ? `in ${selectedRegion}` : "(All)"}</CardTitle>
           </CardHeader>
           <CardContent>
             {filteredIssues.length > 0 ? (
               <div className="space-y-4">
-                {filteredIssues.map((issue) => (
-                  <div
-                    key={issue.id}
-                    className="p-4 border rounded-lg hover:bg-accent"
-                  >
-                    <div className="flex justify-between">
-                      <p className="font-medium">{issue.title}</p>
-                      <Badge>{issue.status}</Badge>
+                {filteredIssues.map((issue) => {
+                  const fullIssue = allIssues.find((i) => String(i.id) === String(issue.id)) || issue
+                  return (
+                    <div
+                      key={issue.id}
+                      role="button"
+                      tabIndex={0}
+                      onClick={() => { setSelectedIssue({ ...fullIssue, ...issue, likes: 0, comments: 0 }); setDetailOpen(true) }}
+                      onKeyDown={(e) => e.key === "Enter" && (setSelectedIssue({ ...fullIssue, ...issue, likes: 0, comments: 0 }), setDetailOpen(true))}
+                      className="p-4 border rounded-lg hover:bg-accent cursor-pointer"
+                    >
+                      <div className="flex justify-between">
+                        <p className="font-medium">{issue.title}</p>
+                        <Badge>{issue.status}</Badge>
+                      </div>
+                      <p className="text-sm text-muted-foreground">
+                        {issue.department}
+                      </p>
+                      <div className="flex items-center gap-2 text-xs text-muted-foreground mt-1">
+                        <Clock className="h-3 w-3" />
+                        {issue.time}
+                      </div>
                     </div>
-                    <p className="text-sm text-muted-foreground">
-                      {issue.department}
-                    </p>
-                    <div className="flex items-center gap-2 text-xs text-muted-foreground mt-1">
-                      <Clock className="h-3 w-3" />
-                      {issue.time}
-                    </div>
-                  </div>
-                ))}
+                  )
+                })}
               </div>
             ) : (
               <div className="text-center py-10 text-muted-foreground">
@@ -303,6 +311,8 @@ export default function SuperAdminDashboard() {
           </CardContent>
         </Card>
       </div>
+
+      <IssueDetailDialog open={detailOpen} onClose={() => setDetailOpen(false)} issue={selectedIssue} />
 
       {/* Admin Actions */}
       <Card>

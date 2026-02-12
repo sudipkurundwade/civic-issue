@@ -28,12 +28,14 @@ import {
   Building2,
 } from "lucide-react"
 import { adminService } from "@/services/adminService"
+import { issueService } from "@/services/issueService"
 import { useToast } from "@/components/ui/use-toast"
+import { IssueDetailDialog } from "@/components/IssueDetailDialog"
 
 export default function DepartmentDashboard() {
   const { toast } = useToast()
   const [departments, setDepartments] = React.useState([])
-  const [selectedDepartment, setSelectedDepartment] = React.useState("")
+  const [selectedDepartment, setSelectedDepartment] = React.useState("all")
   const [adminName, setAdminName] = React.useState("")
   const [adminEmail, setAdminEmail] = React.useState("")
   const [adminPassword, setAdminPassword] = React.useState("")
@@ -42,13 +44,32 @@ export default function DepartmentDashboard() {
   const [isCreateNewDept, setIsCreateNewDept] = React.useState(false)
   const [loading, setLoading] = React.useState(false)
   const [dialogOpen, setDialogOpen] = React.useState(false)
-  const [issues, setIssues] = React.useState([])
+  const [allIssues, setAllIssues] = React.useState([])
+  const [selectedIssue, setSelectedIssue] = React.useState(null)
+  const [detailOpen, setDetailOpen] = React.useState(false)
 
   React.useEffect(() => {
     adminService.getDepartments().then(setDepartments).catch(() => toast({ title: "Failed to load departments", variant: "destructive" }))
   }, [dialogOpen])
 
-  const filteredIssues = issues.filter((i) => i.department?.name === selectedDepartment)
+  React.useEffect(() => {
+    issueService.getAllIssues().then(setAllIssues).catch(() => setAllIssues([]))
+  }, [])
+
+  const deptIds = departments.map((d) => String(d.id ?? d._id ?? ""))
+  const regionIssues = allIssues.filter((i) => {
+    const deptId = String(i.department?.id ?? i.department?._id ?? i.department ?? "")
+    return deptIds.includes(deptId) && deptId
+  }).map((i) => ({
+    id: i.id,
+    title: i.description?.slice(0, 60) || "Issue",
+    department: i.department?.name || "—",
+    time: i.createdAt ? new Date(i.createdAt).toLocaleDateString() : "",
+    status: (i.status || "PENDING").toLowerCase().replace("_", "-"),
+  }))
+  const filteredIssues = !selectedDepartment || selectedDepartment === "all"
+    ? regionIssues
+    : regionIssues.filter((i) => i.department === selectedDepartment)
 
   const handleCreateDepartmentalAdmin = async (e) => {
     e.preventDefault()
@@ -139,63 +160,74 @@ export default function DepartmentDashboard() {
         {/* Departments List */}
         <Card className="md:col-span-4 lg:col-span-3">
           <CardHeader>
-            <CardTitle>Departments</CardTitle>
-            <CardDescription>Select department to view issues</CardDescription>
+            <CardTitle>Select Department</CardTitle>
+            <CardDescription>Filter issues by department or view all</CardDescription>
           </CardHeader>
 
           <CardContent className="space-y-2">
-            {departments.length === 0 ? (
-              <p className="text-sm text-muted-foreground py-4">No departments yet. Create a departmental admin and assign a new department.</p>
-            ) : (
-              departments.map((dept) => (
-                <div
-                  key={dept.id}
-                  onClick={() => setSelectedDepartment(dept.name)}
-                  className={`flex justify-between p-3 rounded cursor-pointer ${selectedDepartment === dept.name ? "bg-primary text-primary-foreground" : "hover:bg-accent"}`}
-                >
-                  <div className="flex items-center gap-2">
-                    <Building2 className="h-4 w-4" />
-                    <span>{dept.name}</span>
-                  </div>
+            <div
+              onClick={() => setSelectedDepartment("all")}
+              className={`flex justify-between p-3 rounded cursor-pointer ${(!selectedDepartment || selectedDepartment === "all") ? "bg-primary text-primary-foreground" : "hover:bg-accent"}`}
+            >
+              <span>All Issues</span>
+            </div>
+            {departments.map((dept) => (
+              <div
+                key={dept.id}
+                onClick={() => setSelectedDepartment(dept.name)}
+                className={`flex justify-between p-3 rounded cursor-pointer ${selectedDepartment === dept.name ? "bg-primary text-primary-foreground" : "hover:bg-accent"}`}
+              >
+                <div className="flex items-center gap-2">
+                  <Building2 className="h-4 w-4" />
+                  <span>{dept.name}</span>
                 </div>
-              ))
-            )}
+              </div>
+            ))}
           </CardContent>
         </Card>
 
         {/* Issues Section */}
         <Card className="md:col-span-8 lg:col-span-9">
           <CardHeader>
-            <CardTitle>Issues in {selectedDepartment}</CardTitle>
+            <CardTitle>Issues {selectedDepartment && selectedDepartment !== "all" ? `in ${selectedDepartment}` : "(All in your region)"}</CardTitle>
           </CardHeader>
 
           <CardContent>
             {filteredIssues.length > 0 ? (
               <div className="space-y-4">
-                {filteredIssues.map((issue) => (
-                  <div
-                    key={issue.id}
-                    className="p-4 border rounded-lg hover:bg-accent"
-                  >
-                    <div className="flex justify-between">
-                      <p className="font-medium">{issue.title}</p>
-                      <Badge>{issue.status}</Badge>
+                {filteredIssues.map((issue) => {
+                  const fullIssue = allIssues.find((i) => String(i.id) === String(issue.id))
+                  return (
+                    <div
+                      key={issue.id}
+                      role="button"
+                      tabIndex={0}
+                      onClick={() => { setSelectedIssue({ ...fullIssue, ...issue, likes: 0, comments: 0 }); setDetailOpen(true) }}
+                      onKeyDown={(e) => e.key === "Enter" && (setSelectedIssue({ ...fullIssue, ...issue, likes: 0, comments: 0 }), setDetailOpen(true))}
+                      className="p-4 border rounded-lg hover:bg-accent cursor-pointer"
+                    >
+                      <div className="flex justify-between">
+                        <p className="font-medium">{issue.title}</p>
+                        <Badge>{issue.status}</Badge>
+                      </div>
+                      <div className="flex items-center gap-2 text-xs text-muted-foreground mt-1">
+                        <Clock className="h-3 w-3" />
+                        {issue.time}
+                      </div>
                     </div>
-                    <div className="flex items-center gap-2 text-xs text-muted-foreground mt-1">
-                      <Clock className="h-3 w-3" />
-                      {issue.time}
-                    </div>
-                  </div>
-                ))}
+                  )
+                })}
               </div>
             ) : (
               <div className="text-center py-10 text-muted-foreground">
-                No recent issues in this department.
+                No issues in {selectedDepartment && selectedDepartment !== "all" ? "this department" : "your region"}.
               </div>
             )}
           </CardContent>
         </Card>
       </div>
+
+      <IssueDetailDialog open={detailOpen} onClose={() => setDetailOpen(false)} issue={selectedIssue} />
 
       {/* Department Actions */}
       <Card>

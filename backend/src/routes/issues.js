@@ -77,11 +77,27 @@ router.post('/', authenticate, requireRole('civic'), maybeUploadPhoto, async (re
   }
 });
 
+// All authenticated users: Get all issues (public feed)
+router.get('/', authenticate, async (req, res) => {
+  try {
+    const issues = await Issue.find()
+      .populate({ path: 'department', select: 'name', populate: { path: 'region', select: 'name' } })
+      .populate('user', 'name email')
+      .sort({ createdAt: -1 })
+      .lean();
+
+    res.json(issues.map((i) => ({ ...i, id: i._id })));
+  } catch (err) {
+    console.error('All issues error:', err);
+    res.status(500).json({ error: 'Failed to fetch issues' });
+  }
+});
+
 // Civic: Get my submitted issues
 router.get('/my', authenticate, requireRole('civic'), async (req, res) => {
   try {
     const issues = await Issue.find({ user: req.user.id })
-      .populate('department', 'name')
+      .populate({ path: 'department', select: 'name', populate: { path: 'region', select: 'name' } })
       .sort({ createdAt: -1 })
       .lean();
 
