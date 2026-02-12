@@ -141,7 +141,29 @@ router.get('/departments', authenticate, requireRole('regional_admin'), async (r
       .sort({ name: 1 })
       .lean();
 
-    res.json(departments.map((d) => ({ ...d, id: d._id })));
+    // Fetch departmental admins for these departments
+    const deptIds = departments.map(d => d._id);
+    const admins = await User.find({
+      role: 'departmental_admin',
+      department: { $in: deptIds }
+    }).select('email name department');
+
+    // Create a map of departmentId -> admin details
+    const adminMap = {};
+    admins.forEach(admin => {
+      adminMap[admin.department.toString()] = {
+        email: admin.email,
+        name: admin.name
+      };
+    });
+
+    const result = departments.map((d) => ({
+      ...d,
+      id: d._id,
+      assignedAdmin: adminMap[d._id.toString()] || null
+    }));
+
+    res.json(result);
   } catch (err) {
     console.error('Departments error:', err);
     res.status(500).json({ error: 'Failed to fetch departments' });

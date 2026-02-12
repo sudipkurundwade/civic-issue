@@ -126,7 +126,7 @@ export default function DepartmentDashboard() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex flex-col gap-1">
-          <h2 className="text-3xl font-bold">Department Dashboard</h2>
+          <h2 className="text-3xl font-bold">Region Admin Dashboard</h2>
           {pendingDeptCount > 0 && (
             <div className="inline-flex items-center gap-2 rounded-full bg-amber-100 text-amber-900 dark:bg-amber-950/40 dark:text-amber-200 px-3 py-1 text-xs font-medium">
               <AlertTriangle className="h-3 w-3" />

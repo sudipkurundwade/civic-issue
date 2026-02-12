@@ -31,6 +31,7 @@ const ROLE_NAV = {
   ],
   regional_admin: [
     { title: "Region Dashboard", url: "/region-dashboard", icon: Map },
+    { title: "Departments", url: "/region-departments", icon: Building2 },
     { title: "Messages", url: "/chat", icon: MessageSquare },
     { title: "Profile", url: "/profile", icon: User },
   ],
