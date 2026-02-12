@@ -37,4 +37,13 @@ export const departmentalService = {
     if (!res.ok) throw new Error(data.error || 'Failed to complete issue');
     return data;
   },
+
+  async getReportSummary() {
+    const res = await fetch(`${API_URL}/departmental/reports/summary`, {
+      headers: headers(),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Failed to generate report');
+    return data;
+  },
 };

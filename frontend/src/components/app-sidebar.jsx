@@ -10,7 +10,9 @@ import {
   MessageSquare,
   User,
   List,
+  Bell,
   Megaphone,
+  FileText,
 } from "lucide-react"
 
 import { NavMain } from "@/components/nav-main"
@@ -26,33 +28,50 @@ import {
 const ROLE_NAV = {
   super_admin: [
     { title: "Super Admin Dashboard", url: "/super-dashboard", icon: LayoutDashboard },
+    { title: "Reports", url: "/reports", icon: FileText },
+    { title: "Notifications", url: "/notifications", icon: Bell },
     { title: "Analytics", url: "/analytics", icon: PieChart },
     { title: "Announcements", url: "/announcements", icon: Megaphone },
     { title: "My Announcements", url: "/my-announcements", icon: List },
-    { title: "Messages", url: "/chat", icon: MessageSquare },
     { title: "Profile", url: "/profile", icon: User },
   ],
   regional_admin: [
     { title: "Region Dashboard", url: "/region-dashboard", icon: Map },
-    { title: "Messages", url: "/chat", icon: MessageSquare },
+    { title: "Departments", url: "/region-departments", icon: Building2 },
+    { title: "Reports", url: "/reports", icon: FileText },
+    { title: "Analytics", url: "/analytics", icon: PieChart },
+    { title: "Notifications", url: "/notifications", icon: Bell },
     { title: "Profile", url: "/profile", icon: User },
   ],
   departmental_admin: [
     { title: "Department Dashboard", url: "/dept-dashboard", icon: Building2 },
+    { title: "Reports", url: "/reports", icon: FileText },
+    { title: "Notifications", url: "/notifications", icon: Bell },
     { title: "Announcements", url: "/announcements", icon: Megaphone },
-    { title: "Messages", url: "/chat", icon: MessageSquare },
     { title: "Profile", url: "/profile", icon: User },
   ],
   civic: [
     { title: "Report Issue", url: "/civic-dashboard", icon: AlertCircle },
     { title: "Announcements", url: "/announcements", icon: Megaphone },
     { title: "My Issues", url: "/my-issues", icon: List },
+    { title: "Notifications", url: "/notifications", icon: Bell },
     { title: "Profile", url: "/profile", icon: User },
   ],
 }
 
 export function AppSidebar({ user, onLogout, page, onNavigate }) {
-  const navItems = ROLE_NAV[user?.role] || ROLE_NAV.civic
+  const baseNav = ROLE_NAV[user?.role] || ROLE_NAV.civic
+  const navItems =
+    baseNav.map((item, idx) => {
+      if (idx !== 0) return item
+      if (user?.role === "departmental_admin" && user?.department?.name) {
+        return { ...item, title: user.department.name }
+      }
+      if (user?.role === "regional_admin" && user?.region?.name) {
+        return { ...item, title: user.region.name }
+      }
+      return item
+    })
 
   const handleNav = (e, url) => {
     e?.preventDefault?.()

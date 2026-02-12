@@ -1,9 +1,11 @@
 import express from 'express';
 import Issue from '../models/Issue.js';
+import Department from '../models/Department.js';
 import { authenticate, requireRole } from '../middleware/auth.js';
 import { uploadCompletionPhoto } from '../config/cloudinary.js';
 import { uploadToCloudinary } from '../lib/uploadToCloudinary.js';
 import { cloudinary } from '../config/cloudinary.js';
+import { notifyIssueStatusChange } from '../lib/notifications.js';
 
 const router = express.Router();
 
@@ -26,6 +28,63 @@ router.get('/issues', authenticate, requireRole('departmental_admin'), async (re
   }
 });
 
+// Departmental admin: Reporting summary for this department
+router.get('/reports/summary', authenticate, requireRole('departmental_admin'), async (req, res) => {
+  try {
+    const deptId = req.user.department;
+    if (!deptId) return res.status(403).json({ error: 'No department assigned' });
+    const dept = await Department.findById(deptId).populate('region', 'name').select('name region').lean();
+
+    const issues = await Issue.find({ department: deptId }).sort({ createdAt: 1 }).lean();
+
+    const total = issues.length;
+    const pending = issues.filter((i) => i.status === 'PENDING' || i.status === 'PENDING_DEPARTMENT').length;
+    const inProgress = issues.filter((i) => i.status === 'IN_PROGRESS').length;
+    const completed = issues.filter((i) => i.status === 'COMPLETED').length;
+
+    const timeline = issues.map((i) => ({
+      id: i._id,
+      description: i.description,
+      status: i.status,
+      createdAt: i.createdAt,
+      completedAt: i.completedAt,
+    }));
+
+    const issuesWithPhotos = issues.map((i) => ({
+      id: i._id,
+      description: i.description,
+      beforePhotoUrl: i.photoUrl,
+      afterPhotoUrl: i.completionPhotoUrl || null,
+    }));
+
+    const insightsText = [
+      `Your department is handling ${total} issues in total.`,
+      `Currently, ${pending} are pending, ${inProgress} are in progress, and ${completed} have been completed.`,
+      completed > 0
+        ? `Focus on reducing the ${pending} pending issues to improve your resolution rate.`
+        : null,
+    ]
+      .filter(Boolean)
+      .join(' ');
+
+    res.json({
+      departmentId: deptId,
+      departmentName: dept?.name || null,
+      regionName: dept?.region?.name || null,
+      totalIssues: total,
+      pending,
+      inProgress,
+      completed,
+      timeline,
+      issuesWithPhotos,
+      insightsText,
+    });
+  } catch (err) {
+    console.error('Department report summary error:', err);
+    res.status(500).json({ error: 'Failed to generate report' });
+  }
+});
+
 // Departmental admin: Update status to IN_PROGRESS
 router.patch('/issues/:id/status', authenticate, requireRole('departmental_admin'), async (req, res) => {
   try {
@@ -38,6 +97,17 @@ router.patch('/issues/:id/status', authenticate, requireRole('departmental_admin
       return res.status(400).json({ error: 'Status must be PENDING or IN_PROGRESS. Use complete endpoint for COMPLETED.' });
     }
 
+    const current = await Issue.findOne({ _id: id, department: deptId })
+      .populate('department', 'name')
+      .populate('user', 'name email')
+      .lean();
+
+    if (!current) return res.status(404).json({ error: 'Issue not found' });
+
+    if (current.status === status) {
+      return res.json({ ...current, id: current._id });
+    }
+
     const issue = await Issue.findOneAndUpdate(
       { _id: id, department: deptId },
       { status },
@@ -48,6 +118,10 @@ router.patch('/issues/:id/status', authenticate, requireRole('departmental_admin
       .lean();
 
     if (!issue) return res.status(404).json({ error: 'Issue not found' });
+
+    // Notify the citizen that their issue status changed
+    notifyIssueStatusChange(issue);
+
     res.json({ ...issue, id: issue._id });
   } catch (err) {
     console.error('Update status error:', err);
@@ -107,6 +181,16 @@ router.patch(
         });
       }
 
+      const current = await Issue.findOne({ _id: id, department: deptId })
+        .populate('department', 'name')
+        .populate('user', 'name email')
+        .lean();
+
+      if (!current) return res.status(404).json({ error: 'Issue not found' });
+      if (current.status === 'COMPLETED') {
+        return res.json({ ...current, id: current._id });
+      }
+
       const issue = await Issue.findOneAndUpdate(
         { _id: id, department: deptId },
         {
@@ -122,6 +206,10 @@ router.patch(
         .lean();
 
       if (!issue) return res.status(404).json({ error: 'Issue not found' });
+
+      // Notify the citizen that their issue has been completed
+      notifyIssueStatusChange(issue);
+
       res.json({ ...issue, id: issue._id });
     } catch (err) {
       console.error('Complete issue error:', err);

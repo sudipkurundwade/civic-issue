@@ -91,6 +91,25 @@ export const adminService = {
     if (!res.ok) throw new Error(data.error || 'Failed to create departmental admin');
     return data;
   },
+
+  // Reports
+  async getRegionReport() {
+    const res = await fetch(`${API_URL}/admin/reports/region-summary`, {
+      headers: headers(),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Failed to generate region report');
+    return data;
+  },
+
+  async getSystemReport() {
+    const res = await fetch(`${API_URL}/admin/reports/system-summary`, {
+      headers: headers(),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Failed to generate system report');
+    return data;
+  },
 };
 
 // Public endpoints (no auth)

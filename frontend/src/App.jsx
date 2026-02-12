@@ -9,9 +9,13 @@ import RegionDepartments from "@/pages/regionAdmin/RegionDepartments"
 import DepartmentAdminDashboard from "@/pages/departmentAdmin/departmentdashboard"
 import CitizenDashboard from "@/pages/citizen/citizensDashboard"
 import MyIssuesPage from "@/pages/citizen/myIssues"
+import ProfilePage from "@/pages/SuperAdmin/profile"
+import AnalyticsPage from "@/pages/SuperAdmin/analytics"
+import NotificationsPage from "@/pages/Notifications"
 import AnnouncementsPage from "@/pages/SuperAdmin/announcements"
 import AnnouncementsList from "@/pages/shared/AnnouncementsList"
 import CreateAnnouncement from "@/pages/shared/CreateAnnouncement"
+import ReportsPage from "@/pages/Reports"
 import { AppSidebar } from "@/components/app-sidebar"
 import { SidebarProvider, SidebarInset, SidebarTrigger } from "@/components/ui/sidebar"
 import { useAuth } from "@/context/AuthContext"
@@ -129,6 +133,8 @@ function AppContent() {
             page.includes("dept-dashboard") ? "Department Dashboard" :
               (page.includes("civic-dashboard") || page.includes("citizen-dashboard")) ? "Report Issue" :
                 page.includes("my-issues") ? "My Issues" :
+                  page === "notifications" ? "Notifications" :
+                  page === "reports" ? "Reports" :
                   page === "chat" ? "Chat" :
                     page === "profile" ? "Profile" :
                       page === "analytics" ? "Analytics" :
@@ -154,10 +160,12 @@ function AppContent() {
             {page.includes("dept-dashboard") && user?.role === "departmental_admin" && <DepartmentAdminDashboard />}
             {(page.includes("civic-dashboard") || page.includes("citizen-dashboard")) && user?.role === "civic" && <CitizenDashboard />}
             {page.includes("my-issues") && user?.role === "civic" && <MyIssuesPage />}
+            {page === "notifications" && <NotificationsPage />}
             {page === "chat" && <ChatPage />}
             {page === "profile" && <ProfilePage />}
             {page === "profile" && <ProfilePage />}
-            {page === "analytics" && user?.role === "super_admin" && <AnalyticsPage />}
+            {page === "analytics" && (user?.role === "super_admin" || user?.role === "regional_admin") && <AnalyticsPage />}
+            {page === "reports" && <ReportsPage />}
             {page === "announcements" && <AnnouncementsList />}
             {page === "my-announcements" && <AnnouncementsList mode="my" />}
             {page === "create-announcement" && <CreateAnnouncement />}

@@ -57,6 +57,7 @@ export default function SuperAdminDashboard() {
   const [allIssues, setAllIssues] = React.useState([])
   const [selectedIssue, setSelectedIssue] = React.useState(null)
   const [detailOpen, setDetailOpen] = React.useState(false)
+  const [report, setReport] = React.useState(null)
 
   React.useEffect(() => {
     adminService.getRegions()
@@ -317,10 +318,21 @@ export default function SuperAdminDashboard() {
       {/* Admin Actions */}
       <Card>
         <CardHeader>
-          <CardTitle>Admin Actions</CardTitle>
+        <CardTitle>Admin Actions</CardTitle>
         </CardHeader>
         <CardContent className="flex gap-4 flex-wrap">
-          <Button variant="outline">
+          <Button
+            variant="outline"
+            onClick={async () => {
+              try {
+                const data = await adminService.getSystemReport()
+                setReport(data)
+                toast({ title: "System report generated" })
+              } catch (err) {
+                toast({ title: err.message || "Failed to generate report", variant: "destructive" })
+              }
+            }}
+          >
             <ArrowUpRight className="mr-2 h-4 w-4" />
             Generate Report
           </Button>
@@ -334,6 +346,32 @@ export default function SuperAdminDashboard() {
           </Button>
         </CardContent>
       </Card>
+
+      {report && (
+        <Card>
+          <CardHeader>
+            <CardTitle>System Report Summary</CardTitle>
+            <CardDescription>High-level overview of issues, performance, and SLA.</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-2 text-sm">
+            <p><span className="font-semibold">Total Issues:</span> {report.totalIssues}</p>
+            <div>
+              <p className="font-semibold">Status Distribution:</p>
+              <ul className="list-disc list-inside text-muted-foreground">
+                {Object.entries(report.statusDistribution || {}).map(([status, count]) => (
+                  <li key={status}>{status}: {count}</li>
+                ))}
+              </ul>
+            </div>
+            <div>
+              <p className="font-semibold">SLA:</p>
+              <p className="text-muted-foreground">
+                Threshold {report.sla?.thresholdHours}h · Completed {report.sla?.totalCompleted} · Breaches {report.sla?.totalBreaches}
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+      )}
     </div>
   )
 }

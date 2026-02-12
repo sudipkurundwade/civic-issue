@@ -14,6 +14,7 @@ import { Textarea } from "@/components/ui/textarea"
 import {
     AlertCircle,
     CheckCircle,
+    Clock,
     MapPin,
     ThumbsUp,
     MessageSquare,
@@ -80,24 +81,17 @@ export default function CitizenDashboard() {
     const [cameraOpen, setCameraOpen] = React.useState(false)
     const [selectedIssue, setSelectedIssue] = React.useState(null)
     const [detailOpen, setDetailOpen] = React.useState(false)
+    const [openCommentsId, setOpenCommentsId] = React.useState(null)
+    const [commentsByIssue, setCommentsByIssue] = React.useState({})
+    const [commentTextByIssue, setCommentTextByIssue] = React.useState({})
     const uploadInputRef = React.useRef(null)
 
-    const loadData = React.useCallback(async () => {
-        try {
-            const [my, all] = await Promise.all([
-                issueService.getMyIssues(),
-                issueService.getAllIssues()
-            ])
-            setMyIssues(my)
-            setAllIssues(all)
-        } catch (error) {
-            console.error("Failed to load data", error)
-        }
-    }, [])
-
     React.useEffect(() => {
-        loadData()
-    }, [loadData, isReporting])
+        issueService.getAllIssues().then(setAllIssues).catch(() => { })
+    }, [])
+    React.useEffect(() => {
+        issueService.getMyIssues().then(setMyIssues).catch(() => { })
+    }, [isReporting])
 
     React.useEffect(() => {
         if (isReporting && navigator.geolocation) {
@@ -106,14 +100,11 @@ export default function CitizenDashboard() {
                 if (pos) setLocation((l) => ({ ...l, ...pos }))
                 setLocationLoading(false)
             })
-        } else if (isReporting) {
-            setLocationLoading(false)
-        }
+        } else if (isReporting) setLocationLoading(false)
     }, [isReporting])
 
     const resolved = myIssues.filter((i) => i.status === "COMPLETED").length
     const unresolved = myIssues.filter((i) => i.status !== "COMPLETED").length
-
     const stats = [
         { title: "My Issues", value: String(myIssues.length), description: "Total reported by you", icon: MapPin },
         { title: "Resolved", value: String(resolved), description: "Successfully fixed", icon: CheckCircle },
@@ -121,16 +112,17 @@ export default function CitizenDashboard() {
     ]
 
     const feedIssues = allIssues.map((i) => ({
-        id: i.id || i._id,
+        id: i.id,
         title: i.description?.slice(0, 50) || "Issue",
         description: i.description,
-        region: i.department?.region?.name || i.requestedRegionName || "—",
-        area: i.address || `${i.latitude?.toFixed(4)}, ${i.longitude?.toFixed(4)}`,
+        region: i.department?.region?.name || "—",
+        area: i.address || `${i.latitude}, ${i.longitude}`,
         date: i.createdAt ? new Date(i.createdAt).toLocaleDateString() : "",
         status: i.status?.toLowerCase() || "pending",
         image: i.photoUrl || "/placeholder.svg",
-        likes: 0,
-        comments: 0,
+        likes: i.likesCount ?? 0,
+        comments: i.commentsCount ?? 0,
+        likedByMe: i.likedByMe ?? false,
         reporterName: i.user?.name || "Anonymous",
         latitude: i.latitude,
         longitude: i.longitude,
@@ -140,15 +132,17 @@ export default function CitizenDashboard() {
         return (
             <div className="min-h-screen bg-background p-6">
                 <div className="max-w-6xl mx-auto space-y-6">
+                    {/* Header */}
                     <div className="flex items-center justify-between">
                         <Button variant="ghost" onClick={() => setIsReporting(false)} className="gap-2">
                             <ArrowLeft className="h-4 w-4" /> Back to Dashboard
                         </Button>
                         <h2 className="text-2xl font-bold text-primary">Report New Issue</h2>
-                        <div className="w-[100px]"></div>
+                        <div className="w-[100px]"></div> {/* Spacer for centering */}
                     </div>
 
                     <div className="grid md:grid-cols-2 gap-6">
+                        {/* Left Column: Map - Auto-tracked, click to adjust */}
                         <Card className="h-full min-h-[500px] flex flex-col">
                             <CardHeader>
                                 <CardTitle className="flex items-center gap-2">
@@ -179,51 +173,58 @@ export default function CitizenDashboard() {
                             </CardContent>
                         </Card>
 
+                        {/* Right Column: Form */}
                         <Card>
                             <CardHeader>
                                 <CardTitle>Issue Details</CardTitle>
                             </CardHeader>
                             <CardContent className="space-y-6">
-                                <form onSubmit={async (e) => {
-                                    e.preventDefault()
-                                    const pos = mapSelected || (location.lat != null ? location : null)
-                                    const lat = pos?.lat
-                                    const lng = pos?.lng
-                                    if (!reportForm.photo || !reportForm.description || !reportForm.regionName || !reportForm.departmentName) {
-                                        toast({ title: "Please add region, department, description, and photo.", variant: "destructive" })
-                                        return
-                                    }
-                                    if (lat == null || lng == null) {
-                                        toast({ title: "Please select location on map (could not get your current location)", variant: "destructive" })
-                                        return
-                                    }
-                                    setSubmitting(true)
-                                    try {
-                                        const fd = new FormData()
-                                        fd.append("photo", reportForm.photo)
-                                        fd.append("latitude", String(lat))
-                                        fd.append("longitude", String(lng))
-                                        fd.append("address", reportForm.address || "")
-                                        fd.append("description", reportForm.description)
-                                        fd.append("regionName", reportForm.regionName)
-                                        fd.append("departmentName", reportForm.departmentName)
-                                        const result = await issueService.submitIssue(fd)
-                                        if (result.status === "PENDING_DEPARTMENT") {
-                                            toast({ title: "Issue submitted. Awaiting department creation by regional admin.", description: `"${reportForm.departmentName}" will be created and your issue assigned.` })
-                                        } else {
-                                            toast({ title: "Issue submitted successfully" })
+                                <form
+                                    onSubmit={async (e) => {
+                                        e.preventDefault()
+                                        const pos = mapSelected || (location.lat != null ? location : null)
+                                        const lat = pos?.lat
+                                        const lng = pos?.lng
+                                        if (!reportForm.photo || !reportForm.description || !reportForm.regionName || !reportForm.departmentName) {
+                                            toast({ title: "Please add region, department, description, and photo.", variant: "destructive" })
+                                            return
                                         }
-                                        setIsReporting(false)
-                                        setReportForm({ description: "", regionName: "", departmentName: "", photo: null, photoPreview: null, address: "" })
-                                        setMapSelected(null)
-                                        issueService.getMyIssues().then(setMyIssues)
-                                        issueService.getAllIssues().then(setAllIssues)
-                                    } catch (err) {
-                                        toast({ title: err.message || "Failed to submit", variant: "destructive" })
-                                    } finally {
-                                        setSubmitting(false)
-                                    }
-                                }} className="space-y-6">
+                                        if (lat == null || lng == null) {
+                                            toast({ title: "Please select location on map (could not get your current location)", variant: "destructive" })
+                                            return
+                                        }
+                                        setSubmitting(true)
+                                        try {
+                                            const fd = new FormData()
+                                            fd.append("photo", reportForm.photo)
+                                            fd.append("latitude", String(lat))
+                                            fd.append("longitude", String(lng))
+                                            fd.append("address", reportForm.address || "")
+                                            fd.append("description", reportForm.description)
+                                            fd.append("regionName", reportForm.regionName)
+                                            fd.append("departmentName", reportForm.departmentName)
+                                            const result = await issueService.submitIssue(fd)
+                                            if (result.status === "PENDING_DEPARTMENT") {
+                                                toast({
+                                                    title: "Issue submitted. Awaiting department creation by regional admin.",
+                                                    description: `"${reportForm.departmentName}" will be created and your issue assigned.`,
+                                                })
+                                            } else {
+                                                toast({ title: "Issue submitted successfully" })
+                                            }
+                                            setIsReporting(false)
+                                            setReportForm({ description: "", regionName: "", departmentName: "", photo: null, photoPreview: null, address: "" })
+                                            setMapSelected(null)
+                                            issueService.getMyIssues().then(setMyIssues)
+                                            issueService.getAllIssues().then(setAllIssues)
+                                        } catch (err) {
+                                            toast({ title: err.message || "Failed to submit", variant: "destructive" })
+                                        } finally {
+                                            setSubmitting(false)
+                                        }
+                                    }}
+                                    className="space-y-6"
+                                >
                                     <div className="space-y-3">
                                         <Label>Region *</Label>
                                         <Input
@@ -246,12 +247,14 @@ export default function CitizenDashboard() {
                                         <select
                                             value={reportForm.departmentName}
                                             onChange={(e) => setReportForm((f) => ({ ...f, departmentName: e.target.value }))}
-                                            className="h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                                            className="h-10 w-full rounded-md border px-3 text-sm"
                                             required
                                         >
                                             <option value="">Select Department</option>
                                             {DEPARTMENT_OPTIONS.map((name) => (
-                                                <option key={name} value={name}>{name}</option>
+                                                <option key={name} value={name}>
+                                                    {name}
+                                                </option>
                                             ))}
                                         </select>
                                     </div>
@@ -263,7 +266,9 @@ export default function CitizenDashboard() {
                                             value={reportForm.address ?? ""}
                                             onChange={(e) => setReportForm((f) => ({ ...f, address: e.target.value }))}
                                         />
-                                        <p className="text-xs text-muted-foreground">Location is auto-tracked. Add address for easier navigation.</p>
+                                        <p className="text-xs text-muted-foreground">
+                                            Location is auto-tracked. Add address for easier navigation.
+                                        </p>
                                     </div>
 
                                     <div className="space-y-2">
@@ -279,7 +284,9 @@ export default function CitizenDashboard() {
 
                                     <div className="space-y-2">
                                         <Label>Issue Photo *</Label>
-                                        <p className="text-xs text-muted-foreground">Take a photo with camera or upload one. Location is captured automatically.</p>
+                                        <p className="text-xs text-muted-foreground">
+                                            Take a photo with camera or upload one. Location is captured automatically.
+                                        </p>
                                         <div className="flex gap-3">
                                             <input
                                                 ref={uploadInputRef}
@@ -293,21 +300,41 @@ export default function CitizenDashboard() {
                                                     const pos = await captureLocation()
                                                     if (pos) setLocation((l) => ({ ...l, ...pos }))
                                                     setLocationLoading(false)
-                                                    setReportForm((f) => ({ ...f, photo: file, photoPreview: URL.createObjectURL(file) }))
+                                                    setReportForm((f) => ({
+                                                        ...f,
+                                                        photo: file,
+                                                        photoPreview: URL.createObjectURL(file),
+                                                    }))
                                                     e.target.value = ""
                                                 }}
                                             />
-                                            <Button type="button" variant="outline" className="flex-1 gap-2" onClick={() => setCameraOpen(true)}>
+                                            <Button
+                                                type="button"
+                                                variant="outline"
+                                                className="flex-1 gap-2"
+                                                onClick={() => setCameraOpen(true)}
+                                            >
                                                 <Camera className="h-4 w-4" /> Take Photo
                                             </Button>
-                                            <Button type="button" variant="outline" className="flex-1 gap-2" onClick={() => uploadInputRef.current?.click()}>
+                                            <Button
+                                                type="button"
+                                                variant="outline"
+                                                className="flex-1 gap-2"
+                                                onClick={() => uploadInputRef.current?.click()}
+                                            >
                                                 <Upload className="h-4 w-4" /> Upload
                                             </Button>
                                         </div>
                                         {reportForm.photoPreview && (
                                             <div className="mt-2">
-                                                <img src={reportForm.photoPreview} alt="Preview" className="h-24 rounded border object-cover" />
-                                                <p className="text-xs text-green-600 mt-1">Photo added. Location captured.</p>
+                                                <img
+                                                    src={reportForm.photoPreview}
+                                                    alt="Preview"
+                                                    className="h-24 rounded border object-cover"
+                                                />
+                                                <p className="text-xs text-green-600 mt-1">
+                                                    Photo added. Location captured.
+                                                </p>
                                             </div>
                                         )}
                                     </div>
@@ -315,25 +342,39 @@ export default function CitizenDashboard() {
                                     <Button
                                         type="submit"
                                         className="w-full bg-green-600 hover:bg-green-700 text-white"
-                                        disabled={submitting || !reportForm.photo || !reportForm.regionName || !reportForm.departmentName || !(mapSelected || (location.lat != null && location.lng != null))}
-                                        title={!(mapSelected || location.lat) ? "Select location on map if GPS is not available" : ""}
+                                        disabled={
+                                            submitting ||
+                                            !reportForm.photo ||
+                                            !reportForm.regionName ||
+                                            !reportForm.departmentName ||
+                                            !(mapSelected || (location.lat != null && location.lng != null))
+                                        }
+                                        title={
+                                            !(mapSelected || location.lat)
+                                                ? "Select location on map if GPS is not available"
+                                                : ""
+                                        }
                                     >
-                                        <Share2 className="mr-2 h-4 w-4" /> {submitting ? "Submitting..." : "Submit Issue"}
+                                        <Share2 className="mr-2 h-4 w-4" />{" "}
+                                        {submitting ? "Submitting..." : "Submit Issue"}
                                     </Button>
                                 </form>
-                            </CardContent >
-                        </Card >
-                    </div >
-
+                            </CardContent>
+                        </Card>
+                    </div>
                     <CameraCapture
                         open={cameraOpen}
                         onClose={() => setCameraOpen(false)}
                         onCapture={async (file) => {
+                            setLocationLoading(true)
+                            const pos = await captureLocation()
+                            if (pos) setLocation((l) => ({ ...l, ...pos }))
+                            setLocationLoading(false)
                             setReportForm((f) => ({ ...f, photo: file, photoPreview: URL.createObjectURL(file) }))
                         }}
                     />
-                </div >
-            </div >
+                </div>
+            </div>
         )
     }
 
@@ -349,76 +390,211 @@ export default function CitizenDashboard() {
                 </Button>
             </div>
 
+            {/* Stats Grid */}
             <div className="grid gap-4 md:grid-cols-3">
                 {stats.map((stat, index) => {
                     const Icon = stat.icon
                     return (
                         <Card key={index}>
                             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                                <CardTitle className="text-sm font-medium">{stat.title}</CardTitle>
+                                <CardTitle className="text-sm font-medium">
+                                    {stat.title}
+                                </CardTitle>
                                 <Icon className="h-4 w-4 text-muted-foreground" />
                             </CardHeader>
                             <CardContent>
                                 <div className="text-2xl font-bold">{stat.value}</div>
-                                <p className="text-xs text-muted-foreground">{stat.description}</p>
+                                <p className="text-xs text-muted-foreground">
+                                    {stat.description}
+                                </p>
                             </CardContent>
                         </Card>
                     )
                 })}
             </div>
 
+            {/* All Issues (visible to all users) */}
             <div className="space-y-6">
-                <h3 className="text-xl font-semibold">Community Feed</h3>
+                <h3 className="text-xl font-semibold">All Issues</h3>
 
                 <div className="grid gap-6 md:grid-cols-1 lg:max-w-2xl mx-auto">
                     {feedIssues.length > 0 ? (
-                        feedIssues.map((issue) => (
+                        feedIssues.map((issue) => {
+                            const comments = commentsByIssue[issue.id] || []
+                            const commentText = commentTextByIssue[issue.id] || ""
+                            const isCommentsOpen = openCommentsId === issue.id
+                            return (
                             <Card
                                 key={issue.id}
-                                className="overflow-hidden shadow-md border-muted cursor-pointer hover:shadow-lg transition-all"
-                                onClick={() => { setSelectedIssue(issue); setDetailOpen(true) }}
+                                className="overflow-hidden shadow-md border-muted hover:shadow-lg transition-shadow"
                             >
+                                {/* Post Header */}
                                 <div className="p-4 flex items-center gap-3 border-b bg-muted/20">
                                     <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
                                         <MapPin className="h-5 w-5 text-primary" />
                                     </div>
                                     <div>
-                                        <h4 className="font-semibold text-sm">{issue.area}</h4>
-                                        <p className="text-xs text-muted-foreground">{issue.date} · {issue.reporterName}</p>
+                                        <h4 className="font-semibold text-sm">{issue.area}, {issue.region}</h4>
+                                        <p className="text-xs text-muted-foreground">{issue.date} · Reported by {issue.reporterName}</p>
                                     </div>
                                     <div className="ml-auto">
-                                        <Badge variant={issue.status === "completed" ? "secondary" : "destructive"}>
+                                        <Badge variant={issue.status === "pending" ? "destructive" : "secondary"}>
                                             {issue.status}
                                         </Badge>
                                     </div>
                                 </div>
 
-                                <div className="p-0">
+                                {/* Post Content */}
+                                <div className="p-0 cursor-pointer" onClick={() => { setSelectedIssue(issue); setDetailOpen(true) }}>
                                     <div className="aspect-video w-full bg-muted">
-                                        <img src={issue.image} alt={issue.title} className="w-full h-full object-cover" />
+                                        <img
+                                            src={issue.image}
+                                            alt={issue.title}
+                                            className="w-full h-full object-cover"
+                                        />
                                     </div>
                                     <div className="p-4 space-y-2">
-                                        <h4 className="font-bold text-lg">{issue.title}</h4>
-                                        <p className="text-sm text-foreground/80 line-clamp-2">{issue.description}</p>
+                                        <h3 className="font-bold text-lg">{issue.title}</h3>
+                                        <p className="text-sm text-foreground/80">{issue.description}</p>
                                     </div>
                                 </div>
 
-                                <div className="p-3 border-t flex items-center justify-around text-muted-foreground bg-muted/10">
-                                    <Button variant="ghost" size="sm" className="gap-2">
+                                {/* Post Actions */}
+                        <div className="p-3 border-t flex items-center justify-around text-muted-foreground bg-muted/10">
+                                    <Button
+                                        variant={issue.likedByMe ? "default" : "ghost"}
+                                        size="sm"
+                                        className="gap-2 hover:text-blue-600"
+                                        onClick={async (e) => {
+                                            e.stopPropagation()
+                                            try {
+                                                const result = await issueService.toggleLike(issue.id)
+                                                setAllIssues((prev) =>
+                                                    prev.map((it) =>
+                                                        it.id === issue.id
+                                                            ? {
+                                                                ...it,
+                                                                likesCount: result.likesCount,
+                                                                likedByMe: result.liked,
+                                                            }
+                                                            : it
+                                                    )
+                                                )
+                                            } catch {
+                                                toast({ title: "Failed to update like", variant: "destructive" })
+                                            }
+                                        }}
+                                    >
                                         <ThumbsUp className="h-4 w-4" />
                                         <span className="text-xs">{issue.likes} Supports</span>
                                     </Button>
-                                    <Button variant="ghost" size="sm" className="gap-2">
+                                    <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        className="gap-2 hover:text-green-600"
+                                        onClick={async (e) => {
+                                            e.stopPropagation()
+                                            if (!isCommentsOpen) {
+                                                // Opening comments: fetch if not already loaded
+                                                if (!commentsByIssue[issue.id]) {
+                                                    try {
+                                                        const data = await issueService.getComments(issue.id)
+                                                        setCommentsByIssue((prev) => ({ ...prev, [issue.id]: data }))
+                                                    } catch {
+                                                        toast({ title: "Failed to load comments", variant: "destructive" })
+                                                    }
+                                                }
+                                                setOpenCommentsId(issue.id)
+                                            } else {
+                                                setOpenCommentsId(null)
+                                            }
+                                        }}
+                                    >
                                         <MessageSquare className="h-4 w-4" />
                                         <span className="text-xs">{issue.comments} Comments</span>
                                     </Button>
-                                    <Button variant="ghost" size="sm" className="gap-2">
+                                    <Button variant="ghost" size="sm" className="gap-2 hover:text-purple-600">
                                         <Share2 className="h-4 w-4" />
                                         <span className="text-xs">Share</span>
                                     </Button>
                                 </div>
+                                {/* Inline Comments Thread */}
+                                {isCommentsOpen && (
+                                    <div className="border-t px-4 pb-4 pt-3 space-y-3 bg-muted/10">
+                                        {comments.length === 0 ? (
+                                            <p className="text-xs text-muted-foreground">
+                                                No comments yet. Be the first to comment.
+                                            </p>
+                                        ) : (
+                                            <div className="space-y-2 max-h-40 overflow-y-auto pr-1">
+                                                {comments.map((c) => (
+                                                    <div key={c.id} className="text-xs border rounded-md px-2 py-1 bg-background">
+                                                        <div className="flex justify-between items-center mb-0.5">
+                                                            <span className="font-semibold">
+                                                                {c.user?.name || c.user?.email || "User"}
+                                                            </span>
+                                                            <span className="text-[10px] text-muted-foreground">
+                                                                {c.createdAt ? new Date(c.createdAt).toLocaleString() : ""}
+                                                            </span>
+                                                        </div>
+                                                        <p className="text-xs whitespace-pre-wrap">{c.text}</p>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        )}
+
+                                        <form
+                                            className="flex gap-2 pt-1"
+                                            onSubmit={async (e) => {
+                                                e.preventDefault()
+                                                const text = (commentTextByIssue[issue.id] || "").trim()
+                                                if (!text) return
+                                                try {
+                                                    const newComment = await issueService.addComment(issue.id, text)
+                                                    setCommentsByIssue((prev) => ({
+                                                        ...prev,
+                                                        [issue.id]: [newComment, ...(prev[issue.id] || [])],
+                                                    }))
+                                                    setCommentTextByIssue((prev) => ({ ...prev, [issue.id]: "" }))
+                                                    // Increment comment count on the issue in allIssues
+                                                    setAllIssues((prev) =>
+                                                        prev.map((it) =>
+                                                            it.id === issue.id
+                                                                ? {
+                                                                    ...it,
+                                                                    commentsCount: (it.commentsCount || 0) + 1,
+                                                                }
+                                                                : it
+                                                        )
+                                                    )
+                                                } catch {
+                                                    toast({ title: "Failed to add comment", variant: "destructive" })
+                                                }
+                                            }}
+                                        >
+                                            <Input
+                                                placeholder="Write a comment..."
+                                                value={commentText}
+                                                onChange={(e) =>
+                                                    setCommentTextByIssue((prev) => ({
+                                                        ...prev,
+                                                        [issue.id]: e.target.value,
+                                                    }))
+                                                }
+                                                className="text-xs"
+                                            />
+                                            <Button
+                                                type="submit"
+                                                size="sm"
+                                                disabled={!commentText.trim()}
+                                            >
+                                                Post
+                                            </Button>
+                                        </form>
+                                    </div>
+                                )}
                             </Card>
-                        ))
+                        )})
                     ) : (
                         <div className="text-center py-10">
                             <CheckCircle className="h-12 w-12 text-green-500 mx-auto mb-3" />

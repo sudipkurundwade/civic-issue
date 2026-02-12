@@ -6,6 +6,7 @@ import { authenticate, requireRole } from '../middleware/auth.js';
 import { uploadPhoto } from '../config/cloudinary.js';
 import { uploadToCloudinary } from '../lib/uploadToCloudinary.js';
 import { cloudinary } from '../config/cloudinary.js';
+import { notifyDepartmentNewIssue } from '../lib/notifications.js';
 
 const router = express.Router();
 
@@ -91,6 +92,11 @@ router.post('/', authenticate, requireRole('civic'), maybeUploadPhoto, async (re
       .populate('user', 'name email')
       .lean();
 
+    // If the issue is already assigned to a department, notify its admins
+    if (populated.department) {
+      notifyDepartmentNewIssue(populated);
+    }
+
     res.status(201).json({ ...populated, id: populated._id });
   } catch (err) {
     console.error('Submit issue error:', err);
@@ -107,7 +113,16 @@ router.get('/', authenticate, async (req, res) => {
       .sort({ createdAt: -1 })
       .lean();
 
-    res.json(issues.map((i) => ({ ...i, id: i._id })));
+    const userId = req.user?.id?.toString();
+    res.json(
+      issues.map((i) => ({
+        ...i,
+        id: i._id,
+        likesCount: Array.isArray(i.likes) ? i.likes.length : 0,
+        commentsCount: Array.isArray(i.comments) ? i.comments.length : 0,
+        likedByMe: userId ? Array.isArray(i.likes) && i.likes.some((u) => u.toString() === userId) : false,
+      }))
+    );
   } catch (err) {
     console.error('All issues error:', err);
     res.status(500).json({ error: 'Failed to fetch issues' });
@@ -122,10 +137,103 @@ router.get('/my', authenticate, requireRole('civic'), async (req, res) => {
       .sort({ createdAt: -1 })
       .lean();
 
-    res.json(issues.map((i) => ({ ...i, id: i._id })));
+    res.json(
+      issues.map((i) => ({
+        ...i,
+        id: i._id,
+        likesCount: Array.isArray(i.likes) ? i.likes.length : 0,
+        commentsCount: Array.isArray(i.comments) ? i.comments.length : 0,
+        likedByMe: Array.isArray(i.likes) && i.likes.some((u) => u.toString() === req.user.id),
+      }))
+    );
   } catch (err) {
     console.error('My issues error:', err);
     res.status(500).json({ error: 'Failed to fetch issues' });
+  }
+});
+
+// Toggle like on an issue
+router.post('/:id/like', authenticate, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const userId = req.user.id;
+
+    const issue = await Issue.findById(id);
+    if (!issue) return res.status(404).json({ error: 'Issue not found' });
+
+    const liked = Array.isArray(issue.likes) && issue.likes.some((u) => u.toString() === userId);
+    if (liked) {
+      issue.likes = issue.likes.filter((u) => u.toString() !== userId);
+    } else {
+      issue.likes = [...(issue.likes || []), userId];
+    }
+    await issue.save();
+
+    res.json({
+      id: issue._id,
+      liked: !liked,
+      likesCount: issue.likes.length,
+    });
+  } catch (err) {
+    console.error('Toggle like error:', err);
+    res.status(500).json({ error: 'Failed to update like' });
+  }
+});
+
+// Get comments for an issue
+router.get('/:id/comments', authenticate, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const issue = await Issue.findById(id)
+      .populate('comments.user', 'name email')
+      .lean();
+    if (!issue) return res.status(404).json({ error: 'Issue not found' });
+
+    const comments = (issue.comments || []).map((c) => ({
+      id: c._id,
+      text: c.text,
+      createdAt: c.createdAt,
+      user: c.user
+        ? { id: c.user._id, name: c.user.name, email: c.user.email }
+        : null,
+    }));
+
+    res.json(comments);
+  } catch (err) {
+    console.error('Get comments error:', err);
+    res.status(500).json({ error: 'Failed to fetch comments' });
+  }
+});
+
+// Add a comment to an issue
+router.post('/:id/comments', authenticate, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { text } = req.body;
+    if (!text || !String(text).trim()) {
+      return res.status(400).json({ error: 'Comment text is required' });
+    }
+
+    const issue = await Issue.findById(id);
+    if (!issue) return res.status(404).json({ error: 'Issue not found' });
+
+    const comment = {
+      user: req.user.id,
+      text: String(text).trim(),
+      createdAt: new Date(),
+    };
+    issue.comments = [...(issue.comments || []), comment];
+    await issue.save();
+
+    res.status(201).json({
+      id: issue.comments[issue.comments.length - 1]._id,
+      text: comment.text,
+      createdAt: comment.createdAt,
+      user: { id: req.user.id, name: req.user.name, email: req.user.email },
+    });
+  } catch (err) {
+    console.error('Add comment error:', err);
+    res.status(500).json({ error: 'Failed to add comment' });
   }
 });
 

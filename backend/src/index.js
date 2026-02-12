@@ -11,6 +11,7 @@ import authRoutes from './routes/auth.js';
 import issuesRoutes from './routes/issues.js';
 import adminRoutes from './routes/admin.js';
 import departmentalRoutes from './routes/departmental.js';
+import notificationRoutes from './routes/notifications.js';
 import announcementRoutes from './routes/announcements.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -62,6 +63,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/issues', issuesRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/departmental', departmentalRoutes);
+app.use('/api/notifications', notificationRoutes);
 app.use('/api/announcements', announcementRoutes);
 
 // 404

@@ -18,6 +18,15 @@ const issueSchema = new mongoose.Schema(
     department: { type: mongoose.Schema.Types.ObjectId, ref: 'Department' },
     requestedDepartmentName: { type: String },
     user: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+    // Social interactions
+    likes: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
+    comments: [
+      {
+        user: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+        text: { type: String, required: true },
+        createdAt: { type: Date, default: Date.now },
+      },
+    ],
   },
   { timestamps: true }
 );
