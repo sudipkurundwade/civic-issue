@@ -227,19 +227,19 @@ export default function CitizenDashboard() {
                                 >
                                     <div className="space-y-3">
                                         <Label>Region *</Label>
-                                        <Input
-                                            list="region-suggestions"
-                                            placeholder="Type or select region"
+                                        <select
                                             value={reportForm.regionName}
                                             onChange={(e) => setReportForm((f) => ({ ...f, regionName: e.target.value }))}
                                             className="h-10 w-full rounded-md border px-3 text-sm"
                                             required
-                                        />
-                                        <datalist id="region-suggestions">
+                                        >
+                                            <option value="">Select region</option>
                                             {REGION_SUGGESTIONS.map((name) => (
-                                                <option key={name} value={name} />
+                                                <option key={name} value={name}>
+                                                    {name}
+                                                </option>
                                             ))}
-                                        </datalist>
+                                        </select>
                                     </div>
 
                                     <div className="space-y-3">

@@ -26,7 +26,16 @@ router.post('/regional-admin', authenticate, requireRole('super_admin'), async (
       region = await Region.findById(regionId);
       if (!region) return res.status(404).json({ error: 'Region not found' });
     } else if (regionName) {
-      region = await Region.create({ name: regionName });
+      // Check if region already exists (case-insensitive)
+      const existingRegion = await Region.findOne({
+        name: { $regex: new RegExp('^' + regionName.trim() + '$', 'i') }
+      });
+      
+      if (existingRegion) {
+        return res.status(400).json({ error: 'Region with this name already exists' });
+      }
+      
+      region = await Region.create({ name: regionName.trim() });
     } else {
       return res.status(400).json({ error: 'regionId or regionName required' });
     }
@@ -52,7 +61,18 @@ router.post('/regional-admin', authenticate, requireRole('super_admin'), async (
 
     if (pendingIssues.length > 0) {
       const { notifyRegionalAdminMissingDepartment } = await import('../lib/notifications.js');
-      for (const issue of pendingIssues) {
+      
+      // Group issues by department name to avoid duplicate notifications
+      const issuesByDepartment = {};
+      pendingIssues.forEach(issue => {
+        const deptName = issue.requestedDepartmentName;
+        if (!issuesByDepartment[deptName]) {
+          issuesByDepartment[deptName] = issue;
+        }
+      });
+      
+      // Send one notification per unique department needed
+      for (const issue of Object.values(issuesByDepartment)) {
         notifyRegionalAdminMissingDepartment(issue);
       }
     }
@@ -98,14 +118,126 @@ router.post('/regions', authenticate, requireRole('super_admin'), async (req, re
     const { name } = req.body;
     if (!name) return res.status(400).json({ error: 'name required' });
 
-    const region = await Region.create({ name });
+    // Check if region already exists (case-insensitive)
+    const existingRegion = await Region.findOne({
+      name: { $regex: new RegExp('^' + name.trim() + '$', 'i') }
+    });
+    
+    if (existingRegion) {
+      return res.status(400).json({ error: 'Region with this name already exists' });
+    }
+
+    const region = await Region.create({ name: name.trim() });
+    
     // Retroactively assign pending issues that were waiting for this region
     const updated = await Issue.updateMany(
       { status: 'PENDING_REGION', requestedRegionName: name },
       { $set: { region: region._id, status: 'PENDING_DEPARTMENT' }, $unset: { requestedRegionName: 1 } }
     );
 
-    res.status(201).json({ ...region.toObject(), id: region._id, issuesUpdated: updated.modifiedCount });
+    // Mark all related notifications as read since the region is now created
+    console.log('Attempting to mark notifications as read for region:', name.trim());
+    console.log('Looking for notifications with type: MISSING_REGION');
+    
+    // First, let's find all unread MISSING_REGION notifications for this super admin
+    const allUnreadRegionNotifications = await Notification.find({
+      type: 'MISSING_REGION',
+      read: false,
+      user: req.user._id
+    }).lean();
+    
+    console.log('Found unread region notifications:', allUnreadRegionNotifications.length);
+    console.log('Notification details:', allUnreadRegionNotifications.map(n => ({
+      id: n._id,
+      requestedRegionName: n.issue?.requestedRegionName,
+      message: n.message
+    })));
+    
+    // Try multiple approaches to mark notifications as read
+    
+    // Approach 1: Exact string matching
+    const exactMatchResult = await Notification.updateMany(
+      { 
+        type: 'MISSING_REGION',
+        read: false,
+        user: req.user._id,
+        'issue.requestedRegionName': name.trim()
+      },
+      { $set: { read: true } }
+    );
+    
+    console.log('Exact match result:', exactMatchResult);
+    
+    // Approach 2: Case-insensitive regex matching
+    const regexMatchResult = await Notification.updateMany(
+      { 
+        type: 'MISSING_REGION',
+        read: false,
+        user: req.user._id,
+        'issue.requestedRegionName': { $regex: new RegExp('^' + name.trim() + '$', 'i') }
+      },
+      { $set: { read: true } }
+    );
+    
+    console.log('Regex match result:', regexMatchResult);
+    
+    // Approach 3: If still unread, clear all MISSING_REGION notifications for this user
+    const remainingUnread = await Notification.countDocuments({
+      type: 'MISSING_REGION',
+      read: false,
+      user: req.user._id
+    });
+    
+    console.log('Remaining unread after specific attempts:', remainingUnread);
+    
+    if (remainingUnread > 0) {
+      const clearAllResult = await Notification.updateMany(
+        { 
+          type: 'MISSING_REGION',
+          read: false,
+          user: req.user._id
+        },
+        { $set: { read: true } }
+      );
+      
+      console.log('Clear all result:', clearAllResult);
+    }
+
+    // Find regional admins for this region
+    const regionalAdmins = await User.find({
+      role: 'regional_admin',
+      region: region._id
+    }).lean();
+
+    // If there are pending department issues and regional admins, notify them
+    if (updated.modifiedCount > 0 && regionalAdmins.length > 0) {
+      const { notifyRegionalAdminMissingDepartment } = await import('../lib/notifications.js');
+      const pendingIssues = await Issue.find({
+        region: region._id,
+        status: 'PENDING_DEPARTMENT'
+      }).limit(20).lean();
+      
+      // Group issues by department name to avoid duplicate notifications
+      const issuesByDepartment = {};
+      pendingIssues.forEach(issue => {
+        const deptName = issue.requestedDepartmentName;
+        if (!issuesByDepartment[deptName]) {
+          issuesByDepartment[deptName] = issue;
+        }
+      });
+      
+      // Send one notification per unique department needed
+      for (const issue of Object.values(issuesByDepartment)) {
+        notifyRegionalAdminMissingDepartment(issue);
+      }
+    }
+
+    res.status(201).json({ 
+      ...region.toObject(), 
+      id: region._id, 
+      issuesUpdated: updated.modifiedCount,
+      regionalAdminsNotified: updated.modifiedCount > 0 && regionalAdmins.length > 0
+    });
   } catch (err) {
     console.error('Create region error:', err);
     res.status(500).json({ error: 'Failed to create region' });
@@ -589,6 +721,39 @@ router.post('/create-department-and-assign', authenticate, requireRole('regional
       { status: 'PENDING_DEPARTMENT', requestedDepartmentName: name },
       { $set: { department: department._id, status: 'PENDING', $unset: { requestedDepartmentName: 1 } } }
     );
+
+    // Mark all related notifications as read since the department is now created
+    console.log('Attempting to mark notifications as read for department:', name, 'region:', regionId);
+    
+    // Try specific matching first
+    const specificUpdateResult = await Notification.updateMany(
+      { 
+        type: 'MISSING_DEPARTMENT',
+        'issue.requestedDepartmentName': { $regex: new RegExp('^' + name + '$', 'i') },
+        'issue.region': regionId
+      },
+      { $set: { read: true } }
+    );
+    
+    console.log('Specific department notification update result:', specificUpdateResult);
+    
+    // If no specific notifications were found, clear all unread MISSING_DEPARTMENT notifications for this user
+    if (specificUpdateResult.modifiedCount === 0) {
+      const regionalAdmins = await User.find({ role: 'regional_admin' }).select('_id').lean();
+      const regionalAdminIds = regionalAdmins.map(admin => admin._id);
+      
+      const broadUpdateResult = await Notification.updateMany(
+        { 
+          type: 'MISSING_DEPARTMENT',
+          read: false,
+          user: { $in: regionalAdminIds }
+        },
+        { $set: { read: true } }
+      );
+      
+      console.log('Broad department notification update result:', broadUpdateResult);
+    }
+
     // Notify departmental admins that new issues were assigned
     if (updated.modifiedCount > 0) {
       const affectedIssues = await Issue.find({

@@ -29,8 +29,10 @@ import {
 } from "lucide-react"
 import { adminService } from "@/services/adminService"
 import { issueService } from "@/services/issueService"
+import { notificationService } from "@/services/notificationService"
 import { useToast } from "@/components/ui/use-toast"
 import { IssueDetailDialog } from "@/components/IssueDetailDialog"
+import AdminNotifications from "@/components/AdminNotifications"
 
 const formatTimeAgo = (date) => {
   const sec = Math.floor((Date.now() - date) / 1000)
@@ -43,6 +45,13 @@ const formatTimeAgo = (date) => {
 
 export default function SuperAdminDashboard() {
   const { toast } = useToast()
+  
+  // Navigation function
+  const navigate = (path) => {
+    window.history.pushState({}, "", path)
+    window.location.reload() // Reload to trigger the App.jsx routing logic
+  }
+  
   const [regions, setRegions] = React.useState([])
   const [selectedRegion, setSelectedRegion] = React.useState("all")
   const [adminEmail, setAdminEmail] = React.useState("")
@@ -59,11 +68,53 @@ export default function SuperAdminDashboard() {
   const [detailOpen, setDetailOpen] = React.useState(false)
   const [report, setReport] = React.useState(null)
 
+  // Check for URL parameters to auto-open dialogs
+  React.useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search)
+    if (urlParams.get('createRegion') === 'true') {
+      // Set states first
+      setIsCreateNewRegion(true)
+      setDialogOpen(true)
+      // Clean the URL
+      window.history.replaceState({}, '', '/super-dashboard')
+      
+      // Try to get the requested region name from notifications
+      notificationService.getMyNotifications().then(notifications => {
+        const missingRegionNotification = notifications.find(n => 
+          n.type === 'MISSING_REGION' && !n.read
+        )
+        if (missingRegionNotification?.issue?.requestedRegionName) {
+          setNewRegionName(missingRegionNotification.issue.requestedRegionName)
+        }
+      }).catch(() => {
+        // Silently fail if we can't get notifications
+      })
+    }
+  }, [])
+
   React.useEffect(() => {
     adminService.getRegions()
       .then(setRegions)
       .catch(() => toast({ title: "Failed to load regions", variant: "destructive" }))
   }, [regionsKey])
+
+  // Debug: Log regions to see what's happening
+  React.useEffect(() => {
+    console.log('Regions loaded:', regions)
+  }, [regions])
+
+  // Remove duplicate regions by name (case-insensitive)
+  const uniqueRegions = React.useMemo(() => {
+    const seen = new Set();
+    return regions.filter(region => {
+      const normalizedName = region.name.toLowerCase().trim();
+      if (seen.has(normalizedName)) {
+        return false;
+      }
+      seen.add(normalizedName);
+      return true;
+    });
+  }, [regions])
 
   React.useEffect(() => {
     issueService.getAllIssues()
@@ -82,7 +133,7 @@ export default function SuperAdminDashboard() {
   const totalPending = recentIssues.filter((i) => i.status !== "completed").length
   const totalSolved = recentIssues.filter((i) => i.status === "completed").length
   const stats = [
-    { title: "Total Regions", value: String(regions.length), change: "", icon: MapPin, description: "administrative regions" },
+    { title: "Total Regions", value: String(uniqueRegions.length), change: "", icon: MapPin, description: "administrative regions" },
     { title: "Total Issues", value: String(allIssues.length), change: "", icon: AlertCircle, description: "all reported issues" },
     { title: "Pending", value: String(totalPending), change: "", icon: Clock, description: "awaiting resolution" },
     { title: "Solved", value: String(totalSolved), change: "", icon: CheckCircle, description: "resolved" },
@@ -92,7 +143,7 @@ export default function SuperAdminDashboard() {
     e.preventDefault()
     setLoading(true)
     try {
-      await adminService.createRegionalAdmin({
+      const result = await adminService.createRegionalAdmin({
         email: adminEmail,
         password: adminPassword,
         name: adminName,
@@ -101,7 +152,10 @@ export default function SuperAdminDashboard() {
       })
       toast({ title: "Regional admin created successfully" })
       setDialogOpen(false)
+      // Refresh regions list when either admin or region is created
       setRegionsKey((k) => k + 1)
+      // Trigger immediate notification refresh by emitting a custom event
+      window.dispatchEvent(new CustomEvent('notificationRefresh'))
       setAdminEmail("")
       setAdminPassword("")
       setAdminName("")
@@ -196,7 +250,7 @@ export default function SuperAdminDashboard() {
                       required={!isCreateNewRegion}
                     >
                       <option value="">Select Region</option>
-                      {regions.map((region) => (
+                      {uniqueRegions.map((region) => (
                         <option key={region.id} value={region.id}>
                           {region.name}
                         </option>
@@ -215,6 +269,9 @@ export default function SuperAdminDashboard() {
           </DialogContent>
         </Dialog>
       </div>
+
+      {/* Notifications */}
+      <AdminNotifications userRole="super_admin" onNavigate={navigate} />
 
       {/* Stats */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
@@ -255,7 +312,7 @@ export default function SuperAdminDashboard() {
             >
               <span>All Issues</span>
             </div>
-            {regions.map((region) => (
+            {uniqueRegions.map((region) => (
               <div
                 key={region.id}
                 onClick={() => setSelectedRegion(region.name)}

@@ -30,9 +30,11 @@ import {
 } from "lucide-react"
 import { adminService } from "@/services/adminService"
 import { issueService } from "@/services/issueService"
+import { notificationService } from "@/services/notificationService"
 import { useToast } from "@/components/ui/use-toast"
 import { IssueDetailDialog } from "@/components/IssueDetailDialog"
 import { useAuth } from "@/context/AuthContext"
+import AdminNotifications from "@/components/AdminNotifications"
 
 // Standard department options for a region.
 const PREDEFINED_DEPARTMENTS = [
@@ -51,6 +53,13 @@ const PREDEFINED_DEPARTMENTS = [
 export default function DepartmentDashboard() {
   const { user } = useAuth()
   const { toast } = useToast()
+  
+  // Navigation function
+  const navigate = (path) => {
+    window.history.pushState({}, "", path)
+    window.location.reload() // Reload to trigger the App.jsx routing logic
+  }
+  
   const [departments, setDepartments] = React.useState([])
   const [selectedDepartment, setSelectedDepartment] = React.useState("all")
   const [adminName, setAdminName] = React.useState("")
@@ -67,6 +76,29 @@ export default function DepartmentDashboard() {
   const [pendingIssues, setPendingIssues] = React.useState([])
   const [assigningDept, setAssigningDept] = React.useState(null)
   const [report, setReport] = React.useState(null)
+
+  // Check for URL parameters to auto-open dialogs
+  React.useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search)
+    if (urlParams.get('createDepartment') === 'true') {
+      setDialogOpen(true)
+      setIsCreateNewDept(true)
+      // Clean the URL
+      window.history.replaceState({}, '', '/region-dashboard')
+      
+      // Try to get the requested department name from notifications
+      notificationService.getMyNotifications().then(notifications => {
+        const missingDeptNotification = notifications.find(n => 
+          n.type === 'MISSING_DEPARTMENT' && !n.read
+        )
+        if (missingDeptNotification?.issue?.requestedDepartmentName) {
+          setNewDeptName(missingDeptNotification.issue.requestedDepartmentName)
+        }
+      }).catch(() => {
+        // Silently fail if we can't get notifications
+      })
+    }
+  }, [])
 
   // Departments that have NOT yet been created in this region,
   // based on the standard list above.
@@ -263,6 +295,9 @@ export default function DepartmentDashboard() {
           </DialogContent>
         </Dialog>
       </div>
+
+      {/* Notifications */}
+      <AdminNotifications userRole="regional_admin" onNavigate={navigate} />
 
       {/* Pending - Awaiting Department Creation */}
       {Object.keys(pendingByDept).length > 0 && (
