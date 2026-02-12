@@ -10,6 +10,7 @@ import {
   MessageSquare,
   User,
   List,
+  Megaphone,
 } from "lucide-react"
 
 import { NavMain } from "@/components/nav-main"
@@ -26,21 +27,27 @@ const ROLE_NAV = {
   super_admin: [
     { title: "Super Admin Dashboard", url: "/super-dashboard", icon: LayoutDashboard },
     { title: "Analytics", url: "/analytics", icon: PieChart },
+    { title: "Announcements", url: "/announcements", icon: Megaphone },
+    { title: "My Announcements", url: "/my-announcements", icon: List },
     { title: "Messages", url: "/chat", icon: MessageSquare },
     { title: "Profile", url: "/profile", icon: User },
   ],
   regional_admin: [
     { title: "Region Dashboard", url: "/region-dashboard", icon: Map },
+    { title: "Announcements", url: "/announcements", icon: Megaphone },
+    { title: "My Announcements", url: "/my-announcements", icon: List },
     { title: "Messages", url: "/chat", icon: MessageSquare },
     { title: "Profile", url: "/profile", icon: User },
   ],
   departmental_admin: [
     { title: "Department Dashboard", url: "/dept-dashboard", icon: Building2 },
+    { title: "Announcements", url: "/announcements", icon: Megaphone },
     { title: "Messages", url: "/chat", icon: MessageSquare },
     { title: "Profile", url: "/profile", icon: User },
   ],
   civic: [
     { title: "Report Issue", url: "/civic-dashboard", icon: AlertCircle },
+    { title: "Announcements", url: "/announcements", icon: Megaphone },
     { title: "My Issues", url: "/my-issues", icon: List },
     { title: "Profile", url: "/profile", icon: User },
   ],

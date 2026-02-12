@@ -8,8 +8,9 @@ import DepartmentDashboard from "@/pages/regionAdmin/regionDashboard"
 import DepartmentAdminDashboard from "@/pages/departmentAdmin/departmentdashboard"
 import CitizenDashboard from "@/pages/citizen/citizensDashboard"
 import MyIssuesPage from "@/pages/citizen/myIssues"
-import ProfilePage from "@/pages/SuperAdmin/profile"
-import AnalyticsPage from "@/pages/SuperAdmin/analytics"
+import AnnouncementsPage from "@/pages/SuperAdmin/announcements"
+import AnnouncementsList from "@/pages/shared/AnnouncementsList"
+import CreateAnnouncement from "@/pages/shared/CreateAnnouncement"
 import { AppSidebar } from "@/components/app-sidebar"
 import { SidebarProvider, SidebarInset, SidebarTrigger } from "@/components/ui/sidebar"
 import { useAuth } from "@/context/AuthContext"
@@ -128,7 +129,11 @@ function AppContent() {
               page.includes("my-issues") ? "My Reported Issues" :
                 page === "chat" ? "Chat" :
                   page === "profile" ? "Profile" :
-                    page === "analytics" ? "Analytics" : ""
+                    page === "analytics" ? "Analytics" :
+                      page === "analytics" ? "Analytics" :
+                        page === "announcements" ? "Announcements" :
+                          page === "my-announcements" ? "My Announcements" :
+                            page === "create-announcement" ? "Create Announcement" : ""
 
     return (
       <SidebarProvider>
@@ -149,7 +154,11 @@ function AppContent() {
             {page.includes("my-issues") && <MyIssuesPage />}
             {page === "chat" && <ChatPage />}
             {page === "profile" && <ProfilePage />}
+            {page === "profile" && <ProfilePage />}
             {page === "analytics" && user?.role === "super_admin" && <AnalyticsPage />}
+            {page === "announcements" && <AnnouncementsList />}
+            {page === "my-announcements" && <AnnouncementsList mode="my" />}
+            {page === "create-announcement" && <CreateAnnouncement />}
           </main>
         </SidebarInset>
       </SidebarProvider>

@@ -20,16 +20,19 @@ async function seed() {
   }
 
   // Regions
-  let gokul = await Region.findOne({ name: 'Gokulshigaon' });
-  if (!gokul) {
-    gokul = await Region.create({ name: 'Gokulshigaon' });
-    console.log('Created region: Gokulshigaon');
-  }
+  const regionNames = [
+    'Kagal', 'Jaysingpur', 'Karvir', 'Gadhinglaj', 'Murgud', 'Panhala', 'Shirur'
+  ];
 
-  let karveer = await Region.findOne({ name: 'Karveer' });
-  if (!karveer) {
-    karveer = await Region.create({ name: 'Karveer' });
-    console.log('Created region: Karveer');
+  const regionsMap = {};
+
+  for (const name of regionNames) {
+    let region = await Region.findOne({ name });
+    if (!region) {
+      region = await Region.create({ name });
+      console.log(`Created region: ${name}`);
+    }
+    regionsMap[name] = region;
   }
 
   // Departments

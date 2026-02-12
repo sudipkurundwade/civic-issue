@@ -10,6 +10,7 @@ import authRoutes from './routes/auth.js';
 import issuesRoutes from './routes/issues.js';
 import adminRoutes from './routes/admin.js';
 import departmentalRoutes from './routes/departmental.js';
+import announcementRoutes from './routes/announcements.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -48,6 +49,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/issues', issuesRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/departmental', departmentalRoutes);
+app.use('/api/announcements', announcementRoutes);
 
 // 404
 app.use((req, res) => res.status(404).json({ error: 'Not found' }));
