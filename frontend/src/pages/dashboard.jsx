@@ -8,22 +8,38 @@ import {
 } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog"
 import {
   AlertCircle,
   CheckCircle,
   Clock,
-  Trophy,
+  MapPin,
   ArrowUpRight,
   MoreHorizontal,
-  Droplets,
-  Zap,
-  Truck,
-  Trash2,
+  Plus,
 } from "lucide-react"
 
 export default function Dashboard() {
   // Mock data for Civic Issue Dashboard
   const stats = [
+    {
+      title: "Total Regions",
+      value: "12",
+      change: "",
+      trend: "neutral",
+      icon: MapPin,
+      description: "active administrative wards",
+    },
     {
       title: "Total Issues",
       value: "1,248",
@@ -47,45 +63,6 @@ export default function Dashboard() {
       trend: "up",
       icon: CheckCircle,
       description: "resolved this month",
-    },
-    {
-      title: "Ranking",
-      value: "#3",
-      change: "+2",
-      trend: "up",
-      icon: Trophy,
-      description: "city-wide performance",
-    },
-  ]
-
-  const departments = [
-    {
-      name: "Water Supply Department 💧",
-      icon: Droplets,
-      issues: 120,
-      solved: 95,
-      status: "Operational",
-    },
-    {
-      name: "Electricity / Street Lighting 💡",
-      icon: Zap,
-      issues: 85,
-      solved: 70,
-      status: "Operational",
-    },
-    {
-      name: "Roads & Public Works 🛣️",
-      icon: Truck, // Using Truck as placeholder for Road works if HardHat/Cone not available or just generic
-      issues: 210,
-      solved: 150,
-      status: "High Load",
-    },
-    {
-      name: "Solid Waste Management 🗑️",
-      icon: Trash2,
-      issues: 65,
-      solved: 60,
-      status: "Operational",
     },
   ]
 
@@ -122,12 +99,85 @@ export default function Dashboard() {
       status: "solved",
       priority: "low",
     },
+    {
+      id: 5,
+      title: "Broken Park Bench",
+      department: "Parks",
+      time: "2 days ago",
+      status: "pending",
+      priority: "low",
+    },
+  ]
+
+  const kolhapurRegions = [
+    "Karveer",
+    "Panhala",
+    "Radhanagari",
+    "Shirol",
+    "Hatkanangale"
   ]
 
   return (
     <div className="space-y-6 p-6">
       <div className="flex items-center justify-between">
         <h2 className="text-3xl font-bold tracking-tight">Dashboard</h2>
+        <Dialog>
+          <DialogTrigger asChild>
+            <Button>
+              <Plus className="mr-2 h-4 w-4" /> Add Admin
+            </Button>
+          </DialogTrigger>
+          <DialogContent className="sm:max-w-[425px]">
+            <DialogHeader>
+              <DialogTitle>Add New Admin</DialogTitle>
+              <DialogDescription>
+                Create a new administrator account for a specific region.
+              </DialogDescription>
+            </DialogHeader>
+            <form className="grid gap-4 py-4">
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="email" className="text-right">
+                  Email
+                </Label>
+                <Input
+                  id="email"
+                  type="email"
+                  placeholder="admin@example.com"
+                  className="col-span-3"
+                />
+              </div>
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="password" className="text-right">
+                  Password
+                </Label>
+                <Input
+                  id="password"
+                  type="password"
+                  className="col-span-3"
+                />
+              </div>
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="region" className="text-right">
+                  Region
+                </Label>
+                <div className="col-span-3">
+                  <select
+                    id="region"
+                    className="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    <option value="" disabled selected>Select Region</option>
+                    {kolhapurRegions.map((region) => (
+                      <option key={region} value={region}>{region}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+            </form>
+            <DialogFooter>
+              <Button type="submit">Submit</Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </div>
 
       {/* Stats Grid */}
@@ -145,7 +195,7 @@ export default function Dashboard() {
               <CardContent>
                 <div className="text-2xl font-bold">{stat.value}</div>
                 <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                  <span className="text-green-600 font-medium">
+                  <span className={`font-medium ${stat.change.startsWith('+') ? 'text-green-600' : 'text-muted-foreground'}`}>
                     {stat.change}
                   </span>
                   <span>{stat.description}</span>
@@ -156,55 +206,17 @@ export default function Dashboard() {
         })}
       </div>
 
-      {/* Departments Section */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-2">
-        <Card className="col-span-2">
-          <CardHeader>
-            <CardTitle>Departments Overview</CardTitle>
-            <CardDescription>
-              Current status and performance of municipal departments
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-              {departments.map((dept, index) => (
-                <div
-                  key={index}
-                  className="flex flex-col items-center justify-center p-4 rounded-lg border bg-card hover:bg-accent/50 transition-colors text-center space-y-3"
-                >
-                  <div className="p-2 bg-primary/10 rounded-full">
-                    <dept.icon className="h-6 w-6 text-primary" />
-                  </div>
-                  <h3 className="font-semibold text-sm">{dept.name}</h3>
-                  <div className="grid grid-cols-2 gap-4 w-full text-xs">
-                    <div>
-                      <p className="text-muted-foreground">Issues</p>
-                      <p className="font-bold">{dept.issues}</p>
-                    </div>
-                    <div>
-                      <p className="text-muted-foreground">Solved</p>
-                      <p className="font-bold">{dept.solved}</p>
-                    </div>
-                  </div>
-                  <Badge variant={dept.status === "High Load" ? "destructive" : "secondary"} className="w-full justify-center">
-                    {dept.status}
-                  </Badge>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-      </div>
+      {/* Main Content Area: Recent Issues (Full Width) */}
+      <div className="grid gap-4 md:grid-cols-1">
 
-      {/* Recent Issues Feed */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
-        <Card className="col-span-4">
+        {/* Recently Posted Issues by Public Section (Full Width) */}
+        <Card className="col-span-1">
           <CardHeader>
             <div className="flex items-center justify-between">
               <div>
-                <CardTitle>Recent Issues</CardTitle>
+                <CardTitle>Recently Posted Issues by Public</CardTitle>
                 <CardDescription>
-                  Latest reported civic issues
+                  Latest community reports from all regions
                 </CardDescription>
               </div>
               <Button variant="ghost" size="icon">
@@ -249,23 +261,25 @@ export default function Dashboard() {
             </div>
           </CardContent>
         </Card>
+      </div>
 
-        {/* Quick Actions / Info */}
-        <Card className="col-span-3">
+      {/* Admin Actions (Full Width or Separate Row) */}
+      <div className="grid gap-4 md:grid-cols-1">
+        <Card>
           <CardHeader>
             <CardTitle>Admin Actions</CardTitle>
             <CardDescription>Manage system and reports</CardDescription>
           </CardHeader>
-          <CardContent className="space-y-4">
-            <Button className="w-full justify-start" variant="outline">
+          <CardContent className="flex flex-wrap gap-4">
+            <Button variant="outline">
               <ArrowUpRight className="mr-2 h-4 w-4" />
               Generate Monthly Report
             </Button>
-            <Button className="w-full justify-start" variant="outline">
+            <Button variant="outline">
               <CheckCircle className="mr-2 h-4 w-4" />
               Review Solved Cases
             </Button>
-            <Button className="w-full justify-start text-red-600 hover:text-red-600 hover:bg-red-50" variant="outline">
+            <Button className="text-red-600 hover:text-red-600 hover:bg-red-50" variant="outline">
               <AlertCircle className="mr-2 h-4 w-4" />
               View Critical Issues
             </Button>
