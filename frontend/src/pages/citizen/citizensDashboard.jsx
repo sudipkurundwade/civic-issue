@@ -24,12 +24,35 @@ import {
     Camera,
     Upload,
 } from "lucide-react"
-import { publicService } from "@/services/adminService"
 import { issueService } from "@/services/issueService"
 import { useToast } from "@/components/ui/use-toast"
 import { LocationMap } from "@/components/LocationMap"
 import { CameraCapture } from "@/components/CameraCapture"
 import { IssueDetailDialog } from "@/components/IssueDetailDialog"
+
+const DEPARTMENT_OPTIONS = [
+    "Roads & Infrastructure",
+    "Water Supply",
+    "Sanitation & Garbage",
+    "Electricity / Street Lights",
+    "Drainage & Sewage",
+    "Public Health",
+    "Encroachment / Illegal Construction",
+    "Traffic & Public Safety",
+    "Parks & Public Spaces",
+    "Animal Control",
+    "Other",
+]
+
+const REGION_SUGGESTIONS = [
+    "Kagal",
+    "Jaysingpur",
+    "Karvir",
+    "Gadhinglaj",
+    "Murgud",
+    "Panhala",
+    "Shirur",
+]
 
 const captureLocation = () => {
     return new Promise((resolve) => {
@@ -48,22 +71,17 @@ const captureLocation = () => {
 export default function CitizenDashboard() {
     const { toast } = useToast()
     const [isReporting, setIsReporting] = React.useState(false)
-    const [departments, setDepartments] = React.useState([])
     const [allIssues, setAllIssues] = React.useState([])
     const [myIssues, setMyIssues] = React.useState([])
     const [location, setLocation] = React.useState({ lat: null, lng: null, address: "" })
     const [locationLoading, setLocationLoading] = React.useState(true)
     const [mapSelected, setMapSelected] = React.useState(null)
-    const [reportForm, setReportForm] = React.useState({ description: "", departmentId: "", photo: null, photoPreview: null, address: "" })
+    const [reportForm, setReportForm] = React.useState({ description: "", regionName: "", departmentName: "", photo: null, photoPreview: null, address: "" })
     const [submitting, setSubmitting] = React.useState(false)
     const [cameraOpen, setCameraOpen] = React.useState(false)
     const [selectedIssue, setSelectedIssue] = React.useState(null)
     const [detailOpen, setDetailOpen] = React.useState(false)
     const uploadInputRef = React.useRef(null)
-
-    React.useEffect(() => {
-        publicService.getDepartments().then(setDepartments).catch(() => {})
-    }, [])
 
     React.useEffect(() => {
         issueService.getAllIssues().then(setAllIssues).catch(() => {})
@@ -162,8 +180,8 @@ export default function CitizenDashboard() {
                                     const pos = mapSelected || (location.lat != null ? location : null)
                                     const lat = pos?.lat
                                     const lng = pos?.lng
-                                    if (!reportForm.photo || !reportForm.description || !reportForm.departmentId) {
-                                        toast({ title: "Please add photo, description, and department.", variant: "destructive" })
+                                    if (!reportForm.photo || !reportForm.description || !reportForm.regionName || !reportForm.departmentName) {
+                                        toast({ title: "Please add region, department, description, and photo.", variant: "destructive" })
                                         return
                                     }
                                     if (lat == null || lng == null) {
@@ -178,11 +196,16 @@ export default function CitizenDashboard() {
                                         fd.append("longitude", String(lng))
                                         fd.append("address", reportForm.address || "")
                                         fd.append("description", reportForm.description)
-                                        fd.append("departmentId", reportForm.departmentId)
-                                        await issueService.submitIssue(fd)
-                                        toast({ title: "Issue submitted successfully" })
+                                        fd.append("regionName", reportForm.regionName)
+                                        fd.append("departmentName", reportForm.departmentName)
+                                        const result = await issueService.submitIssue(fd)
+                                        if (result.status === "PENDING_DEPARTMENT") {
+                                            toast({ title: "Issue submitted. Awaiting department creation by regional admin.", description: `"${reportForm.departmentName}" will be created and your issue assigned.` })
+                                        } else {
+                                            toast({ title: "Issue submitted successfully" })
+                                        }
                                         setIsReporting(false)
-                                        setReportForm({ description: "", departmentId: "", photo: null, photoPreview: null, address: "" })
+                                        setReportForm({ description: "", regionName: "", departmentName: "", photo: null, photoPreview: null, address: "" })
                                         setMapSelected(null)
                                         issueService.getMyIssues().then(setMyIssues)
                                         issueService.getAllIssues().then(setAllIssues)
@@ -193,16 +216,33 @@ export default function CitizenDashboard() {
                                     }
                                 }} className="space-y-6">
                                 <div className="space-y-3">
+                                    <Label>Region *</Label>
+                                    <Input
+                                        list="region-suggestions"
+                                        placeholder="Type or select region"
+                                        value={reportForm.regionName}
+                                        onChange={(e) => setReportForm((f) => ({ ...f, regionName: e.target.value }))}
+                                        className="h-10 w-full rounded-md border px-3 text-sm"
+                                        required
+                                    />
+                                    <datalist id="region-suggestions">
+                                        {REGION_SUGGESTIONS.map((name) => (
+                                            <option key={name} value={name} />
+                                        ))}
+                                    </datalist>
+                                </div>
+
+                                <div className="space-y-3">
                                     <Label>Department *</Label>
                                     <select
-                                        value={reportForm.departmentId}
-                                        onChange={(e) => setReportForm((f) => ({ ...f, departmentId: e.target.value }))}
+                                        value={reportForm.departmentName}
+                                        onChange={(e) => setReportForm((f) => ({ ...f, departmentName: e.target.value }))}
                                         className="h-10 w-full rounded-md border px-3 text-sm"
                                         required
                                     >
                                         <option value="">Select Department</option>
-                                        {departments.map((d) => (
-                                            <option key={d.id} value={d.id}>{d.name} ({d.region?.name})</option>
+                                        {DEPARTMENT_OPTIONS.map((name) => (
+                                            <option key={name} value={name}>{name}</option>
                                         ))}
                                     </select>
                                 </div>
@@ -266,7 +306,7 @@ export default function CitizenDashboard() {
                                 <Button
                                     type="submit"
                                     className="w-full bg-green-600 hover:bg-green-700 text-white"
-                                    disabled={submitting || !reportForm.photo || !(mapSelected || (location.lat != null && location.lng != null))}
+                                    disabled={submitting || !reportForm.photo || !reportForm.regionName || !reportForm.departmentName || !(mapSelected || (location.lat != null && location.lng != null))}
                                     title={!(mapSelected || location.lat) ? "Select location on map if GPS is not available" : ""}
                                 >
                                     <Share2 className="mr-2 h-4 w-4" /> {submitting ? "Submitting..." : "Submit Issue"}

@@ -26,6 +26,7 @@ import {
   ArrowUpRight,
   Plus,
   Building2,
+  AlertTriangle,
 } from "lucide-react"
 import { adminService } from "@/services/adminService"
 import { issueService } from "@/services/issueService"
@@ -47,6 +48,8 @@ export default function DepartmentDashboard() {
   const [allIssues, setAllIssues] = React.useState([])
   const [selectedIssue, setSelectedIssue] = React.useState(null)
   const [detailOpen, setDetailOpen] = React.useState(false)
+  const [pendingIssues, setPendingIssues] = React.useState([])
+  const [assigningDept, setAssigningDept] = React.useState(null)
 
   React.useEffect(() => {
     adminService.getDepartments().then(setDepartments).catch(() => toast({ title: "Failed to load departments", variant: "destructive" }))
@@ -55,6 +58,9 @@ export default function DepartmentDashboard() {
   React.useEffect(() => {
     issueService.getAllIssues().then(setAllIssues).catch(() => setAllIssues([]))
   }, [])
+  React.useEffect(() => {
+    adminService.getPendingDepartmentIssues().then(setPendingIssues).catch(() => setPendingIssues([]))
+  }, [dialogOpen])
 
   const deptIds = departments.map((d) => String(d.id ?? d._id ?? ""))
   const regionIssues = allIssues.filter((i) => {
@@ -70,6 +76,24 @@ export default function DepartmentDashboard() {
   const filteredIssues = !selectedDepartment || selectedDepartment === "all"
     ? regionIssues
     : regionIssues.filter((i) => i.department === selectedDepartment)
+
+  const handleCreateDeptAndAssign = async (deptName) => {
+    // Open the existing \"Create Departmental Admin\" dialog
+    // with \"Create new department\" checked and name pre-filled,
+    // so the regional admin can enter name/email/password like manual flow.
+    setIsCreateNewDept(true)
+    setNewDeptName(deptName)
+    setDialogOpen(true)
+  }
+
+  const pendingByDept = pendingIssues.reduce((acc, i) => {
+    const name = i.requestedDepartmentName || "Unknown"
+    if (!acc[name]) acc[name] = []
+    acc[name].push(i)
+    return acc
+  }, {})
+
+  const pendingDeptCount = Object.keys(pendingByDept).length
 
   const handleCreateDepartmentalAdmin = async (e) => {
     e.preventDefault()
@@ -87,6 +111,8 @@ export default function DepartmentDashboard() {
       setAdminName(""); setAdminEmail(""); setAdminPassword("")
       setAdminDept(""); setNewDeptName(""); setIsCreateNewDept(false)
       adminService.getDepartments().then(setDepartments)
+      adminService.getPendingDepartmentIssues().then(setPendingIssues)
+      issueService.getAllIssues().then(setAllIssues)
     } catch (err) {
       toast({ title: err.message || "Failed to create admin", variant: "destructive" })
     } finally {
@@ -99,7 +125,15 @@ export default function DepartmentDashboard() {
 
       {/* Header */}
       <div className="flex items-center justify-between">
-        <h2 className="text-3xl font-bold">Department Dashboard</h2>
+        <div className="flex flex-col gap-1">
+          <h2 className="text-3xl font-bold">Department Dashboard</h2>
+          {pendingDeptCount > 0 && (
+            <div className="inline-flex items-center gap-2 rounded-full bg-amber-100 text-amber-900 dark:bg-amber-950/40 dark:text-amber-200 px-3 py-1 text-xs font-medium">
+              <AlertTriangle className="h-3 w-3" />
+              <span>{pendingDeptCount} department{pendingDeptCount > 1 ? "s" : ""} need to be created for citizen issues</span>
+            </div>
+          )}
+        </div>
 
         <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
           <DialogTrigger asChild>
@@ -153,6 +187,37 @@ export default function DepartmentDashboard() {
           </DialogContent>
         </Dialog>
       </div>
+
+      {/* Pending - Awaiting Department Creation */}
+      {Object.keys(pendingByDept).length > 0 && (
+        <Card className="border-amber-200 bg-amber-50/50 dark:bg-amber-950/20 dark:border-amber-900">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-amber-800 dark:text-amber-200">
+              <AlertTriangle className="h-5 w-5" />
+              Issues Awaiting Department
+            </CardTitle>
+            <CardDescription>
+              Citizens reported issues for departments that don&apos;t exist. Create the department to assign these issues.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {Object.entries(pendingByDept).map(([deptName, issues]) => (
+              <div key={deptName} className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 rounded-lg border border-amber-200 dark:border-amber-800 bg-background">
+                <div>
+                  <p className="font-medium">{deptName}</p>
+                  <p className="text-sm text-muted-foreground">{issues.length} issue(s) waiting</p>
+                </div>
+                <Button
+                  onClick={() => handleCreateDeptAndAssign(deptName)}
+                  disabled={assigningDept === deptName}
+                >
+                  {assigningDept === deptName ? "Creating..." : "Create Department & Assign"}
+                </Button>
+              </div>
+            ))}
+          </CardContent>
+        </Card>
+      )}
 
       {/* Departments & Issues Layout */}
       <div className="grid gap-4 md:grid-cols-12">

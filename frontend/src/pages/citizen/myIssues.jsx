@@ -16,7 +16,7 @@ import { Input } from "@/components/ui/input"
 import { issueService } from "@/services/issueService"
 import { IssueDetailDialog } from "@/components/IssueDetailDialog"
 
-const statusMap = { PENDING: "pending", IN_PROGRESS: "in-progress", COMPLETED: "solved" }
+const statusMap = { PENDING: "pending", PENDING_DEPARTMENT: "awaiting-department", IN_PROGRESS: "in-progress", COMPLETED: "solved" }
 
 export default function MyIssuesPage() {
     const [searchTerm, setSearchTerm] = React.useState("")
@@ -57,6 +57,7 @@ export default function MyIssuesPage() {
         switch (status) {
             case "solved": return "bg-green-100 text-green-800 hover:bg-green-100"
             case "in-progress": return "bg-blue-100 text-blue-800 hover:bg-blue-100"
+            case "awaiting-department": return "bg-amber-100 text-amber-800 hover:bg-amber-100"
             default: return "bg-yellow-100 text-yellow-800 hover:bg-yellow-100"
         }
     }
@@ -65,6 +66,7 @@ export default function MyIssuesPage() {
         switch (status) {
             case "solved": return <CheckCircle className="h-4 w-4 mr-1" />
             case "in-progress": return <Clock className="h-4 w-4 mr-1" />
+            case "awaiting-department": return <AlertCircle className="h-4 w-4 mr-1" />
             default: return <AlertCircle className="h-4 w-4 mr-1" />
         }
     }

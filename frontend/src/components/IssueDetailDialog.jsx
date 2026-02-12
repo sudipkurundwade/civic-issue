@@ -23,6 +23,7 @@ export function IssueDetailDialog({ open, onClose, issue }) {
     const comments = issue.comments ?? 0
     const status = issue.status || "pending"
     const hasCoords = issue.latitude != null && issue.longitude != null
+    const requestedDept = issue.requestedDepartmentName
 
     return (
         <Dialog open={open} onOpenChange={onClose}>
@@ -42,9 +43,12 @@ export function IssueDetailDialog({ open, onClose, issue }) {
 
                     {/* Status & Meta */}
                     <div className="flex flex-wrap items-center gap-2">
-                        <Badge variant={status === "completed" || status === "solved" ? "default" : "secondary"}>
-                            {String(status).charAt(0).toUpperCase() + String(status).slice(1).replace("-", " ")}
+                        <Badge variant={status === "completed" || status === "solved" ? "default" : status === "awaiting-department" ? "outline" : "secondary"}>
+                            {String(status).charAt(0).toUpperCase() + String(status).slice(1).replace(/-/g, " ")}
                         </Badge>
+                        {requestedDept && (
+                            <span className="text-sm text-muted-foreground">Awaiting: {requestedDept}</span>
+                        )}
                         {date && (
                             <span className="flex items-center gap-1 text-sm text-muted-foreground">
                                 <Clock className="h-3 w-3" />
