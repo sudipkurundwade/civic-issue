@@ -11,6 +11,7 @@ import CitizenDashboard from "@/pages/citizen/citizensDashboard"
 import MyIssuesPage from "@/pages/citizen/myIssues"
 import ProfilePage from "@/pages/SuperAdmin/profile"
 import AnalyticsPage from "@/pages/SuperAdmin/analytics"
+import NotificationsPage from "@/pages/Notifications"
 import { AppSidebar } from "@/components/app-sidebar"
 import { SidebarProvider, SidebarInset, SidebarTrigger } from "@/components/ui/sidebar"
 import { useAuth } from "@/context/AuthContext"
@@ -128,6 +129,7 @@ function AppContent() {
             page.includes("dept-dashboard") ? "Department Dashboard" :
               (page.includes("civic-dashboard") || page.includes("citizen-dashboard")) ? "Report Issue" :
                 page.includes("my-issues") ? "My Issues" :
+                  page === "notifications" ? "Notifications" :
                   page === "chat" ? "Chat" :
                     page === "profile" ? "Profile" :
                       page === "analytics" ? "Analytics" : ""
@@ -150,6 +152,7 @@ function AppContent() {
             {page.includes("dept-dashboard") && user?.role === "departmental_admin" && <DepartmentAdminDashboard />}
             {(page.includes("civic-dashboard") || page.includes("citizen-dashboard")) && user?.role === "civic" && <CitizenDashboard />}
             {page.includes("my-issues") && user?.role === "civic" && <MyIssuesPage />}
+            {page === "notifications" && <NotificationsPage />}
             {page === "chat" && <ChatPage />}
             {page === "profile" && <ProfilePage />}
             {page === "analytics" && user?.role === "super_admin" && <AnalyticsPage />}

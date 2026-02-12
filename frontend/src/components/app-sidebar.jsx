@@ -10,6 +10,7 @@ import {
   MessageSquare,
   User,
   List,
+  Bell,
 } from "lucide-react"
 
 import { NavMain } from "@/components/nav-main"
@@ -25,6 +26,7 @@ import {
 const ROLE_NAV = {
   super_admin: [
     { title: "Super Admin Dashboard", url: "/super-dashboard", icon: LayoutDashboard },
+    { title: "Notifications", url: "/notifications", icon: Bell },
     { title: "Analytics", url: "/analytics", icon: PieChart },
     { title: "Messages", url: "/chat", icon: MessageSquare },
     { title: "Profile", url: "/profile", icon: User },
@@ -32,17 +34,20 @@ const ROLE_NAV = {
   regional_admin: [
     { title: "Region Dashboard", url: "/region-dashboard", icon: Map },
     { title: "Departments", url: "/region-departments", icon: Building2 },
+    { title: "Notifications", url: "/notifications", icon: Bell },
     { title: "Messages", url: "/chat", icon: MessageSquare },
     { title: "Profile", url: "/profile", icon: User },
   ],
   departmental_admin: [
     { title: "Department Dashboard", url: "/dept-dashboard", icon: Building2 },
+    { title: "Notifications", url: "/notifications", icon: Bell },
     { title: "Messages", url: "/chat", icon: MessageSquare },
     { title: "Profile", url: "/profile", icon: User },
   ],
   civic: [
     { title: "Report Issue", url: "/civic-dashboard", icon: AlertCircle },
     { title: "My Issues", url: "/my-issues", icon: List },
+    { title: "Notifications", url: "/notifications", icon: Bell },
     { title: "Profile", url: "/profile", icon: User },
   ],
 }

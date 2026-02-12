@@ -5,6 +5,7 @@ import Region from '../models/Region.js';
 import Department from '../models/Department.js';
 import Issue from '../models/Issue.js';
 import { authenticate, requireRole } from '../middleware/auth.js';
+import { notifyDepartmentNewIssue } from '../lib/notifications.js';
 
 const router = express.Router();
 
@@ -131,6 +132,20 @@ router.post('/departmental-admin', authenticate, requireRole('regional_admin'), 
       .populate({ path: 'department', populate: { path: 'region', select: 'name' } })
       .lean();
 
+    // Notify this new departmental admin about any issues that were just
+    // linked to their department because citizens had already reported them.
+    const newlyAssignedIssues = await Issue.find({
+      department: department._id,
+      status: 'PENDING',
+      requestedDepartmentName: { $exists: false },
+    })
+      .limit(20)
+      .lean();
+
+    for (const issue of newlyAssignedIssues) {
+      notifyDepartmentNewIssue({ ...issue, department });
+    }
+
     res.status(201).json({ ...u, id: u._id });
   } catch (err) {
     console.error('Create departmental admin error:', err);
@@ -234,6 +249,19 @@ router.post('/create-department-and-assign', authenticate, requireRole('regional
       { status: 'PENDING_DEPARTMENT', requestedDepartmentName: name },
       { $set: { department: department._id, status: 'PENDING', $unset: { requestedDepartmentName: 1 } } }
     );
+    // Notify departmental admins that new issues were assigned
+    if (updated.modifiedCount > 0) {
+      const affectedIssues = await Issue.find({
+        department: department._id,
+        status: 'PENDING',
+      })
+        .limit(20)
+        .lean();
+      for (const issue of affectedIssues) {
+        notifyDepartmentNewIssue({ ...issue, department });
+      }
+    }
+
     res.json({
       department: { ...department.toObject(), id: department._id },
       issuesAssigned: updated.modifiedCount,

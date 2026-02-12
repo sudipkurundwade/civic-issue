@@ -4,6 +4,7 @@ import { authenticate, requireRole } from '../middleware/auth.js';
 import { uploadCompletionPhoto } from '../config/cloudinary.js';
 import { uploadToCloudinary } from '../lib/uploadToCloudinary.js';
 import { cloudinary } from '../config/cloudinary.js';
+import { notifyIssueStatusChange } from '../lib/notifications.js';
 
 const router = express.Router();
 
@@ -38,6 +39,17 @@ router.patch('/issues/:id/status', authenticate, requireRole('departmental_admin
       return res.status(400).json({ error: 'Status must be PENDING or IN_PROGRESS. Use complete endpoint for COMPLETED.' });
     }
 
+    const current = await Issue.findOne({ _id: id, department: deptId })
+      .populate('department', 'name')
+      .populate('user', 'name email')
+      .lean();
+
+    if (!current) return res.status(404).json({ error: 'Issue not found' });
+
+    if (current.status === status) {
+      return res.json({ ...current, id: current._id });
+    }
+
     const issue = await Issue.findOneAndUpdate(
       { _id: id, department: deptId },
       { status },
@@ -48,6 +60,10 @@ router.patch('/issues/:id/status', authenticate, requireRole('departmental_admin
       .lean();
 
     if (!issue) return res.status(404).json({ error: 'Issue not found' });
+
+    // Notify the citizen that their issue status changed
+    notifyIssueStatusChange(issue);
+
     res.json({ ...issue, id: issue._id });
   } catch (err) {
     console.error('Update status error:', err);
@@ -107,6 +123,16 @@ router.patch(
         });
       }
 
+      const current = await Issue.findOne({ _id: id, department: deptId })
+        .populate('department', 'name')
+        .populate('user', 'name email')
+        .lean();
+
+      if (!current) return res.status(404).json({ error: 'Issue not found' });
+      if (current.status === 'COMPLETED') {
+        return res.json({ ...current, id: current._id });
+      }
+
       const issue = await Issue.findOneAndUpdate(
         { _id: id, department: deptId },
         {
@@ -122,6 +148,10 @@ router.patch(
         .lean();
 
       if (!issue) return res.status(404).json({ error: 'Issue not found' });
+
+      // Notify the citizen that their issue has been completed
+      notifyIssueStatusChange(issue);
+
       res.json({ ...issue, id: issue._id });
     } catch (err) {
       console.error('Complete issue error:', err);

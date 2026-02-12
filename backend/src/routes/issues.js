@@ -6,6 +6,7 @@ import { authenticate, requireRole } from '../middleware/auth.js';
 import { uploadPhoto } from '../config/cloudinary.js';
 import { uploadToCloudinary } from '../lib/uploadToCloudinary.js';
 import { cloudinary } from '../config/cloudinary.js';
+import { notifyDepartmentNewIssue } from '../lib/notifications.js';
 
 const router = express.Router();
 
@@ -90,6 +91,11 @@ router.post('/', authenticate, requireRole('civic'), maybeUploadPhoto, async (re
       .populate('department', 'name')
       .populate('user', 'name email')
       .lean();
+
+    // If the issue is already assigned to a department, notify its admins
+    if (populated.department) {
+      notifyDepartmentNewIssue(populated);
+    }
 
     res.status(201).json({ ...populated, id: populated._id });
   } catch (err) {
