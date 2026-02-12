@@ -5,6 +5,8 @@ import { ThemeToggle } from "@/components/theme-toggle"
 import { ChatPage } from "@/components/chat/ChatPage"
 import Dashboard from "@/pages/SuperAdmin/dashboard"
 import DepartmentDashboard from "@/pages/regionAdmin/regionDashboard"
+import DepartmentAdminDashboard from "@/pages/departmentAdmin/departmentdashboard"
+import CitizenDashboard from "@/pages/citizen/citizensDashboard"
 import ProfilePage from "@/pages/SuperAdmin/profile"
 import AnalyticsPage from "@/pages/SuperAdmin/analytics"
 import { AppSidebar } from "@/components/app-sidebar"
@@ -29,6 +31,12 @@ function App() {
     } else if (path === "/region-dashboard") {
       setIsAuthenticated(true)
       setPage("region-dashboard")
+    } else if (path === "/department-admin") {
+      setIsAuthenticated(true)
+      setPage("department-admin")
+    } else if (path === "/citizen") {
+      setIsAuthenticated(true)
+      setPage("citizen")
     } else if (path === "/chat") {
       setIsAuthenticated(true)
       setPage("chat")
@@ -99,9 +107,11 @@ function App() {
               <h1 className="text-lg font-semibold">
                 {page === "dashboard" ? "Dashboard" :
                   page === "region-dashboard" ? "Region Dashboard" :
-                    page === "chat" ? "Chat" :
-                      page === "profile" ? "Profile" :
-                        page === "analytics" ? "Analytics" : ""}
+                    page === "department-admin" ? "Dept. Admin" :
+                      page === "citizen" ? "Citizen Feed" :
+                        page === "chat" ? "Chat" :
+                          page === "profile" ? "Profile" :
+                            page === "analytics" ? "Analytics" : ""}
               </h1>
             </div>
             <ThemeToggle />
@@ -109,6 +119,8 @@ function App() {
           <main className="flex-1 overflow-hidden min-h-0">
             {page === "dashboard" && <Dashboard />}
             {page === "region-dashboard" && <DepartmentDashboard />}
+            {page === "department-admin" && <DepartmentAdminDashboard />}
+            {page === "citizen" && <CitizenDashboard />}
             {page === "chat" && <ChatPage />}
             {page === "profile" && <ProfilePage />}
             {page === "analytics" && <AnalyticsPage />}

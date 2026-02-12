@@ -65,6 +65,16 @@ const data = {
       icon: Map,
     },
     {
+      title: "Dept. Admin",
+      url: "/department-admin",
+      icon: Command,
+    },
+    {
+      title: "Citizen View",
+      url: "/citizen",
+      icon: AudioWaveform,
+    },
+    {
       title: "Messages",
       url: "/chat",
       icon: Bot,
