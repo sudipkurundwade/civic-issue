@@ -5,8 +5,13 @@ import { ThemeToggle } from "@/components/theme-toggle"
 import { ChatPage } from "@/components/chat/ChatPage"
 import SuperAdminDashboard from "@/pages/SuperAdmin/dashboard"
 import DepartmentDashboard from "@/pages/regionAdmin/regionDashboard"
+<<<<<<< HEAD
 import DepartmentalDashboard from "@/pages/DepartmentalAdmin/departmentalDashboard"
 import CivicDashboard from "@/pages/Civic/civicDashboard"
+=======
+import DepartmentAdminDashboard from "@/pages/departmentAdmin/departmentdashboard"
+import CitizenDashboard from "@/pages/citizen/citizensDashboard"
+>>>>>>> 18511e52e5f12a0000dcb995d1efba0ed8149239
 import ProfilePage from "@/pages/SuperAdmin/profile"
 import AnalyticsPage from "@/pages/SuperAdmin/analytics"
 import { AppSidebar } from "@/components/app-sidebar"
@@ -38,7 +43,39 @@ function AppContent() {
     const path = window.location.pathname
     if (path === "/signup") {
       setPage("signup")
+<<<<<<< HEAD
       return
+=======
+      setIsAuthenticated(false)
+    } else if (path === "/login") {
+      setPage("login")
+      setIsAuthenticated(false)
+    } else if (path === "/dashboard") {
+      setIsAuthenticated(true)
+      setPage("dashboard")
+    } else if (path === "/region-dashboard") {
+      setIsAuthenticated(true)
+      setPage("region-dashboard")
+    } else if (path === "/department-admin") {
+      setIsAuthenticated(true)
+      setPage("department-admin")
+    } else if (path === "/citizen") {
+      setIsAuthenticated(true)
+      setPage("citizen")
+    } else if (path === "/chat") {
+      setIsAuthenticated(true)
+      setPage("chat")
+    } else if (path === "/profile") {
+      setIsAuthenticated(true)
+      setPage("profile")
+    } else if (path === "/analytics") {
+      setIsAuthenticated(true)
+      setPage("analytics")
+    } else if (path === "/" && isAuthenticated) {
+      // Redirect authenticated users from root to dashboard
+      window.history.pushState({}, "", "/dashboard")
+      setPage("dashboard")
+>>>>>>> 18511e52e5f12a0000dcb995d1efba0ed8149239
     }
     if (path === "/login") {
       setPage("login")
@@ -135,15 +172,34 @@ function AppContent() {
           <header className="flex h-16 shrink-0 items-center gap-2 border-b px-4 bg-background">
             <SidebarTrigger />
             <div className="flex-1">
+<<<<<<< HEAD
               <h1 className="text-lg font-semibold">{pageTitle}</h1>
+=======
+              <h1 className="text-lg font-semibold">
+                {page === "dashboard" ? "Dashboard" :
+                  page === "region-dashboard" ? "Region Dashboard" :
+                    page === "department-admin" ? "Dept. Admin" :
+                      page === "citizen" ? "Citizen Feed" :
+                        page === "chat" ? "Chat" :
+                          page === "profile" ? "Profile" :
+                            page === "analytics" ? "Analytics" : ""}
+              </h1>
+>>>>>>> 18511e52e5f12a0000dcb995d1efba0ed8149239
             </div>
             <ThemeToggle />
           </header>
           <main className="flex-1 overflow-hidden min-h-0">
+<<<<<<< HEAD
             {page.includes("super-dashboard") && user?.role === "super_admin" && <SuperAdminDashboard />}
             {page.includes("region-dashboard") && user?.role === "regional_admin" && <DepartmentDashboard />}
             {page.includes("dept-dashboard") && user?.role === "departmental_admin" && <DepartmentalDashboard />}
             {(page.includes("civic-dashboard") || !["super_admin", "regional_admin", "departmental_admin"].includes(user?.role)) && <CivicDashboard />}
+=======
+            {page === "dashboard" && <Dashboard />}
+            {page === "region-dashboard" && <DepartmentDashboard />}
+            {page === "department-admin" && <DepartmentAdminDashboard />}
+            {page === "citizen" && <CitizenDashboard />}
+>>>>>>> 18511e52e5f12a0000dcb995d1efba0ed8149239
             {page === "chat" && <ChatPage />}
             {page === "profile" && <ProfilePage />}
             {page === "analytics" && user?.role === "super_admin" && <AnalyticsPage />}
