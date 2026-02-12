@@ -42,6 +42,21 @@ router.post('/regional-admin', authenticate, requireRole('super_admin'), async (
       region: region._id,
     });
 
+    // Notify this new regional admin about any issues that are waiting for departments in their region
+    const pendingIssues = await Issue.find({
+      region: region._id,
+      status: 'PENDING_DEPARTMENT',
+    })
+      .limit(20)
+      .lean();
+
+    if (pendingIssues.length > 0) {
+      const { notifyRegionalAdminMissingDepartment } = await import('../lib/notifications.js');
+      for (const issue of pendingIssues) {
+        notifyRegionalAdminMissingDepartment(issue);
+      }
+    }
+
     const u = await User.findById(user._id)
       .select('-password')
       .populate('region', 'name')
@@ -84,7 +99,13 @@ router.post('/regions', authenticate, requireRole('super_admin'), async (req, re
     if (!name) return res.status(400).json({ error: 'name required' });
 
     const region = await Region.create({ name });
-    res.status(201).json({ ...region.toObject(), id: region._id });
+    // Retroactively assign pending issues that were waiting for this region
+    const updated = await Issue.updateMany(
+      { status: 'PENDING_REGION', requestedRegionName: name },
+      { $set: { region: region._id, status: 'PENDING_DEPARTMENT' }, $unset: { requestedRegionName: 1 } }
+    );
+
+    res.status(201).json({ ...region.toObject(), id: region._id, issuesUpdated: updated.modifiedCount });
   } catch (err) {
     console.error('Create region error:', err);
     res.status(500).json({ error: 'Failed to create region' });
@@ -305,7 +326,7 @@ router.post('/departmental-admin', authenticate, requireRole('regional_admin'), 
 
     // Assign any pending issues that were waiting for this department name
     await Issue.updateMany(
-      { status: 'PENDING_DEPARTMENT', requestedDepartmentName: department.name },
+      { status: 'PENDING_DEPARTMENT', requestedDepartmentName: department.name, region: regionId },
       { $set: { department: department._id, status: 'PENDING' }, $unset: { requestedDepartmentName: 1 } }
     );
 
@@ -565,7 +586,7 @@ router.post('/create-department-and-assign', authenticate, requireRole('regional
       department = await Department.create({ name, region: regionId });
     }
     const updated = await Issue.updateMany(
-      { status: 'PENDING_DEPARTMENT', requestedDepartmentName: name },
+      { status: 'PENDING_DEPARTMENT', requestedDepartmentName: name, region: regionId },
       { $set: { department: department._id, status: 'PENDING', $unset: { requestedDepartmentName: 1 } } }
     );
     // Notify departmental admins that new issues were assigned

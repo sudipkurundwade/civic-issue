@@ -50,7 +50,7 @@ router.post('/', authenticate, requireRole('civic'), maybeUploadPhoto, async (re
       return res.status(400).json({ error: 'Issue photo required (upload file or send photoBase64)' });
     }
 
-    const { latitude, longitude, address, description, departmentId, departmentName } = req.body;
+    const { latitude, longitude, address, description, departmentId, departmentName, regionName, regionId } = req.body;
 
     if (!latitude || !longitude || !description) {
       return res.status(400).json({
@@ -59,20 +59,59 @@ router.post('/', authenticate, requireRole('civic'), maybeUploadPhoto, async (re
     }
 
     let deptId = departmentId;
+    let validRegionId = regionId;
     let status = 'PENDING';
     let requestedDepartmentName = null;
+    let requestedRegionName = null;
+
+    // 1. Try to find Department
     if (!deptId && departmentName) {
-      const dept = await Department.findOne({ name: departmentName });
-      if (!dept) {
-        deptId = null;
-        status = 'PENDING_DEPARTMENT';
-        requestedDepartmentName = departmentName;
-      } else {
+      // If region is known, look up in that region
+      const deptQuery = { name: departmentName };
+
+      // We need to resolve region first if possible to be precise
+      let potentialRegionId = regionId;
+      if (!potentialRegionId && regionName) {
+        const r = await Region.findOne({ name: regionName });
+        if (r) potentialRegionId = r._id;
+      }
+
+      if (potentialRegionId) deptQuery.region = potentialRegionId;
+
+      const dept = await Department.findOne(deptQuery);
+      if (dept) {
         deptId = dept._id;
+        validRegionId = dept.region; // Ensure region is linked
+      } else {
+        // Department not found
+        requestedDepartmentName = departmentName;
       }
     }
-    if (!deptId && !requestedDepartmentName) {
-      return res.status(400).json({ error: 'departmentId or departmentName is required' });
+
+    // 2. If Department NOT found, check Region
+    if (!deptId) {
+      if (!validRegionId && regionName) {
+        const r = await Region.findOne({ name: regionName });
+        if (r) {
+          validRegionId = r._id;
+        } else {
+          requestedRegionName = regionName;
+        }
+      }
+
+      if (validRegionId) {
+        // Region exists, but Department missing
+        status = 'PENDING_DEPARTMENT';
+      } else {
+        // Region also missing (or not provided but required context implied)
+        status = 'PENDING_REGION';
+      }
+    }
+
+    // Fallback: If no dept/region info provided at all, strictly validate or default?
+    // Current logic requires at least something. 
+    if (!deptId && !requestedDepartmentName && !validRegionId && !requestedRegionName) {
+      return res.status(400).json({ error: 'departmentName or regionName is required' });
     }
 
     const issue = await Issue.create({
@@ -83,18 +122,30 @@ router.post('/', authenticate, requireRole('civic'), maybeUploadPhoto, async (re
       description,
       department: deptId || undefined,
       requestedDepartmentName: requestedDepartmentName || undefined,
+      region: validRegionId || undefined,
+      requestedRegionName: requestedRegionName || undefined,
       status,
       user: req.user.id,
     });
 
     const populated = await Issue.findById(issue._id)
       .populate('department', 'name')
+      .populate('region', 'name')
       .populate('user', 'name email')
       .lean();
 
-    // If the issue is already assigned to a department, notify its admins
+    // Notifications
     if (populated.department) {
       notifyDepartmentNewIssue(populated);
+    } else if (populated.region && status === 'PENDING_DEPARTMENT') {
+      // Notify Regional Admin
+      // We need to import this dynamically or move function to lib to avoid circular dep if any
+      const { notifyRegionalAdminMissingDepartment } = await import('../lib/notifications.js');
+      notifyRegionalAdminMissingDepartment(populated);
+    } else if (status === 'PENDING_REGION') {
+      // Notify Super Admin
+      const { notifySuperAdminMissingRegion } = await import('../lib/notifications.js');
+      notifySuperAdminMissingRegion(populated);
     }
 
     res.status(201).json({ ...populated, id: populated._id });
