@@ -145,6 +145,9 @@ export default function DepartmentDashboard() {
     }
   }
 
+  // Departments that already exist but do NOT have an assigned admin.
+  const unassignedDepartments = departments.filter((d) => !d.assignedAdmin)
+
   return (
     <div className="space-y-6 p-6">
 
@@ -224,25 +227,31 @@ export default function DepartmentDashboard() {
                     </p>
                   )
                 ) : (
-                  <select
-                    value={adminDept}
-                    onChange={(e) => setAdminDept(e.target.value)}
-                    className="h-10 w-full rounded-md border px-3 text-sm"
-                    required
-                  >
-                    <option value="">Select Department</option>
-                    {departments.map((dept) => (
-                      <option key={dept.id} value={dept.id}>
-                        {dept.name}
-                      </option>
-                    ))}
-                  </select>
+                  unassignedDepartments.length > 0 ? (
+                    <select
+                      value={adminDept}
+                      onChange={(e) => setAdminDept(e.target.value)}
+                      className="h-10 w-full rounded-md border px-3 text-sm"
+                      required
+                    >
+                      <option value="">Select Department</option>
+                      {unassignedDepartments.map((dept) => (
+                        <option key={dept.id} value={dept.id}>
+                          {dept.name}
+                        </option>
+                      ))}
+                    </select>
+                  ) : (
+                    <p className="text-sm text-muted-foreground">
+                      All existing departments already have an administrator.
+                    </p>
+                  )
                 )}
               </div>
               <DialogFooter>
                 <Button
                   type="submit"
-                  disabled={loading || (isCreateNewDept && availableDeptNames.length === 0)}
+                  disabled={loading || (isCreateNewDept ? availableDeptNames.length === 0 : unassignedDepartments.length === 0)}
                 >
                   {loading ? "Creating..." : "Create Admin"}
                 </Button>
