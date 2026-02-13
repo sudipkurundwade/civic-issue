@@ -2,6 +2,7 @@ import { useState } from "react"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
+import signupImage from "@/assets/sign_up.jpeg"
 import {
   Field,
   FieldDescription,
@@ -111,7 +112,13 @@ export function SignupForm({ className, onSignup, ...props }) {
               </FieldDescription>
             </FieldGroup>
           </form>
-          <div className="bg-muted relative hidden md:block" />
+          <div className="relative hidden md:block overflow-hidden">
+            <img 
+              src={signupImage} 
+              alt="Sign Up" 
+              className="w-full h-full object-cover"
+            />
+          </div>
         </CardContent>
       </Card>
     </div>

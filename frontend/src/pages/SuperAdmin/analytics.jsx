@@ -72,12 +72,12 @@ export default function AnalyticsPage() {
       <div className="space-y-6 p-6 max-w-7xl mx-auto">
         <div className="flex items-center justify-between mb-6">
           <div>
-            <h1 className="text-3xl font-bold tracking-tight">Analytics</h1>
+            <h1 className="text-3xl font-bold tracking-tight bg-gradient-to-r from-orange-600 to-orange-700 bg-clip-text text-transparent">Analytics</h1>
             <p className="text-muted-foreground text-sm">
               {isSuper ? "System-wide performance across regions" : "Department performance within your region"}
             </p>
           </div>
-          <Button variant="outline" onClick={() => window.print()}>Export</Button>
+          <Button className="bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white shadow-sm hover:shadow-md transition-all duration-300" onClick={() => window.print()}>Export</Button>
         </div>
 
         {loading && (
@@ -86,7 +86,7 @@ export default function AnalyticsPage() {
 
         {isSuper && system && (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <Card>
+            <Card className="border-t-4 border-t-orange-400 hover:shadow-md transition-all duration-300">
               <CardHeader>
                 <CardTitle>Region-wise Issues</CardTitle>
                 <CardDescription>Total issues reported per region</CardDescription>
@@ -95,7 +95,7 @@ export default function AnalyticsPage() {
                 <BarChart data={(system.regionPerformance || []).map(r => ({ name: r.name, count: r.totalIssues }))} xKey="name" yKey="count" />
               </CardContent>
             </Card>
-            <Card>
+            <Card className="border-t-4 border-t-emerald-400 hover:shadow-md transition-all duration-300">
               <CardHeader>
                 <CardTitle>Region Work Speed (Avg Resolution Hours)</CardTitle>
                 <CardDescription>Average resolution time per region</CardDescription>
@@ -104,7 +104,7 @@ export default function AnalyticsPage() {
                 <BarChart data={(system.regionPerformance || []).map(r => ({ name: r.name, hrs: r.averageResolutionHours ?? 0 }))} xKey="name" yKey="hrs" color="rgb(34,197,94)" />
               </CardContent>
             </Card>
-            <Card>
+            <Card className="border-t-4 border-t-red-400 hover:shadow-md transition-all duration-300">
               <CardHeader>
                 <CardTitle>SLA Breaches by Region</CardTitle>
                 <CardDescription>{system?.sla?.thresholdHours ? `Completed issues exceeding >${system.sla.thresholdHours}h` : "Completed issues exceeding SLA resolution time"}</CardDescription>
@@ -113,7 +113,7 @@ export default function AnalyticsPage() {
                 <BarChart data={(system.regionPerformance || []).map(r => ({ name: r.name, breaches: r.slaBreaches }))} xKey="name" yKey="breaches" color="rgb(239,68,68)" />
               </CardContent>
             </Card>
-            <Card>
+            <Card className="border-t-4 border-t-blue-400 hover:shadow-md transition-all duration-300">
               <CardHeader>
                 <CardTitle>Top Departments by Completion</CardTitle>
                 <CardDescription>Departments with highest number of completed issues</CardDescription>
@@ -135,7 +135,7 @@ export default function AnalyticsPage() {
 
         {isRegional && region && (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <Card>
+            <Card className="border-t-4 border-t-orange-400 hover:shadow-md transition-all duration-300">
               <CardHeader>
                 <CardTitle>Department-wise Issues</CardTitle>
                 <CardDescription>Total issues reported per department</CardDescription>
@@ -144,7 +144,7 @@ export default function AnalyticsPage() {
                 <BarChart data={(region.departments || []).map(d => ({ name: d.name, count: d.totalIssues }))} xKey="name" yKey="count" />
               </CardContent>
             </Card>
-            <Card>
+            <Card className="border-t-4 border-t-emerald-400 hover:shadow-md transition-all duration-300">
               <CardHeader>
                 <CardTitle>Department Work Speed (Avg Resolution Hours)</CardTitle>
                 <CardDescription>Average resolution time per department</CardDescription>
@@ -153,7 +153,7 @@ export default function AnalyticsPage() {
                 <BarChart data={(region.departments || []).map(d => ({ name: d.name, hrs: d.averageResolutionHours ?? 0 }))} xKey="name" yKey="hrs" color="rgb(34,197,94)" />
               </CardContent>
             </Card>
-            <Card>
+            <Card className="border-t-4 border-t-blue-400 hover:shadow-md transition-all duration-300">
               <CardHeader>
                 <CardTitle>Department Completion Count</CardTitle>
                 <CardDescription>Number of completed issues per department</CardDescription>
@@ -162,7 +162,7 @@ export default function AnalyticsPage() {
                 <BarChart data={(region.departments || []).map(d => ({ name: d.name, done: d.completed }))} xKey="name" yKey="done" color="rgb(59,130,246)" />
               </CardContent>
             </Card>
-            <Card>
+            <Card className="border-t-4 border-t-red-400 hover:shadow-md transition-all duration-300">
               <CardHeader>
                 <CardTitle>SLA Breaches by Department</CardTitle>
                 <CardDescription>Completed issues exceeding SLA resolution time</CardDescription>

@@ -103,7 +103,7 @@ export default function AnnouncementsList({ mode = "public" }) {
     return (
         <div className="space-y-6 p-6 max-w-7xl mx-auto">
             <div className="flex items-center justify-between">
-                <h2 className="text-3xl font-bold">{mode === 'my' ? 'My Announcements' : 'Announcements'}</h2>
+                <h2 className="text-3xl font-bold tracking-tight bg-gradient-to-r from-orange-600 to-orange-700 bg-clip-text text-transparent">{mode === 'my' ? 'My Announcements' : 'Announcements'}</h2>
                 {(mode === 'my' || (user && ['super_admin', 'regional_admin'].includes(user?.role))) && (
                     <a
                         href="/create-announcement"
@@ -112,7 +112,7 @@ export default function AnnouncementsList({ mode = "public" }) {
                             window.history.pushState({}, "", "/create-announcement");
                             window.dispatchEvent(new PopStateEvent('popstate'));
                         }}
-                        className="inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-primary text-primary-foreground hover:bg-primary/90 h-10 px-4 py-2"
+                        className="inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white shadow-md hover:shadow-lg h-10 px-4 py-2 transition-all duration-300"
                     >
                         Create New
                     </a>
@@ -132,12 +132,18 @@ export default function AnnouncementsList({ mode = "public" }) {
                     {loading ? (
                         <div className="text-center py-10">Loading...</div>
                     ) : announcements.length === 0 ? (
-                        <div className="text-center py-10 text-muted-foreground">
-                            No {activeTab} announcements found.
+                        <div className="text-center py-12 border-2 border-dashed border-orange-200 rounded-lg bg-gradient-to-br from-orange-50/50 to-transparent">
+                            <div className="flex flex-col items-center justify-center text-muted-foreground">
+                                <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gradient-to-br from-orange-100 to-orange-200 mb-4">
+                                    <Megaphone className="h-8 w-8 text-orange-600" />
+                                </div>
+                                <p className="text-lg font-semibold text-foreground">No announcements found</p>
+                                <p className="text-sm">No {activeTab} announcements at this time.</p>
+                            </div>
                         </div>
                     ) : (
                         announcements.map((announcement) => (
-                            <Card key={announcement._id} data-id={announcement._id} className="announcement-card overflow-hidden">
+                            <Card key={announcement._id} data-id={announcement._id} className="announcement-card overflow-hidden hover:shadow-lg hover:border-orange-200 transition-all duration-300">
                                 <div className={`h-1 w-full ${getPriorityColor(announcement.priority)}`} />
                                 <CardHeader className="pb-2">
                                     <div className="flex justify-between items-start">

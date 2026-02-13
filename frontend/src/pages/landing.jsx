@@ -6,6 +6,7 @@ import { Separator } from "@/components/ui/separator"
 import { Badge } from "@/components/ui/badge"
 import { AlertCircle, Loader2, Users, Shield, Building2, MapPin, Camera, CheckCircle2, FileText, Bell, BarChart3, Globe } from "lucide-react"
 import Spline from "@splinetool/react-spline"
+import logoImg from "@/assets/logo.png"
 import ScrollStack, { ScrollStackItem } from "@/components/ScrollStack"
 
 export default function Landing() {
@@ -32,9 +33,17 @@ export default function Landing() {
       {/* Header */}
       <header className="sticky top-0 z-20 w-full border-b bg-background/80 backdrop-blur">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <AlertCircle className="h-5 w-5 text-primary" />
-            <span className="font-semibold">Civic Issue Reporter</span>
+           <div className="flex items-center gap-2">
+            <div className="shrink-0 w-9 h-9">
+              <img
+                src={logoImg}
+                alt="Civic Issue Reporter Logo"
+                className="w-full h-full object-contain drop-shadow-sm"
+              />
+            </div>
+            <h2 className="font-semibold text-lg bg-gradient-to-r from-orange-600 to-orange-700 bg-clip-text text-transparent truncate">
+              Civic Setu
+            </h2>
           </div>
           <div className="flex items-center gap-2">
             <Button variant="ghost" onClick={() => navigate("/login")}>Log in</Button>

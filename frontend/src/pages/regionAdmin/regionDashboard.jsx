@@ -188,12 +188,12 @@ export default function DepartmentDashboard() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex flex-col gap-1">
-          <h2 className="text-3xl font-bold">{user?.region?.name ? user.region.name : "Region Admin Dashboard"}</h2>
+          <h2 className="text-3xl font-bold tracking-tight bg-gradient-to-r from-orange-600 to-orange-700 bg-clip-text text-transparent">{user?.region?.name ? user.region.name : "Region Admin Dashboard"}</h2>
         </div>
 
         <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
           <DialogTrigger asChild>
-            <Button>
+            <Button className="bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white shadow-md hover:shadow-lg transition-all duration-300">
               <Plus className="mr-2 h-4 w-4" /> Add Departmental Admin
             </Button>
           </DialogTrigger>
@@ -341,7 +341,7 @@ export default function DepartmentDashboard() {
                       tabIndex={0}
                       onClick={() => { setSelectedIssue({ ...fullIssue, ...issue, likes: 0, comments: 0 }); setDetailOpen(true) }}
                       onKeyDown={(e) => e.key === "Enter" && (setSelectedIssue({ ...fullIssue, ...issue, likes: 0, comments: 0 }), setDetailOpen(true))}
-                      className="p-4 border rounded-lg hover:bg-accent cursor-pointer"
+                      className="p-4 border rounded-lg hover:bg-orange-50/50 hover:border-orange-200 hover:shadow-md cursor-pointer transition-all duration-300"
                     >
                       <div className="flex justify-between">
                         <p className="font-medium">{issue.title}</p>
@@ -356,8 +356,14 @@ export default function DepartmentDashboard() {
                 })}
               </div>
             ) : (
-              <div className="text-center py-10 text-muted-foreground">
-                No issues in {selectedDepartment && selectedDepartment !== "all" ? "this department" : "your region"}.
+              <div className="text-center py-12 border-2 border-dashed border-orange-200 rounded-lg bg-gradient-to-br from-orange-50/50 to-transparent">
+                <div className="flex flex-col items-center justify-center text-muted-foreground">
+                  <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gradient-to-br from-orange-100 to-orange-200 mb-4">
+                    <AlertCircle className="h-8 w-8 text-orange-600" />
+                  </div>
+                  <p className="text-lg font-semibold text-foreground">No issues found</p>
+                  <p className="text-sm">No issues in {selectedDepartment && selectedDepartment !== "all" ? "this department" : "your region"}.</p>
+                </div>
               </div>
             )}
           </CardContent>
@@ -373,7 +379,7 @@ export default function DepartmentDashboard() {
         </CardHeader>
         <CardContent className="flex gap-4 flex-wrap">
           <Button
-            variant="outline"
+            className="bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white shadow-sm hover:shadow-md transition-all duration-300"
             onClick={async () => {
               try {
                 const data = await adminService.getRegionReport()
@@ -387,11 +393,11 @@ export default function DepartmentDashboard() {
             <ArrowUpRight className="mr-2 h-4 w-4" />
             Generate Report
           </Button>
-          <Button variant="outline">
+          <Button variant="outline" className="hover:bg-emerald-50 hover:text-emerald-600 hover:border-emerald-300 transition-all duration-300">
             <CheckCircle className="mr-2 h-4 w-4" />
             Review Solved Cases
           </Button>
-          <Button variant="outline" className="text-red-600">
+          <Button variant="outline" className="text-red-600 hover:bg-red-50 hover:border-red-300 transition-all duration-300">
             <AlertCircle className="mr-2 h-4 w-4" />
             View Critical Issues
           </Button>

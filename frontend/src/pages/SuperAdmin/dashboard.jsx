@@ -176,11 +176,11 @@ export default function SuperAdminDashboard() {
     <div className="space-y-6 p-6 max-w-7xl mx-auto">
       {/* Header */}
       <div className="flex items-center justify-between">
-        <h2 className="text-3xl font-bold">SuperAdmin Dashboard</h2>
+        <h2 className="text-3xl font-bold tracking-tight bg-gradient-to-r from-orange-600 to-orange-700 bg-clip-text text-transparent">SuperAdmin Dashboard</h2>
 
         <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
           <DialogTrigger asChild>
-            <Button>
+            <Button className="bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white shadow-md hover:shadow-lg transition-all duration-300">
               <Plus className="mr-2 h-4 w-4" /> Add Regional Admin
             </Button>
           </DialogTrigger>
@@ -274,15 +274,23 @@ export default function SuperAdminDashboard() {
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         {stats.map((stat, index) => {
           const Icon = stat.icon
+          const colorClasses = [
+            "bg-gradient-to-br from-orange-50 to-orange-100/50 border-orange-200/50",
+            "bg-gradient-to-br from-blue-50 to-blue-100/50 border-blue-200/50",
+            "bg-gradient-to-br from-amber-50 to-amber-100/50 border-amber-200/50",
+            "bg-gradient-to-br from-emerald-50 to-emerald-100/50 border-emerald-200/50"
+          ]
+          const iconColors = ["text-orange-600", "text-blue-600", "text-amber-600", "text-emerald-600"]
+          const valueColors = ["text-orange-700", "text-blue-700", "text-amber-700", "text-emerald-700"]
           return (
-            <Card key={index}>
-              <CardHeader className="flex flex-row justify-between pb-2">
-                <CardTitle className="text-sm">{stat.title}</CardTitle>
-                <Icon className="h-4 w-4 text-muted-foreground" />
+            <Card key={index} className={`${colorClasses[index]} border-2 shadow-sm hover:shadow-md transition-all duration-300`}>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-semibold text-foreground">{stat.title}</CardTitle>
+                <Icon className={`h-5 w-5 ${iconColors[index]}`} />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">{stat.value}</div>
-                <p className="text-xs text-muted-foreground">
+                <div className={`text-3xl font-bold ${valueColors[index]}`}>{stat.value}</div>
+                <p className="text-xs text-muted-foreground mt-1">
                   {stat.change} {stat.description}
                 </p>
               </CardContent>
@@ -341,7 +349,7 @@ export default function SuperAdminDashboard() {
                       tabIndex={0}
                       onClick={() => { setSelectedIssue({ ...fullIssue, ...issue, likes: 0, comments: 0 }); setDetailOpen(true) }}
                       onKeyDown={(e) => e.key === "Enter" && (setSelectedIssue({ ...fullIssue, ...issue, likes: 0, comments: 0 }), setDetailOpen(true))}
-                      className="p-4 border rounded-lg hover:bg-accent cursor-pointer"
+                      className="p-4 border rounded-lg hover:bg-orange-50/50 hover:border-orange-200 hover:shadow-md cursor-pointer transition-all duration-300"
                     >
                       <div className="flex justify-between">
                         <p className="font-medium">{issue.title}</p>
@@ -359,8 +367,14 @@ export default function SuperAdminDashboard() {
                 })}
               </div>
             ) : (
-              <div className="text-center py-10 text-muted-foreground">
-                No recent issues in this region.
+              <div className="text-center py-12 border-2 border-dashed border-orange-200 rounded-lg bg-gradient-to-br from-orange-50/50 to-transparent">
+                <div className="flex flex-col items-center justify-center text-muted-foreground">
+                  <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gradient-to-br from-orange-100 to-orange-200 mb-4">
+                    <AlertCircle className="h-8 w-8 text-orange-600" />
+                  </div>
+                  <p className="text-lg font-semibold text-foreground">No issues found</p>
+                  <p className="text-sm">No recent issues in this region.</p>
+                </div>
               </div>
             )}
           </CardContent>
@@ -376,7 +390,7 @@ export default function SuperAdminDashboard() {
         </CardHeader>
         <CardContent className="flex gap-4 flex-wrap">
           <Button
-            variant="outline"
+            className="bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white shadow-sm hover:shadow-md transition-all duration-300"
             onClick={async () => {
               try {
                 const data = await adminService.getSystemReport()
@@ -390,11 +404,11 @@ export default function SuperAdminDashboard() {
             <ArrowUpRight className="mr-2 h-4 w-4" />
             Generate Report
           </Button>
-          <Button variant="outline">
+          <Button variant="outline" className="hover:bg-emerald-50 hover:text-emerald-600 hover:border-emerald-300 transition-all duration-300">
             <CheckCircle className="mr-2 h-4 w-4" />
             Review Solved Cases
           </Button>
-          <Button variant="outline" className="text-red-600">
+          <Button variant="outline" className="text-red-600 hover:bg-red-50 hover:border-red-300 transition-all duration-300">
             <AlertCircle className="mr-2 h-4 w-4" />
             View Critical Issues
           </Button>

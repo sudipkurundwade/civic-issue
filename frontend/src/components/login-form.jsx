@@ -2,6 +2,7 @@ import { useState } from "react"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
+import loginImage from "@/assets/login.jpeg"
 import {
   Field,
   FieldDescription,
@@ -85,11 +86,17 @@ export function LoginForm({ className, onLogin, ...props }) {
                 Super Admin: super@civic.com / super123 · Regional: regional@gokul.com / regional123
               </FieldDescription>
               <FieldDescription className="text-center">
-                Citizen? <a href="/signup" className="font-medium underline">Sign up</a> to report issues
+                New Citizen? <a href="/signup" className="font-medium underline">Sign up</a> to report issues
               </FieldDescription>
             </FieldGroup>
           </form>
-          <div className="bg-muted relative hidden md:block" />
+          <div className="relative hidden md:block overflow-hidden">
+            <img 
+              src={loginImage} 
+              alt="Login" 
+              className="w-full h-full object-cover"
+            />
+          </div>
         </CardContent>
       </Card>
     </div>

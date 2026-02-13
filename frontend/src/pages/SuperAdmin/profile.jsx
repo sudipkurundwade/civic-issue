@@ -111,7 +111,7 @@ export default function ProfilePage() {
     return (
       <div className="space-y-6 p-6 max-w-7xl mx-auto">
         <div className="space-y-2">
-          <h2 className="text-3xl font-bold">My Profile</h2>
+          <h2 className="text-3xl font-bold tracking-tight bg-gradient-to-r from-orange-600 to-orange-700 bg-clip-text text-transparent">My Profile</h2>
           <p className="text-muted-foreground">Manage your account settings and preferences.</p>
         </div>
 
@@ -170,7 +170,7 @@ export default function ProfilePage() {
             </div>
           </CardContent>
           <CardFooter>
-            <Button>Update Password</Button>
+            <Button className="bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white shadow-sm hover:shadow-md transition-all duration-300">Update Password</Button>
           </CardFooter>
         </Card>
       </div>
@@ -189,7 +189,7 @@ export default function ProfilePage() {
                 <div className="flex flex-col items-center text-center space-y-6">
                   {/* Avatar */}
                   <div className="relative">
-                    <Avatar className="h-28 w-28 border-4 border-background shadow-md">
+                    <Avatar className="h-28 w-28 border-4 border-orange-200/50 shadow-md">
                       <AvatarImage
                         src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${personalData.fullName}`}
                         alt={personalData.fullName}
@@ -297,7 +297,7 @@ export default function ProfilePage() {
                             <div className="flex gap-3 pt-2">
                               <Button
                                 onClick={() => setIsEditingPersonal(false)}
-                                className="flex-1"
+                                className="flex-1 bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white shadow-sm hover:shadow-md transition-all duration-300"
                               >
                                 Save Changes
                               </Button>

@@ -63,17 +63,17 @@ export default function ReportsPage() {
     <div className="space-y-6 p-6 max-w-7xl mx-auto">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-3xl font-bold tracking-tight">{scopeLabel}</h2>
+          <h2 className="text-3xl font-bold tracking-tight bg-gradient-to-r from-orange-600 to-orange-700 bg-clip-text text-transparent">{scopeLabel}</h2>
           <p className="text-muted-foreground text-sm">
             Generate and download a PDF summary of key metrics for your level.
           </p>
         </div>
         <div className="flex gap-2">
-          <Button variant="outline" onClick={loadReport} disabled={loading}>
+          <Button variant="outline" onClick={loadReport} disabled={loading} className="hover:bg-orange-50 hover:text-orange-600 hover:border-orange-300 transition-all duration-300">
             {loading ? "Generating..." : "Generate Report"}
           </Button>
           {report && (
-            <Button onClick={handleDownloadPdf}>
+            <Button onClick={handleDownloadPdf} className="bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white shadow-sm hover:shadow-md transition-all duration-300">
               Download PDF
             </Button>
           )}

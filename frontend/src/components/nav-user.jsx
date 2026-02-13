@@ -30,7 +30,7 @@ export function NavUser({ user, onLogout }) {
 
   const handleLogout = () => {
     onLogout?.()
-    window.location.href = "/login"
+    window.location.href = "/"
   }
 
   return (

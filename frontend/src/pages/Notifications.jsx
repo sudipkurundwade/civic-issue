@@ -105,8 +105,8 @@ export default function NotificationsPage() {
     <div className="space-y-6 p-6 max-w-7xl mx-auto">
       <div className="flex items-center justify-between gap-4">
         <div className="space-y-1">
-          <h2 className="text-3xl font-bold tracking-tight flex items-center gap-2">
-            <Bell className="h-6 w-6" />
+          <h2 className="text-3xl font-bold tracking-tight flex items-center gap-2 bg-gradient-to-r from-orange-600 to-orange-700 bg-clip-text text-transparent">
+            <Bell className="h-6 w-6 text-orange-600" />
             Notifications
           </h2>
           <p className="text-muted-foreground">
@@ -123,6 +123,7 @@ export default function NotificationsPage() {
               variant="outline"
               onClick={handleMarkAllRead}
               disabled={markingAll || unreadCount === 0}
+              className="hover:bg-orange-50 hover:text-orange-600 hover:border-orange-300 transition-all duration-300"
             >
               {markingAll ? "Marking..." : "Mark all as read"}
             </Button>

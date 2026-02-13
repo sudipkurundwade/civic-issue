@@ -218,7 +218,7 @@ export default function CreateAnnouncement() {
     return (
         <div className="space-y-6 p-6 max-w-7xl mx-auto">
             <div>
-                <h2 className="text-3xl font-bold">Create New Announcement</h2>
+                <h2 className="text-3xl font-bold tracking-tight bg-gradient-to-r from-orange-600 to-orange-700 bg-clip-text text-transparent">Create New Announcement</h2>
                 <p className="text-muted-foreground">Publish updates to admins and citizens.</p>
             </div>
 
@@ -447,8 +447,8 @@ export default function CreateAnnouncement() {
                 )}
 
                 <div className="flex justify-end gap-4">
-                    <Button variant="outline" type="button" onClick={() => window.history.back()}>Cancel</Button>
-                    <Button type="submit" disabled={loading}>
+                    <Button variant="outline" type="button" onClick={() => window.history.back()} className="hover:bg-orange-50 hover:text-orange-600 hover:border-orange-300 transition-all duration-300">Cancel</Button>
+                    <Button type="submit" disabled={loading} className="bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white shadow-md hover:shadow-lg transition-all duration-300">
                         {loading ? "Publishing..." : "Publish Announcement"}
                     </Button>
                 </div>
