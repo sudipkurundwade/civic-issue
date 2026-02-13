@@ -54,7 +54,7 @@ const ROLE_NAV = {
     { title: "Profile", url: "/profile", icon: User },
   ],
   civic: [
-    { title: "Report Issue", url: "/civic-dashboard", icon: AlertCircle },
+    { title: "Report Issue", url: "/citizen-dashboard", icon: AlertCircle },
     { title: "Announcements", url: "/announcements", icon: Megaphone },
     { title: "My Issues", url: "/my-issues", icon: List },
     { title: "Notifications", url: "/notifications", icon: Bell },
