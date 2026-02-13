@@ -45,13 +45,19 @@ const DEPARTMENT_OPTIONS = [
 ]
 
 const REGION_SUGGESTIONS = [
-    "Kagal",
-    "Jaysingpur",
-    "Karvir",
     "Gadhinglaj",
+    "Jaysingpur",
+    "Panahala",
     "Murgud",
-    "Panhala",
-    "Shirur",
+    "Kurundwad",
+    "Kagal",
+    "Wadgaon (Hatkanangale)",
+    "Malkapur (Shahuwadi)",
+    "Ajara",
+    "Chandgad",
+    "Hupari",
+    "Kolhapur",
+    "Ichalkaranji"
 ]
 
 const captureLocation = () => {
@@ -441,48 +447,45 @@ export default function CitizenDashboard() {
                             return (
                             <Card
                                 key={issue.id}
-                                className="overflow-hidden shadow-md border-orange-100/50 hover:shadow-xl hover:border-orange-200 transition-all duration-300 bg-gradient-to-br from-background to-orange-50/20"
+                                className="overflow-hidden shadow-md border-muted hover:shadow-lg transition-shadow"
                             >
                                 {/* Post Header */}
-                                <div className="p-4 flex items-center gap-3 border-b border-orange-100/50 bg-gradient-to-r from-orange-50/50 to-transparent">
-                                    <div className="h-10 w-10 rounded-full bg-gradient-to-br from-orange-400 to-orange-500 flex items-center justify-center shadow-sm">
-                                        <MapPin className="h-5 w-5 text-white" />
+                                <div className="p-4 flex items-center gap-3 border-b bg-muted/20">
+                                    <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
+                                        <MapPin className="h-5 w-5 text-primary" />
                                     </div>
                                     <div>
-                                        <h4 className="font-semibold text-sm text-foreground">{issue.area}, {issue.region}</h4>
+                                        <h4 className="font-semibold text-sm">{issue.area}, {issue.region}</h4>
                                         <p className="text-xs text-muted-foreground">{issue.date} · Reported by {issue.reporterName}</p>
                                     </div>
                                     <div className="ml-auto">
-                                        <Badge 
-                                            variant={issue.status === "pending" ? "destructive" : "secondary"}
-                                            className={issue.status === "pending" ? "bg-orange-500/10 text-orange-700 border-orange-300/50" : "bg-emerald-500/10 text-emerald-700 border-emerald-300/50"}
-                                        >
+                                        <Badge variant={issue.status === "pending" ? "destructive" : "secondary"}>
                                             {issue.status}
                                         </Badge>
                                     </div>
                                 </div>
 
-                                {/* Post Content */}
-                                <div className="p-0 cursor-pointer" onClick={() => { setSelectedIssue(issue); setDetailOpen(true) }}>
-                                    <div className="aspect-video w-full bg-muted">
-                                        <img
-                                            src={issue.image}
-                                            alt={issue.title}
-                                            className="w-full h-full object-cover"
-                                        />
+                                    {/* Post Content */}
+                                    <div className="p-0 cursor-pointer" onClick={() => { setSelectedIssue(issue); setDetailOpen(true) }}>
+                                        <div className="aspect-video w-full bg-muted">
+                                            <img
+                                                src={issue.image}
+                                                alt={issue.title}
+                                                className="w-full h-full object-cover"
+                                            />
+                                        </div>
+                                        <div className="p-4 space-y-2">
+                                            <h3 className="font-bold text-lg">{issue.title}</h3>
+                                            <p className="text-sm text-foreground/80">{issue.description}</p>
+                                        </div>
                                     </div>
-                                    <div className="p-4 space-y-2">
-                                        <h3 className="font-bold text-lg">{issue.title}</h3>
-                                        <p className="text-sm text-foreground/80">{issue.description}</p>
-                                    </div>
-                                </div>
 
                                 {/* Post Actions */}
-                        <div className="p-3 border-t border-orange-100/50 flex items-center justify-around text-muted-foreground bg-gradient-to-r from-orange-50/30 to-transparent">
+                        <div className="p-3 border-t flex items-center justify-around text-muted-foreground bg-muted/10">
                                     <Button
                                         variant={issue.likedByMe ? "default" : "ghost"}
                                         size="sm"
-                                        className={`gap-2 ${issue.likedByMe ? "bg-orange-500 hover:bg-orange-600 text-white" : "hover:text-orange-600 hover:bg-orange-50"}`}
+                                        className="gap-2 hover:text-blue-600"
                                         onClick={async (e) => {
                                             e.stopPropagation()
                                             try {
@@ -509,7 +512,7 @@ export default function CitizenDashboard() {
                                     <Button
                                         variant="ghost"
                                         size="sm"
-                                        className="gap-2 hover:text-emerald-600 hover:bg-emerald-50"
+                                        className="gap-2 hover:text-green-600"
                                         onClick={async (e) => {
                                             e.stopPropagation()
                                             if (!isCommentsOpen) {
@@ -531,14 +534,14 @@ export default function CitizenDashboard() {
                                         <MessageSquare className="h-4 w-4" />
                                         <span className="text-xs">{issue.comments} Comments</span>
                                     </Button>
-                                    <Button variant="ghost" size="sm" className="gap-2 hover:text-orange-600 hover:bg-orange-50">
+                                    <Button variant="ghost" size="sm" className="gap-2 hover:text-purple-600">
                                         <Share2 className="h-4 w-4" />
                                         <span className="text-xs">Share</span>
                                     </Button>
                                 </div>
                                 {/* Inline Comments Thread */}
                                 {isCommentsOpen && (
-                                    <div className="border-t border-orange-100/50 px-4 pb-4 pt-3 space-y-3 bg-gradient-to-br from-orange-50/20 to-transparent">
+                                    <div className="border-t px-4 pb-4 pt-3 space-y-3 bg-muted/10">
                                         {comments.length === 0 ? (
                                             <p className="text-xs text-muted-foreground">
                                                 No comments yet. Be the first to comment.
@@ -561,58 +564,59 @@ export default function CitizenDashboard() {
                                             </div>
                                         )}
 
-                                        <form
-                                            className="flex gap-2 pt-1"
-                                            onSubmit={async (e) => {
-                                                e.preventDefault()
-                                                const text = (commentTextByIssue[issue.id] || "").trim()
-                                                if (!text) return
-                                                try {
-                                                    const newComment = await issueService.addComment(issue.id, text)
-                                                    setCommentsByIssue((prev) => ({
-                                                        ...prev,
-                                                        [issue.id]: [newComment, ...(prev[issue.id] || [])],
-                                                    }))
-                                                    setCommentTextByIssue((prev) => ({ ...prev, [issue.id]: "" }))
-                                                    // Increment comment count on the issue in allIssues
-                                                    setAllIssues((prev) =>
-                                                        prev.map((it) =>
-                                                            it.id === issue.id
-                                                                ? {
-                                                                    ...it,
-                                                                    commentsCount: (it.commentsCount || 0) + 1,
-                                                                }
-                                                                : it
+                                            <form
+                                                className="flex gap-2 pt-1"
+                                                onSubmit={async (e) => {
+                                                    e.preventDefault()
+                                                    const text = (commentTextByIssue[issue.id] || "").trim()
+                                                    if (!text) return
+                                                    try {
+                                                        const newComment = await issueService.addComment(issue.id, text)
+                                                        setCommentsByIssue((prev) => ({
+                                                            ...prev,
+                                                            [issue.id]: [newComment, ...(prev[issue.id] || [])],
+                                                        }))
+                                                        setCommentTextByIssue((prev) => ({ ...prev, [issue.id]: "" }))
+                                                        // Increment comment count on the issue in allIssues
+                                                        setAllIssues((prev) =>
+                                                            prev.map((it) =>
+                                                                it.id === issue.id
+                                                                    ? {
+                                                                        ...it,
+                                                                        commentsCount: (it.commentsCount || 0) + 1,
+                                                                    }
+                                                                    : it
+                                                            )
                                                         )
-                                                    )
-                                                } catch {
-                                                    toast({ title: "Failed to add comment", variant: "destructive" })
-                                                }
-                                            }}
-                                        >
-                                            <Input
-                                                placeholder="Write a comment..."
-                                                value={commentText}
-                                                onChange={(e) =>
-                                                    setCommentTextByIssue((prev) => ({
-                                                        ...prev,
-                                                        [issue.id]: e.target.value,
-                                                    }))
-                                                }
-                                                className="text-xs"
-                                            />
-                                            <Button
-                                                type="submit"
-                                                size="sm"
-                                                disabled={!commentText.trim()}
+                                                    } catch {
+                                                        toast({ title: "Failed to add comment", variant: "destructive" })
+                                                    }
+                                                }}
                                             >
-                                                Post
-                                            </Button>
-                                        </form>
-                                    </div>
-                                )}
-                            </Card>
-                        )})
+                                                <Input
+                                                    placeholder="Write a comment..."
+                                                    value={commentText}
+                                                    onChange={(e) =>
+                                                        setCommentTextByIssue((prev) => ({
+                                                            ...prev,
+                                                            [issue.id]: e.target.value,
+                                                        }))
+                                                    }
+                                                    className="text-xs"
+                                                />
+                                                <Button
+                                                    type="submit"
+                                                    size="sm"
+                                                    disabled={!commentText.trim()}
+                                                >
+                                                    Post
+                                                </Button>
+                                            </form>
+                                        </div>
+                                    )}
+                                </Card>
+                            )
+                        })
                     ) : (
                         <div className="text-center py-10">
                             <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gradient-to-br from-orange-100 to-orange-200 mb-4">

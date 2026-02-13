@@ -80,8 +80,8 @@ export default function DepartmentAdminDashboard() {
 
     const filteredComplaints = complaints.filter((c) => {
         if (filter === "all") return true
-        if (filter === "solved") return c.status === "completed"
-        if (filter === "unsolved") return c.status !== "completed"
+        if (filter === "solved") return c.status === "resolved"
+        if (filter === "unsolved") return c.status !== "resolved"
         return true
     })
 

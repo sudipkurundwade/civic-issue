@@ -139,9 +139,16 @@ router.post('/', authenticate, requireRole('civic'), maybeUploadPhoto, async (re
       notifyDepartmentNewIssue(populated);
     } else if (populated.region && status === 'PENDING_DEPARTMENT') {
       // Notify Regional Admin
-      // We need to import this dynamically or move function to lib to avoid circular dep if any
       const { notifyRegionalAdminMissingDepartment } = await import('../lib/notifications.js');
       notifyRegionalAdminMissingDepartment(populated);
+
+      // Check if regional admin actually exists
+      const User = (await import('../models/User.js')).default;
+      const adminExists = await User.exists({ role: 'regional_admin', region: populated.region._id });
+      if (!adminExists) {
+        const { notifySuperAdminMissingRegionalAdmin } = await import('../lib/notifications.js');
+        notifySuperAdminMissingRegionalAdmin(populated);
+      }
     } else if (status === 'PENDING_REGION') {
       // Notify Super Admin
       const { notifySuperAdminMissingRegion } = await import('../lib/notifications.js');

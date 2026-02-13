@@ -7,7 +7,7 @@ const notificationSchema = new mongoose.Schema(
     message: { type: String, required: true },
     type: {
       type: String,
-      enum: ['ISSUE_STATUS', 'NEW_ISSUE_ASSIGNED', 'MISSING_DEPARTMENT', 'MISSING_REGION'],
+      enum: ['ISSUE_STATUS', 'NEW_ISSUE_ASSIGNED', 'MISSING_DEPARTMENT', 'MISSING_REGION', 'MISSING_DEPARTMENT_ADMIN'],
       required: true,
     },
     issue: { type: mongoose.Schema.Types.ObjectId, ref: 'Issue' },

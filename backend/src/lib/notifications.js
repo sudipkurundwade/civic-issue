@@ -51,7 +51,11 @@ export async function notifyDepartmentNewIssue(issue) {
       .select('_id')
       .lean();
 
-    if (!admins.length) return;
+    if (!admins.length) {
+      // Fallback: Notify Regional Admin that this department has no admin
+      await notifyRegionalAdminMissingDepartmentAdmin(issue);
+      return;
+    }
 
     const eligibleAdmins = [];
     for (const a of admins) {
@@ -81,6 +85,42 @@ export async function notifyDepartmentNewIssue(issue) {
     await Notification.insertMany(docs);
   } catch (err) {
     console.warn('notifyDepartmentNewIssue error:', err.message);
+  }
+}
+
+export async function notifyRegionalAdminMissingDepartmentAdmin(issue) {
+  try {
+    if (!issue) return;
+    const issueId = issue._id || issue.id;
+    const regionId = (issue.region && (issue.region._id || issue.region.id)) || issue.region;
+    if (!regionId || !issueId) return;
+
+    // Find regional admins for this region
+    const admins = await User.find({
+      role: 'regional_admin',
+      region: regionId,
+    }).select('_id');
+
+    if (!admins.length) return;
+
+    const shortDescription =
+      (issue.description || '').length > 50
+        ? `${issue.description.slice(0, 47)}...`
+        : issue.description || 'Issue';
+
+    const deptName = issue.department?.name || issue.requestedDepartmentName || 'Unknown Department';
+
+    const docs = admins.map((a) => ({
+      user: a._id,
+      title: 'Missing Department Admin',
+      message: `Issue "${shortDescription}" assigned to department "${deptName}" which has no Departmental Admin.`,
+      type: 'MISSING_DEPARTMENT_ADMIN',
+      issue: issueId,
+    }));
+
+    await Notification.insertMany(docs);
+  } catch (err) {
+    console.warn('notifyRegionalAdminMissingDepartmentAdmin error:', err.message);
   }
 }
 
@@ -147,5 +187,37 @@ export async function notifySuperAdminMissingRegion(issue) {
     await Notification.insertMany(docs);
   } catch (err) {
     console.warn('notifySuperAdminMissingRegion error:', err.message);
+  }
+}
+
+export async function notifySuperAdminMissingRegionalAdmin(issue) {
+  try {
+    if (!issue) return;
+    const issueId = issue._id || issue.id;
+    if (!issueId) return;
+
+    // Find super admins
+    const admins = await User.find({ role: 'super_admin' }).select('_id');
+
+    if (!admins.length) return;
+
+    const shortDescription =
+      (issue.description || '').length > 50
+        ? `${issue.description.slice(0, 47)}...`
+        : issue.description || 'Issue';
+
+    const regionName = issue.region?.name || issue.requestedRegionName || 'Unknown Region';
+
+    const docs = admins.map((a) => ({
+      user: a._id,
+      title: 'Missing Regional Admin',
+      message: `Issue "${shortDescription}" reported in region "${regionName}" which has no Regional Admin assigned.`,
+      type: 'MISSING_REGION',
+      issue: issueId,
+    }));
+
+    await Notification.insertMany(docs);
+  } catch (err) {
+    console.warn('notifySuperAdminMissingRegionalAdmin error:', err.message);
   }
 }
