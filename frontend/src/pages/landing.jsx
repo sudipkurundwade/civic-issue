@@ -31,9 +31,15 @@ export default function Landing() {
       {/* Header */}
       <header className="sticky top-0 z-20 w-full border-b bg-background/80 backdrop-blur">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <AlertCircle className="h-5 w-5 text-primary" />
-            <span className="font-semibold">Civic Issue Reporter</span>
+           <div className="shrink-0 w-10 h-10 transition-all duration-200 group-data-[collapsible=icon]:w-14 group-data-[collapsible=icon]:h-14">
+            <img
+              src={logoImg}
+              alt="Civic Issue Reporter Logo"
+              className="w-full h-full object-contain drop-shadow-sm"
+            />
+            <h2 className="font-semibold text-lg bg-gradient-to-r from-orange-600 to-orange-700 bg-clip-text text-transparent truncate">
+              Civic Setu
+            </h2>
           </div>
           <div className="flex items-center gap-2">
             <Button variant="ghost" onClick={() => navigate("/login")}>Log in</Button>

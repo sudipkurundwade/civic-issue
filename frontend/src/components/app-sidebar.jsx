@@ -101,7 +101,7 @@ export function AppSidebar({ user, onLogout, page, onNavigate }) {
           {/* Text content - Hidden when collapsed */}
           <div className="flex-1 min-w-0 overflow-hidden transition-all duration-200 group-data-[collapsible=icon]:hidden">
             <h2 className="font-semibold text-lg bg-gradient-to-r from-orange-600 to-orange-700 bg-clip-text text-transparent truncate">
-              Civic Issue
+              Civic Setu
             </h2>
             <p className="text-xs text-muted-foreground capitalize truncate">
               {user?.role?.replace("_", " ")}
