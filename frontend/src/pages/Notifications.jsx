@@ -11,6 +11,7 @@ import { Badge } from "@/components/ui/badge"
 import { Clock, Bell, CheckCircle } from "lucide-react"
 import { notificationService } from "@/services/notificationService"
 import { useToast } from "@/components/ui/use-toast"
+import { useAuth } from "@/context/AuthContext"
 
 const formatWhen = (dateString) => {
   if (!dateString) return ""
@@ -24,6 +25,7 @@ const formatWhen = (dateString) => {
 }
 
 export default function NotificationsPage() {
+  const { user } = useAuth()
   const { toast } = useToast()
   const [notifications, setNotifications] = React.useState([])
   const [loading, setLoading] = React.useState(true)
@@ -43,6 +45,20 @@ export default function NotificationsPage() {
 
   React.useEffect(() => {
     load()
+  }, [load])
+
+  // Listen for custom notification refresh events
+  React.useEffect(() => {
+    const handleNotificationRefresh = () => {
+      console.log('Notification refresh event received')
+      load()
+    }
+
+    window.addEventListener('notificationRefresh', handleNotificationRefresh)
+
+    return () => {
+      window.removeEventListener('notificationRefresh', handleNotificationRefresh)
+    }
   }, [load])
 
   const unreadCount = notifications.filter((n) => !n.read).length
@@ -68,6 +84,21 @@ export default function NotificationsPage() {
     } finally {
       setMarkingAll(false)
     }
+  }
+
+  const navigate = (path) => {
+    window.history.pushState({}, "", path)
+    window.location.reload()
+  }
+
+  const handleAction = (n) => {
+    if (n.type === 'MISSING_REGION' && user?.role === 'super_admin') {
+      navigate('/super-dashboard?createRegion=true')
+    } else if ((n.type === 'MISSING_DEPARTMENT' || n.type === 'MISSING_DEPARTMENT_ADMIN') && user?.role === 'regional_admin') {
+      navigate('/region-dashboard?createDepartment=true')
+    }
+    // Mark as read after action
+    handleMarkRead(n.id || n._id)
   }
 
   return (
@@ -119,37 +150,72 @@ export default function NotificationsPage() {
             </div>
           ) : (
             <div className="space-y-3">
-              {notifications.map((n) => (
-                <div
-                  key={n.id}
-                  className={`flex items-start gap-3 rounded-md border px-3 py-2 ${
-                    n.read ? "bg-background" : "bg-muted/60 border-primary/40"
-                  }`}
-                >
-                  <div className="mt-1">
-                    <Bell className={`h-4 w-4 ${n.read ? "text-muted-foreground" : "text-primary"}`} />
-                  </div>
-                  <div className="flex-1 space-y-1">
-                    <div className="flex items-center justify-between gap-2">
-                      <p className="font-medium text-sm">{n.title}</p>
-                      <span className="flex items-center gap-1 text-xs text-muted-foreground">
-                        <Clock className="h-3 w-3" />
-                        {formatWhen(n.createdAt)}
-                      </span>
+              {notifications.map((n) => {
+                const isActionable = (
+                  (n.type === 'MISSING_REGION' && user?.role === 'super_admin') ||
+                  ((n.type === 'MISSING_DEPARTMENT' || n.type === 'MISSING_DEPARTMENT_ADMIN') && user?.role === 'regional_admin')
+                )
+                const isResolved = n.status === 'resolved'
+                const isPending = isActionable && (!n.status || n.status === 'pending')
+
+                return (
+                  <div
+                    key={n.id || n._id}
+                    className={`flex items-start gap-3 rounded-md border px-3 py-2 ${n.read ? "bg-background" : "bg-muted/60 border-primary/40"
+                      } ${isPending ? "border-orange-200 bg-orange-50/20 shadow-sm" : ""}`}
+                  >
+                    <div className="mt-1">
+                      <Bell className={`h-4 w-4 ${n.read ? "text-muted-foreground" : isPending ? "text-orange-500" : "text-primary"}`} />
                     </div>
-                    <p className="text-sm text-muted-foreground">{n.message}</p>
+                    <div className="flex-1 space-y-1">
+                      <div className="flex items-center justify-between gap-2">
+                        <div className="flex items-center gap-2">
+                          <p className="font-medium text-sm">{n.title}</p>
+                          {isResolved ? (
+                            <Badge variant="outline" className="text-[10px] h-4 bg-green-50 text-green-700 border-green-200">
+                              Resolved
+                            </Badge>
+                          ) : isPending ? (
+                            <Badge variant="outline" className="text-[10px] h-4 bg-orange-100 text-orange-700 border-orange-200">
+                              Action Required
+                            </Badge>
+                          ) : null}
+                        </div>
+                        <span className="flex items-center gap-1 text-xs text-muted-foreground">
+                          <Clock className="h-3 w-3" />
+                          {formatWhen(n.createdAt)}
+                        </span>
+                      </div>
+                      <p className="text-sm text-muted-foreground">{n.message}</p>
+
+                      {isActionable && (
+                        <div className="pt-2">
+                          <Button
+                            size="sm"
+                            className={`h-8 text-xs transition-all ${isResolved
+                                ? 'bg-muted text-muted-foreground opacity-70 cursor-not-allowed'
+                                : 'bg-orange-600 hover:bg-orange-700 text-white shadow-sm'
+                              }`}
+                            disabled={isResolved}
+                            onClick={() => !isResolved && handleAction(n)}
+                          >
+                            {isResolved ? 'Action Completed' : 'Take Action'}
+                          </Button>
+                        </div>
+                      )}
+                    </div>
+                    {!n.read && (
+                      <Button
+                        size="xs"
+                        variant="ghost"
+                        onClick={() => handleMarkRead(n.id || n._id)}
+                      >
+                        Mark read
+                      </Button>
+                    )}
                   </div>
-                  {!n.read && (
-                    <Button
-                      size="xs"
-                      variant="ghost"
-                      onClick={() => handleMarkRead(n.id)}
-                    >
-                      Mark read
-                    </Button>
-                  )}
-                </div>
-              ))}
+                )
+              })}
             </div>
           )}
         </CardContent>

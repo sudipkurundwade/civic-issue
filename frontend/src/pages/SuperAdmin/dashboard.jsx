@@ -32,7 +32,6 @@ import { issueService } from "@/services/issueService"
 import { notificationService } from "@/services/notificationService"
 import { useToast } from "@/components/ui/use-toast"
 import { IssueDetailDialog } from "@/components/IssueDetailDialog"
-import AdminNotifications from "@/components/AdminNotifications"
 
 const formatTimeAgo = (date) => {
   const sec = Math.floor((Date.now() - date) / 1000)
@@ -45,13 +44,13 @@ const formatTimeAgo = (date) => {
 
 export default function SuperAdminDashboard() {
   const { toast } = useToast()
-  
+
   // Navigation function
   const navigate = (path) => {
     window.history.pushState({}, "", path)
     window.location.reload() // Reload to trigger the App.jsx routing logic
   }
-  
+
   const [regions, setRegions] = React.useState([])
   const [selectedRegion, setSelectedRegion] = React.useState("all")
   const [adminEmail, setAdminEmail] = React.useState("")
@@ -77,10 +76,10 @@ export default function SuperAdminDashboard() {
       setDialogOpen(true)
       // Clean the URL
       window.history.replaceState({}, '', '/super-dashboard')
-      
+
       // Try to get the requested region name from notifications
       notificationService.getMyNotifications().then(notifications => {
-        const missingRegionNotification = notifications.find(n => 
+        const missingRegionNotification = notifications.find(n =>
           n.type === 'MISSING_REGION' && !n.read
         )
         if (missingRegionNotification?.issue?.requestedRegionName) {
@@ -270,8 +269,6 @@ export default function SuperAdminDashboard() {
         </Dialog>
       </div>
 
-      {/* Notifications */}
-      <AdminNotifications userRole="super_admin" onNavigate={navigate} />
 
       {/* Stats */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
@@ -375,7 +372,7 @@ export default function SuperAdminDashboard() {
       {/* Admin Actions */}
       <Card>
         <CardHeader>
-        <CardTitle>Admin Actions</CardTitle>
+          <CardTitle>Admin Actions</CardTitle>
         </CardHeader>
         <CardContent className="flex gap-4 flex-wrap">
           <Button

@@ -33,7 +33,7 @@ export function IssueDetailDialog({ open, onClose, issue }) {
     const description = issue.description || ""
     const address = issue.area || issue.address || (issue.latitude != null && issue.longitude != null
         ? `${issue.latitude.toFixed(5)}, ${issue.longitude.toFixed(5)}` : "—")
-    const region = issue.region || issue.department?.region?.name || "—"
+    const region = (typeof issue.region === 'string' ? issue.region : (issue.region?.name || issue.requestedRegionName)) || issue.department?.region?.name || "—"
     const reporterName = issue.reporterName || issue.user?.name || "Anonymous"
     const date = issue.date || (issue.createdAt ? new Date(issue.createdAt).toLocaleDateString() : "")
     const likes = issue.likes ?? 0

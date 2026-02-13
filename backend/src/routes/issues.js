@@ -167,6 +167,7 @@ router.get('/', authenticate, async (req, res) => {
   try {
     const issues = await Issue.find()
       .populate({ path: 'department', select: 'name', populate: { path: 'region', select: 'name' } })
+      .populate('region', 'name')
       .populate('user', 'name email')
       .sort({ createdAt: -1 })
       .lean();
@@ -192,6 +193,7 @@ router.get('/my', authenticate, requireRole('civic'), async (req, res) => {
   try {
     const issues = await Issue.find({ user: req.user.id })
       .populate({ path: 'department', select: 'name', populate: { path: 'region', select: 'name' } })
+      .populate('region', 'name')
       .sort({ createdAt: -1 })
       .lean();
 

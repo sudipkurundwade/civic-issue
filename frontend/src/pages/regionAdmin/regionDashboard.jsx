@@ -34,7 +34,6 @@ import { notificationService } from "@/services/notificationService"
 import { useToast } from "@/components/ui/use-toast"
 import { IssueDetailDialog } from "@/components/IssueDetailDialog"
 import { useAuth } from "@/context/AuthContext"
-import AdminNotifications from "@/components/AdminNotifications"
 
 // Standard department options for a region.
 const PREDEFINED_DEPARTMENTS = [
@@ -53,13 +52,13 @@ const PREDEFINED_DEPARTMENTS = [
 export default function DepartmentDashboard() {
   const { user } = useAuth()
   const { toast } = useToast()
-  
+
   // Navigation function
   const navigate = (path) => {
     window.history.pushState({}, "", path)
     window.location.reload() // Reload to trigger the App.jsx routing logic
   }
-  
+
   const [departments, setDepartments] = React.useState([])
   const [selectedDepartment, setSelectedDepartment] = React.useState("all")
   const [adminName, setAdminName] = React.useState("")
@@ -85,10 +84,10 @@ export default function DepartmentDashboard() {
       setIsCreateNewDept(true)
       // Clean the URL
       window.history.replaceState({}, '', '/region-dashboard')
-      
+
       // Try to get the requested department name from notifications
       notificationService.getMyNotifications().then(notifications => {
-        const missingDeptNotification = notifications.find(n => 
+        const missingDeptNotification = notifications.find(n =>
           n.type === 'MISSING_DEPARTMENT' && !n.read
         )
         if (missingDeptNotification?.issue?.requestedDepartmentName) {
@@ -190,12 +189,6 @@ export default function DepartmentDashboard() {
       <div className="flex items-center justify-between">
         <div className="flex flex-col gap-1">
           <h2 className="text-3xl font-bold">{user?.region?.name ? user.region.name : "Region Admin Dashboard"}</h2>
-          {pendingDeptCount > 0 && (
-            <div className="inline-flex items-center gap-2 rounded-full bg-amber-100 text-amber-900 dark:bg-amber-950/40 dark:text-amber-200 px-3 py-1 text-xs font-medium">
-              <AlertTriangle className="h-3 w-3" />
-              <span>{pendingDeptCount} department{pendingDeptCount > 1 ? "s" : ""} need to be created for citizen issues</span>
-            </div>
-          )}
         </div>
 
         <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
@@ -296,39 +289,7 @@ export default function DepartmentDashboard() {
         </Dialog>
       </div>
 
-      {/* Notifications */}
-      <AdminNotifications userRole="regional_admin" onNavigate={navigate} />
 
-      {/* Pending - Awaiting Department Creation */}
-      {Object.keys(pendingByDept).length > 0 && (
-        <Card className="border-amber-200 bg-amber-50/50 dark:bg-amber-950/20 dark:border-amber-900">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-amber-800 dark:text-amber-200">
-              <AlertTriangle className="h-5 w-5" />
-              Issues Awaiting Department
-            </CardTitle>
-            <CardDescription>
-              Citizens reported issues for departments that don&apos;t exist. Create the department to assign these issues.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {Object.entries(pendingByDept).map(([deptName, issues]) => (
-              <div key={deptName} className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 rounded-lg border border-amber-200 dark:border-amber-800 bg-background">
-                <div>
-                  <p className="font-medium">{deptName}</p>
-                  <p className="text-sm text-muted-foreground">{issues.length} issue(s) waiting</p>
-                </div>
-                <Button
-                  onClick={() => handleCreateDeptAndAssign(deptName)}
-                  disabled={assigningDept === deptName}
-                >
-                  {assigningDept === deptName ? "Creating..." : "Create Department & Assign"}
-                </Button>
-              </div>
-            ))}
-          </CardContent>
-        </Card>
-      )}
 
       {/* Departments & Issues Layout */}
       <div className="grid gap-4 md:grid-cols-12">

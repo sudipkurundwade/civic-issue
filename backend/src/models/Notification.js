@@ -11,6 +11,7 @@ const notificationSchema = new mongoose.Schema(
       required: true,
     },
     issue: { type: mongoose.Schema.Types.ObjectId, ref: 'Issue' },
+    status: { type: String, enum: ['pending', 'resolved'], default: 'pending' },
     read: { type: Boolean, default: false },
   },
   { timestamps: true }

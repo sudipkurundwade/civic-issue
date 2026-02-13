@@ -45,10 +45,10 @@ export default function ProfilePage() {
   const [isEditingPersonal, setIsEditingPersonal] = React.useState(false)
   const [isEditingBusiness, setIsEditingBusiness] = React.useState(false)
   const [personalData, setPersonalData] = React.useState({
-    fullName: user?.name || "Alex Doe",
-    email: user?.email || "alex.doe@example.com",
-    phone: "+1123-456-7890",
-    location: "San Francisco, CA",
+    fullName: user?.name || "Kolhapur Municipal Corporation",
+    email: user?.email || "super@civic.com",
+    phone: "9456453231",
+    location: "Kolhapur",
   })
 
   // Update state when user context loads
@@ -75,9 +75,6 @@ export default function ProfilePage() {
     portfolio: "innovateinc.com/portfolio",
   })
 
-  const [skills, setSkills] = React.useState([
-    "Administration", "Public Policy", "Management"
-  ])
 
   const [uploadedFiles, setUploadedFiles] = React.useState([
     {
@@ -87,7 +84,6 @@ export default function ProfilePage() {
     },
   ])
 
-  const [newSkill, setNewSkill] = React.useState("")
 
   // --- HANDLERS ---
   const handlePersonalChange = (e) => {
@@ -100,16 +96,6 @@ export default function ProfilePage() {
     setBusinessData((prev) => ({ ...prev, [name]: value }))
   }
 
-  const handleAddSkill = () => {
-    if (newSkill.trim() && !skills.includes(newSkill.trim())) {
-      setSkills([...skills, newSkill.trim()])
-      setNewSkill("")
-    }
-  }
-
-  const handleRemoveSkill = (skillToRemove) => {
-    setSkills(skills.filter((skill) => skill !== skillToRemove))
-  }
 
   const getInitials = (name) => {
     return name
@@ -249,9 +235,8 @@ export default function ProfilePage() {
             <Card className="rounded-2xl shadow-sm border">
               <CardContent className="pt-6">
                 <Tabs defaultValue="personal" className="w-full">
-                  <TabsList className="grid w-full grid-cols-2 mb-6">
-                    <TabsTrigger value="personal">Personal Info</TabsTrigger>
-                    <TabsTrigger value="skills">Skills & Focus</TabsTrigger>
+                  <TabsList className="mb-6">
+                    <TabsTrigger value="personal" className="w-full">Personal Info</TabsTrigger>
                   </TabsList>
 
                   {/* Personal & Business Tab */}
@@ -378,45 +363,6 @@ export default function ProfilePage() {
                     </div>
                   </TabsContent>
 
-                  {/* Skills & Focus Tab */}
-                  <TabsContent value="skills" className="space-y-6">
-                    {/* ... Skills content ... */}
-                    <div className="space-y-4">
-                      <h3 className="text-lg font-semibold">Skills & Focus</h3>
-                      <div className="flex flex-wrap gap-2">
-                        {skills.map((skill, index) => (
-                          <Badge
-                            key={index}
-                            variant="default"
-                            className="px-3 py-1.5 text-sm rounded-full"
-                          >
-                            {skill}
-                            <button
-                              onClick={() => handleRemoveSkill(skill)}
-                              className="ml-2 hover:bg-primary/20 rounded-full p-0.5 transition-colors"
-                            >
-                              <X className="h-3 w-3" />
-                            </button>
-                          </Badge>
-                        ))}
-                      </div>
-                      <div className="flex gap-2">
-                        <Input
-                          placeholder="Enter a skill"
-                          value={newSkill}
-                          onChange={(e) => setNewSkill(e.target.value)}
-                          onKeyDown={(e) => {
-                            if (e.key === "Enter") handleAddSkill()
-                          }}
-                          className="flex-1"
-                        />
-                        <Button onClick={handleAddSkill}>
-                          <Plus className="h-4 w-4 mr-2" />
-                          Add Skill
-                        </Button>
-                      </div>
-                    </div>
-                  </TabsContent>
                 </Tabs>
               </CardContent>
             </Card>

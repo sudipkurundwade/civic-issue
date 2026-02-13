@@ -39,21 +39,10 @@ router.post('/regional-admin', authenticate, requireRole('super_admin'), async (
       region = await Region.create({ name: regionName.trim() });
 
       // Retroactively assign pending issues that were waiting for this region
-      const updated = await Issue.updateMany(
+      await Issue.updateMany(
         { status: 'PENDING_REGION', requestedRegionName: regionName },
         { $set: { region: region._id, status: 'PENDING_DEPARTMENT' }, $unset: { requestedRegionName: 1 } }
       );
-
-      // CLEANUP: Remove "MISSING_REGION" notifications
-      const issuesInRegion = await Issue.find({ region: region._id, status: 'PENDING_DEPARTMENT' }).select('_id');
-      const issueIds = issuesInRegion.map(i => i._id);
-
-      if (issueIds.length > 0) {
-        await Notification.deleteMany({
-          type: 'MISSING_REGION',
-          issue: { $in: issueIds }
-        });
-      }
     } else {
       return res.status(400).json({ error: 'regionId or regionName required' });
     }
@@ -68,6 +57,29 @@ router.post('/regional-admin', authenticate, requireRole('super_admin'), async (
       role: 'regional_admin',
       region: region._id,
     });
+
+    // CLEANUP: Mark "MISSING_REGION" notifications as resolved for this region
+    const issuesInRegion = await Issue.find({ region: region._id }).select('_id');
+    const issueIds = issuesInRegion.map(i => i._id);
+
+    if (issueIds.length > 0) {
+      await Notification.updateMany({
+        type: 'MISSING_REGION',
+        issue: { $in: issueIds }
+      }, {
+        $set: { status: 'resolved', message: `Regional admin created for region "${region.name}".` }
+      });
+    }
+
+    // Also mark any specifically requested region notifications as resolved
+    const cleanupRegionName = regionName || region.name;
+    await Notification.updateMany(
+      {
+        type: 'MISSING_REGION',
+        'issue.requestedRegionName': { $regex: new RegExp('^' + cleanupRegionName.trim() + '$', 'i') }
+      },
+      { $set: { status: 'resolved', read: true } }
+    );
 
     // Notify this new regional admin about any issues that are waiting for departments in their region
     const pendingIssues = await Issue.find({
@@ -153,94 +165,31 @@ router.post('/regions', authenticate, requireRole('super_admin'), async (req, re
       { $set: { region: region._id, status: 'PENDING_DEPARTMENT' }, $unset: { requestedRegionName: 1 } }
     );
 
-    // CLEANUP: Remove "MISSING_REGION" notifications for issues that have now been assigned a region
-    // We need to find the issues that were updated. Since updateMany doesn't return docs, we should have found them first or just delete based on query.
-    // Finding issues first is safer to ensure we target the right notifications.
-    // However, for simplicity and performance, we can delete notifications where the issue is now in 'PENDING_DEPARTMENT' and region is this region.
-    // Actually, simpler: Find issues that are now in this region and were just updated. 
-    // But since we already updated them, we can't query by previous state.
-    // Alternative: Delete notifications where type is MISSING_REGION and the linked issue has region = new region.
-
-    // Efficient approach:
-    // 1. Find IDs of issues in this region that are PENDING_DEPARTMENT (which we just set)
-    // 2. Delete MISSING_REGION notifications for those IDs.
-    const issuesInRegion = await Issue.find({ region: region._id, status: 'PENDING_DEPARTMENT' }).select('_id');
+    // CLEANUP: Mark "MISSING_REGION" notifications as resolved
+    const issuesInRegion = await Issue.find({ region: region._id }).select('_id');
     const issueIds = issuesInRegion.map(i => i._id);
 
     if (issueIds.length > 0) {
-      await Notification.deleteMany({
+      await Notification.updateMany({
         type: 'MISSING_REGION',
         issue: { $in: issueIds }
+      }, {
+        $set: { status: 'resolved', message: `Region "${region.name}" has been created.` }
       });
     }
 
     // Mark all related notifications as read since the region is now created
-    console.log('Attempting to mark notifications as read for region:', name.trim());
-    console.log('Looking for notifications with type: MISSING_REGION');
-
-    // First, let's find all unread MISSING_REGION notifications for this super admin
-    const allUnreadRegionNotifications = await Notification.find({
-      type: 'MISSING_REGION',
-      read: false,
-      user: req.user._id
-    }).lean();
-
-    console.log('Found unread region notifications:', allUnreadRegionNotifications.length);
-    console.log('Notification details:', allUnreadRegionNotifications.map(n => ({
-      id: n._id,
-      requestedRegionName: n.issue?.requestedRegionName,
-      message: n.message
-    })));
-
-    // Try multiple approaches to mark notifications as read
-
-    // Approach 1: Exact string matching
-    const exactMatchResult = await Notification.updateMany(
+    await Notification.updateMany(
       {
         type: 'MISSING_REGION',
-        read: false,
         user: req.user._id,
-        'issue.requestedRegionName': name.trim()
+        $or: [
+          { status: 'pending' },
+          { 'issue.requestedRegionName': { $regex: new RegExp('^' + name.trim() + '$', 'i') } }
+        ]
       },
-      { $set: { read: true } }
+      { $set: { status: 'resolved', read: true } }
     );
-
-    console.log('Exact match result:', exactMatchResult);
-
-    // Approach 2: Case-insensitive regex matching
-    const regexMatchResult = await Notification.updateMany(
-      {
-        type: 'MISSING_REGION',
-        read: false,
-        user: req.user._id,
-        'issue.requestedRegionName': { $regex: new RegExp('^' + name.trim() + '$', 'i') }
-      },
-      { $set: { read: true } }
-    );
-
-    console.log('Regex match result:', regexMatchResult);
-
-    // Approach 3: If still unread, clear all MISSING_REGION notifications for this user
-    const remainingUnread = await Notification.countDocuments({
-      type: 'MISSING_REGION',
-      read: false,
-      user: req.user._id
-    });
-
-    console.log('Remaining unread after specific attempts:', remainingUnread);
-
-    if (remainingUnread > 0) {
-      const clearAllResult = await Notification.updateMany(
-        {
-          type: 'MISSING_REGION',
-          read: false,
-          user: req.user._id
-        },
-        { $set: { read: true } }
-      );
-
-      console.log('Clear all result:', clearAllResult);
-    }
 
     // Find regional admins for this region
     const regionalAdmins = await User.find({
@@ -500,6 +449,20 @@ router.post('/departmental-admin', authenticate, requireRole('regional_admin'), 
       { status: 'PENDING_DEPARTMENT', requestedDepartmentName: department.name, region: regionId },
       { $set: { department: department._id, status: 'PENDING' }, $unset: { requestedDepartmentName: 1 } }
     );
+
+    // CLEANUP: Mark "MISSING_DEPARTMENT" and "MISSING_DEPARTMENT_ADMIN" notifications as resolved
+    const issuesInDept = await Issue.find({ department: department._id }).select('_id');
+    const deptIssueIds = issuesInDept.map(i => i._id);
+
+    if (deptIssueIds.length > 0) {
+      await Notification.updateMany(
+        {
+          type: { $in: ['MISSING_DEPARTMENT', 'MISSING_DEPARTMENT_ADMIN'] },
+          issue: { $in: deptIssueIds }
+        },
+        { $set: { status: 'resolved', message: `Departmental admin created for "${department.name}".` } }
+      );
+    }
 
     const u = await User.findById(user._id)
       .select('-password')
@@ -793,14 +756,16 @@ router.post('/create-department-and-assign', authenticate, requireRole('regional
       console.log('Broad department notification update result:', broadUpdateResult);
     }
 
-    // CLEANUP: Remove "MISSING_DEPARTMENT" notifications
-    const issuesInDept = await Issue.find({ department: department._id, status: 'PENDING' }).select('_id');
+    // CLEANUP: Mark "MISSING_DEPARTMENT" notifications as resolved
+    const issuesInDept = await Issue.find({ department: department._id }).select('_id');
     const issueIds = issuesInDept.map(i => i._id);
 
     if (issueIds.length > 0) {
-      await Notification.deleteMany({
+      await Notification.updateMany({
         type: 'MISSING_DEPARTMENT',
         issue: { $in: issueIds }
+      }, {
+        $set: { status: 'resolved', message: `Department "${department.name}" has been created.` }
       });
     }
 
