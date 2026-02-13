@@ -33,6 +33,7 @@ const ROLE_NAV = {
     { title: "Notifications", url: "/notifications", icon: Bell },
     { title: "Analytics", url: "/analytics", icon: PieChart },
     { title: "Announcements", url: "/announcements", icon: Megaphone },
+    { title: "Heat Map", url: "/heatmap", icon: Map },
     { title: "My Announcements", url: "/my-announcements", icon: List },
     { title: "Profile", url: "/profile", icon: User },
   ],
@@ -42,6 +43,11 @@ const ROLE_NAV = {
     { title: "Reports", url: "/reports", icon: FileText },
     { title: "Analytics", url: "/analytics", icon: PieChart },
     { title: "Notifications", url: "/notifications", icon: Bell },
+<<<<<<< HEAD
+=======
+    { title: "Heat Map", url: "/heatmap", icon: Map },
+    { title: "Messages", url: "/chat", icon: MessageSquare },
+>>>>>>> 53200b90396904a99170ac7ee8266b62bd96d819
     { title: "Profile", url: "/profile", icon: User },
   ],
   departmental_admin: [
@@ -49,10 +55,12 @@ const ROLE_NAV = {
     { title: "Notifications", url: "/notifications", icon: Bell },
     { title: "Announcements", url: "/announcements", icon: Megaphone },
     { title: "Reports", url: "/reports", icon: FileText },
+    { title: "Heat Map", url: "/heatmap", icon: Map },
     { title: "Profile", url: "/profile", icon: User },
   ],
   civic: [
     { title: "Report Issue", url: "/citizen-dashboard", icon: AlertCircle },
+    { title: "Heat Map", url: "/heatmap", icon: Map },
     { title: "Announcements", url: "/announcements", icon: Megaphone },
     { title: "My Issues", url: "/my-issues", icon: List },
     { title: "Notifications", url: "/notifications", icon: Bell },
@@ -95,7 +103,7 @@ export function AppSidebar({ user, onLogout, page, onNavigate }) {
               className="w-full h-full object-contain drop-shadow-sm"
             />
           </div>
-          
+
           {/* Text content - Hidden when collapsed */}
           <div className="flex-1 min-w-0 overflow-hidden transition-all duration-200 group-data-[collapsible=icon]:hidden">
             <h2 className="font-semibold text-lg bg-gradient-to-r from-orange-600 to-orange-700 bg-clip-text text-transparent truncate">

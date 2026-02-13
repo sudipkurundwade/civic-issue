@@ -16,6 +16,7 @@ import NotificationsPage from "@/pages/Notifications"
 import AnnouncementsList from "@/pages/shared/AnnouncementsList"
 import CreateAnnouncement from "@/pages/shared/CreateAnnouncement"
 import ReportsPage from "@/pages/Reports"
+import HeatMap from "@/pages/HeatMap"
 import { AppSidebar } from "@/components/app-sidebar"
 import {
   SidebarProvider,
@@ -185,7 +186,8 @@ function AppContent() {
                             page === "announcements" ? "Announcements" :
                               page === "my-announcements" ? "My Announcements" :
                                 page === "create-announcement" ? "Create Announcement" :
-                                  ""
+                                  page === "heatmap" ? "Heat Map" :
+                                    ""
 
     return (
       <SidebarProvider>
@@ -220,6 +222,7 @@ function AppContent() {
             {page === "announcements" && <AnnouncementsList />}
             {page === "my-announcements" && <AnnouncementsList mode="my" />}
             {page === "create-announcement" && <CreateAnnouncement />}
+            {page === "heatmap" && <HeatMap />}
           </main>
         </SidebarInset>
       </SidebarProvider>
