@@ -10,8 +10,8 @@ import {
   MessageSquare,
   User,
   List,
-  Bell,
   Megaphone,
+  Bell,
   FileText,
 } from "lucide-react"
 
@@ -41,13 +41,15 @@ const ROLE_NAV = {
     { title: "Reports", url: "/reports", icon: FileText },
     { title: "Analytics", url: "/analytics", icon: PieChart },
     { title: "Notifications", url: "/notifications", icon: Bell },
+    { title: "Messages", url: "/chat", icon: MessageSquare },
     { title: "Profile", url: "/profile", icon: User },
   ],
   departmental_admin: [
     { title: "Department Dashboard", url: "/dept-dashboard", icon: Building2 },
-    { title: "Reports", url: "/reports", icon: FileText },
     { title: "Notifications", url: "/notifications", icon: Bell },
     { title: "Announcements", url: "/announcements", icon: Megaphone },
+    { title: "Messages", url: "/chat", icon: MessageSquare },
+    { title: "Reports", url: "/reports", icon: FileText },
     { title: "Profile", url: "/profile", icon: User },
   ],
   civic: [
@@ -61,17 +63,20 @@ const ROLE_NAV = {
 
 export function AppSidebar({ user, onLogout, page, onNavigate }) {
   const baseNav = ROLE_NAV[user?.role] || ROLE_NAV.civic
-  const navItems =
-    baseNav.map((item, idx) => {
-      if (idx !== 0) return item
-      if (user?.role === "departmental_admin" && user?.department?.name) {
-        return { ...item, title: user.department.name }
-      }
-      if (user?.role === "regional_admin" && user?.region?.name) {
-        return { ...item, title: user.region.name }
-      }
-      return item
-    })
+
+  const navItems = baseNav.map((item, idx) => {
+    if (idx !== 0) return item
+
+    if (user?.role === "departmental_admin" && user?.department?.name) {
+      return { ...item, title: user.department.name }
+    }
+
+    if (user?.role === "regional_admin" && user?.region?.name) {
+      return { ...item, title: user.region.name }
+    }
+
+    return item
+  })
 
   const handleNav = (e, url) => {
     e?.preventDefault?.()
@@ -84,7 +89,9 @@ export function AppSidebar({ user, onLogout, page, onNavigate }) {
       <SidebarHeader>
         <div className="px-2 py-2">
           <h2 className="font-semibold text-lg">Civic Issue</h2>
-          <p className="text-xs text-muted-foreground capitalize">{user?.role?.replace("_", " ")}</p>
+          <p className="text-xs text-muted-foreground capitalize">
+            {user?.role?.replace("_", " ")}
+          </p>
         </div>
       </SidebarHeader>
 
