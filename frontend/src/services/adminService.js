@@ -13,6 +13,11 @@ export const adminService = {
     if (!res.ok) throw new Error('Failed to fetch regions');
     return res.json();
   },
+  async getAvailableRegions() {
+    const res = await fetch(`${API_URL}/admin/regions/available`, { headers: headers() });
+    if (!res.ok) throw new Error('Failed to fetch available regions');
+    return res.json();
+  },
 
   async createRegion(name) {
     const res = await fetch(`${API_URL}/admin/regions`, {

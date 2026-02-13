@@ -29,6 +29,7 @@ import { useToast } from "@/components/ui/use-toast"
 import { LocationMap } from "@/components/LocationMap"
 import { CameraCapture } from "@/components/CameraCapture"
 import { IssueDetailDialog } from "@/components/IssueDetailDialog"
+import { publicService } from "@/services/adminService"
 
 const DEPARTMENT_OPTIONS = [
     "Roads & Infrastructure",
@@ -44,7 +45,7 @@ const DEPARTMENT_OPTIONS = [
     "Other",
 ]
 
-const REGION_SUGGESTIONS = [
+const REGION_SUGGESTIONS_DEFAULT = [
     "Gadhinglaj",
     "Jaysingpur",
     "Panahala",
@@ -98,6 +99,17 @@ export default function CitizenDashboard() {
     React.useEffect(() => {
         issueService.getMyIssues().then(setMyIssues).catch(() => { })
     }, [isReporting])
+
+    const [regions, setRegions] = React.useState(REGION_SUGGESTIONS_DEFAULT)
+    React.useEffect(() => {
+        publicService.getRegions()
+            .then(data => {
+                if (data && data.length > 0) {
+                    setRegions(data.map(r => r.name))
+                }
+            })
+            .catch(err => console.error("Failed to fetch regions:", err))
+    }, [])
 
     React.useEffect(() => {
         if (isReporting && navigator.geolocation) {
@@ -240,7 +252,7 @@ export default function CitizenDashboard() {
                                             required
                                         >
                                             <option value="">Select region</option>
-                                            {REGION_SUGGESTIONS.map((name) => (
+                                            {regions.map((name) => (
                                                 <option key={name} value={name}>
                                                     {name}
                                                 </option>
