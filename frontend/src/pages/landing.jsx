@@ -4,8 +4,9 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Separator } from "@/components/ui/separator"
 import { Badge } from "@/components/ui/badge"
-import { AlertCircle, Loader2, Users, Shield, Building2, MapPin, Camera, CheckCircle2 } from "lucide-react"
+import { AlertCircle, Loader2, Users, Shield, Building2, MapPin, Camera, CheckCircle2, FileText, Bell, BarChart3, Globe } from "lucide-react"
 import Spline from "@splinetool/react-spline"
+import ScrollStack, { ScrollStackItem } from "@/components/ScrollStack"
 
 export default function Landing() {
   const [splineLoading, setSplineLoading] = useState(true)
@@ -31,15 +32,9 @@ export default function Landing() {
       {/* Header */}
       <header className="sticky top-0 z-20 w-full border-b bg-background/80 backdrop-blur">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-           <div className="shrink-0 w-10 h-10 transition-all duration-200 group-data-[collapsible=icon]:w-14 group-data-[collapsible=icon]:h-14">
-            <img
-              src={logoImg}
-              alt="Civic Issue Reporter Logo"
-              className="w-full h-full object-contain drop-shadow-sm"
-            />
-            <h2 className="font-semibold text-lg bg-gradient-to-r from-orange-600 to-orange-700 bg-clip-text text-transparent truncate">
-              Civic Setu
-            </h2>
+          <div className="flex items-center gap-2">
+            <AlertCircle className="h-5 w-5 text-primary" />
+            <span className="font-semibold">Civic Issue Reporter</span>
           </div>
           <div className="flex items-center gap-2">
             <Button variant="ghost" onClick={() => navigate("/login")}>Log in</Button>
@@ -118,50 +113,175 @@ export default function Landing() {
           </div>
         </section>
 
-        {/* Features Section */}
-        <section className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-16">
-          <div className="text-center mb-12">
-            <h2 className="text-3xl font-bold mb-4">How It Works</h2>
-            <p className="text-muted-foreground text-lg">Simple steps to report and track civic issues</p>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            <Card>
-              <CardContent className="p-6">
-                <div className="w-full h-44 bg-muted/50 rounded-md flex items-center justify-center overflow-hidden">
-                  <div className="flex flex-col items-center gap-4">
-                    <Camera className="h-16 w-16 text-primary" />
-                    <MapPin className="h-12 w-12 text-primary/70" />
+        {/* How It Works - ScrollStack Section */}
+        <section className="relative h-screen">
+          <ScrollStack>
+            <h1 className="text-4xl font-bold mb-8">How It Works</h1>
+            {/* Card 1: Report Issues */}
+            <ScrollStackItem itemClassName="bg-white  border border-blue-500/20">
+              <div className="flex flex-col md:flex-row items-center gap-8 h-full">
+                <div className="flex-shrink-0 w-24 h-24 rounded-2xl bg-blue-500/15 flex items-center justify-center">
+                  <Camera className="h-12 w-12 text-blue-500" />
+                </div>
+                <div className="flex-1">
+                  <div className="flex items-center gap-3 mb-2">
+                    <span className="text-xs font-bold uppercase tracking-wider text-blue-500 bg-blue-500/10 px-3 py-1 rounded-full">Step 1</span>
+                  </div>
+                  <h3 className="text-2xl font-bold mb-2">Report Issues</h3>
+                  <p className="text-muted-foreground text-base leading-relaxed mb-4">
+                    Snap a photo, pin the exact location on the map, and describe the civic issue in detail. 
+                    Your report is instantly sent to the relevant municipal department.
+                  </p>
+                  <div className="flex flex-wrap gap-3">
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                      <Camera className="h-4 w-4 text-blue-500" />
+                      <span>Photo Upload</span>
+                    </div>
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                      <MapPin className="h-4 w-4 text-blue-500" />
+                      <span>GPS Location</span>
+                    </div>
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                      <FileText className="h-4 w-4 text-blue-500" />
+                      <span>Detailed Description</span>
+                    </div>
                   </div>
                 </div>
-                <div className="mt-4 text-xl font-semibold">Report Issues</div>
-                <p className="mt-2 text-muted-foreground">Take a photo, add location, and describe the civic issue. Submit to the relevant department.</p>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardContent className="p-6">
-                <div className="w-full h-44 bg-muted/50 rounded-md flex items-center justify-center overflow-hidden">
-                  <div className="flex flex-col items-center gap-4">
-                    <CheckCircle2 className="h-16 w-16 text-primary" />
-                    <Users className="h-12 w-12 text-primary/70" />
+              </div>
+            </ScrollStackItem>
+
+            {/* Card 2: Track Progress */}
+            <ScrollStackItem itemClassName="bg-white border border-amber-500/20">
+              <div className="flex flex-col md:flex-row items-center gap-8 h-full">
+                <div className="flex-shrink-0 w-24 h-24 rounded-2xl bg-amber-500/15 flex items-center justify-center">
+                  <BarChart3 className="h-12 w-12 text-amber-500" />
+                </div>
+                <div className="flex-1">
+                  <div className="flex items-center gap-3 mb-2">
+                    <span className="text-xs font-bold uppercase tracking-wider text-amber-500 bg-amber-500/10 px-3 py-1 rounded-full">Step 2</span>
+                  </div>
+                  <h3 className="text-2xl font-bold mb-2">Track Progress</h3>
+                  <p className="text-muted-foreground text-base leading-relaxed mb-4">
+                    Monitor every submitted issue with real-time status updates. Get notified as department admins 
+                    review, assign, and work towards resolving your reports.
+                  </p>
+                  <div className="flex flex-wrap gap-3">
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                      <Bell className="h-4 w-4 text-amber-500" />
+                      <span>Real-time Notifications</span>
+                    </div>
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                      <CheckCircle2 className="h-4 w-4 text-amber-500" />
+                      <span>Status Updates</span>
+                    </div>
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                      <BarChart3 className="h-4 w-4 text-amber-500" />
+                      <span>Progress Timeline</span>
+                    </div>
                   </div>
                 </div>
-                <div className="mt-4 text-xl font-semibold">Track Progress</div>
-                <p className="mt-2 text-muted-foreground">Monitor your submitted issues in real-time. See status updates from department admins.</p>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardContent className="p-6">
-                <div className="w-full h-44 bg-muted/50 rounded-md flex items-center justify-center overflow-hidden">
-                  <div className="flex flex-col items-center gap-4">
-                    <Shield className="h-16 w-16 text-primary" />
-                    <Building2 className="h-12 w-12 text-primary/70" />
+              </div>
+            </ScrollStackItem>
+
+            {/* Card 3: Get Resolved */}
+            <ScrollStackItem itemClassName="bg-white border border-green-500/20">
+              <div className="flex flex-col md:flex-row items-center gap-8 h-full">
+                <div className="flex-shrink-0 w-24 h-24 rounded-2xl bg-green-500/15 flex items-center justify-center">
+                  <CheckCircle2 className="h-12 w-12 text-green-500" />
+                </div>
+                <div className="flex-1">
+                  <div className="flex items-center gap-3 mb-2">
+                    <span className="text-xs font-bold uppercase tracking-wider text-green-500 bg-green-500/10 px-3 py-1 rounded-full">Step 3</span>
+                  </div>
+                  <h3 className="text-2xl font-bold mb-2">Get Resolved</h3>
+                  <p className="text-muted-foreground text-base leading-relaxed mb-4">
+                    Issues are assigned to the appropriate municipal department. Once resolved, completion photos 
+                    are uploaded as proof, and you receive a resolution confirmation.
+                  </p>
+                  <div className="flex flex-wrap gap-3">
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                      <Building2 className="h-4 w-4 text-green-500" />
+                      <span>Department Assignment</span>
+                    </div>
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                      <Camera className="h-4 w-4 text-green-500" />
+                      <span>Completion Photos</span>
+                    </div>
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                      <Shield className="h-4 w-4 text-green-500" />
+                      <span>Verified Resolution</span>
+                    </div>
                   </div>
                 </div>
-                <div className="mt-4 text-xl font-semibold">Get Resolved</div>
-                <p className="mt-2 text-muted-foreground">Issues are assigned to appropriate departments and resolved with completion photos.</p>
-              </CardContent>
-            </Card>
-          </div>
+              </div>
+            </ScrollStackItem>
+
+            {/* Card 4: Department Dashboard */}
+            <ScrollStackItem itemClassName="bg-white border border-purple-500/20">
+              <div className="flex flex-col md:flex-row items-center gap-8 h-full">
+                <div className="flex-shrink-0 w-24 h-24 rounded-2xl bg-purple-500/15 flex items-center justify-center">
+                  <Building2 className="h-12 w-12 text-purple-500" />
+                </div>
+                <div className="flex-1">
+                  <div className="flex items-center gap-3 mb-2">
+                    <span className="text-xs font-bold uppercase tracking-wider text-purple-500 bg-purple-500/10 px-3 py-1 rounded-full">For Admins</span>
+                  </div>
+                  <h3 className="text-2xl font-bold mb-2">Department Dashboard</h3>
+                  <p className="text-muted-foreground text-base leading-relaxed mb-4">
+                    Regional and department admins get a centralized dashboard to manage all incoming issues, 
+                    assign tasks, track resolution metrics, and ensure accountability across teams.
+                  </p>
+                  <div className="flex flex-wrap gap-3">
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                      <Users className="h-4 w-4 text-purple-500" />
+                      <span>Team Management</span>
+                    </div>
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                      <BarChart3 className="h-4 w-4 text-purple-500" />
+                      <span>Analytics & Metrics</span>
+                    </div>
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                      <Shield className="h-4 w-4 text-purple-500" />
+                      <span>Role-based Access</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </ScrollStackItem>
+
+            {/* Card 5: Community Impact */}
+            <ScrollStackItem itemClassName="bg-white border border-rose-500/20">
+              <div className="flex flex-col md:flex-row items-center gap-8 h-full">
+                <div className="flex-shrink-0 w-24 h-24 rounded-2xl bg-rose-500/15 flex items-center justify-center">
+                  <Globe className="h-12 w-12 text-rose-500" />
+                </div>
+                <div className="flex-1">
+                  <div className="flex items-center gap-3 mb-2">
+                    <span className="text-xs font-bold uppercase tracking-wider text-rose-500 bg-rose-500/10 px-3 py-1 rounded-full">Impact</span>
+                  </div>
+                  <h3 className="text-2xl font-bold mb-2">Community Impact</h3>
+                  <p className="text-muted-foreground text-base leading-relaxed mb-4">
+                    Every report you file contributes to a better community. See aggregated statistics, resolved 
+                    issue maps, and community engagement scores that highlight the collective impact of civic participation.
+                  </p>
+                  <div className="flex flex-wrap gap-3">
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                      <MapPin className="h-4 w-4 text-rose-500" />
+                      <span>Issue Heatmaps</span>
+                    </div>
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                      <Users className="h-4 w-4 text-rose-500" />
+                      <span>Community Stats</span>
+                    </div>
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                      <Globe className="h-4 w-4 text-rose-500" />
+                      <span>Public Transparency</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </ScrollStackItem>
+          </ScrollStack>
         </section>
 
         {/* About Section */}
