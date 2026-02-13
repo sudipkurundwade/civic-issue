@@ -334,27 +334,7 @@ export default function CitizenDashboard() {
                                         </p>
                                     </div>
 
-                                    <div className="space-y-2">
-                                        <div className="flex items-center justify-between">
-                                            <Label>Issue Description *</Label>
-                                            {aiGenerated && (
-                                                <Badge variant="outline" className="gap-1 bg-gradient-to-r from-purple-50 to-blue-50 border-purple-200 text-purple-700">
-                                                    <Sparkles className="h-3 w-3" />
-                                                    AI Generated
-                                                </Badge>
-                                            )}
-                                        </div>
-                                        <Textarea
-                                            placeholder="Describe the issue in detail..."
-                                            className="min-h-[100px]"
-                                            value={reportForm.description}
-                                            onChange={(e) => {
-                                                setReportForm((f) => ({ ...f, description: e.target.value }))
-                                                if (aiGenerated) setAiGenerated(false) // Clear AI flag on manual edit
-                                            }}
-                                            required
-                                        />
-                                    </div>
+                                  
 
                                     <div className="space-y-2">
                                         <Label>Issue Photo *</Label>
@@ -424,6 +404,28 @@ export default function CitizenDashboard() {
                                                 </div>
                                             </div>
                                         )}
+                                    </div>
+
+                                      <div className="space-y-2">
+                                        <div className="flex items-center justify-between">
+                                            <Label>Issue Description *</Label>
+                                            {aiGenerated && (
+                                                <Badge variant="outline" className="gap-1 bg-gradient-to-r from-purple-50 to-blue-50 border-purple-200 text-purple-700">
+                                                    <Sparkles className="h-3 w-3" />
+                                                    AI Generated
+                                                </Badge>
+                                            )}
+                                        </div>
+                                        <Textarea
+                                            placeholder="Describe the issue in detail..."
+                                            className="min-h-[100px]"
+                                            value={reportForm.description}
+                                            onChange={(e) => {
+                                                setReportForm((f) => ({ ...f, description: e.target.value }))
+                                                if (aiGenerated) setAiGenerated(false) // Clear AI flag on manual edit
+                                            }}
+                                            required
+                                        />
                                     </div>
 
                                     <Button
