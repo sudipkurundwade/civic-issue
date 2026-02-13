@@ -2,7 +2,7 @@ import 'dotenv/config'; // Load .env file
 import mongoose from 'mongoose';
 import Region from '../src/models/Region.js'; // Adjust path as needed based on where you run this
 
-const regions = [
+export const regions = [
     "Gadhinglaj",
     "Jaysingpur",
     "Panahala",
