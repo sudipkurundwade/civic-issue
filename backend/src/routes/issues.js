@@ -7,6 +7,7 @@ import { uploadPhoto } from '../config/cloudinary.js';
 import { uploadToCloudinary } from '../lib/uploadToCloudinary.js';
 import { cloudinary } from '../config/cloudinary.js';
 import { notifyDepartmentNewIssue } from '../lib/notifications.js';
+import { calculateRankingScore } from '../lib/geminiService.js';
 
 const router = express.Router();
 
@@ -134,6 +135,16 @@ router.post('/', authenticate, requireRole('civic'), maybeUploadPhoto, async (re
       .populate('user', 'name email')
       .lean();
 
+    // Calculate initial ranking score in background
+    calculateRankingScore(issue).then(async (scores) => {
+      await Issue.findByIdAndUpdate(issue._id, {
+        rankingScore: scores.rankingScore,
+        descriptionAnalysisScore: scores.descriptionAnalysisScore,
+        commentAnalysisScore: scores.commentAnalysisScore,
+        lastRankingUpdate: new Date(),
+      });
+    }).catch(err => console.error('Error calculating initial ranking:', err));
+
     // Notifications
     if (populated.department) {
       notifyDepartmentNewIssue(populated);
@@ -169,7 +180,7 @@ router.get('/', authenticate, async (req, res) => {
       .populate({ path: 'department', select: 'name', populate: { path: 'region', select: 'name' } })
       .populate('region', 'name')
       .populate('user', 'name email')
-      .sort({ createdAt: -1 })
+      .sort({ rankingScore: -1, createdAt: -1 })
       .lean();
 
     const userId = req.user?.id?.toString();
@@ -229,6 +240,14 @@ router.post('/:id/like', authenticate, async (req, res) => {
     }
     await issue.save();
 
+    // Recalculate ranking score in background
+    calculateRankingScore(issue).then(async (scores) => {
+      await Issue.findByIdAndUpdate(issue._id, {
+        rankingScore: scores.rankingScore,
+        lastRankingUpdate: new Date(),
+      });
+    }).catch(err => console.error('Error recalculating ranking after like:', err));
+
     res.json({
       id: issue._id,
       liked: !liked,
@@ -284,6 +303,15 @@ router.post('/:id/comments', authenticate, async (req, res) => {
     };
     issue.comments = [...(issue.comments || []), comment];
     await issue.save();
+
+    // Recalculate ranking score in background
+    calculateRankingScore(issue).then(async (scores) => {
+      await Issue.findByIdAndUpdate(issue._id, {
+        rankingScore: scores.rankingScore,
+        commentAnalysisScore: scores.commentAnalysisScore,
+        lastRankingUpdate: new Date(),
+      });
+    }).catch(err => console.error('Error recalculating ranking after comment:', err));
 
     res.status(201).json({
       id: issue.comments[issue.comments.length - 1]._id,

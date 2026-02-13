@@ -29,6 +29,11 @@ const issueSchema = new mongoose.Schema(
         createdAt: { type: Date, default: Date.now },
       },
     ],
+    // Ranking system
+    rankingScore: { type: Number, default: 0 },
+    lastRankingUpdate: { type: Date },
+    descriptionAnalysisScore: { type: Number },
+    commentAnalysisScore: { type: Number },
   },
   { timestamps: true }
 );
