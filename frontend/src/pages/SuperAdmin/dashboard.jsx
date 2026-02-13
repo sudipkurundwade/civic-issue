@@ -51,15 +51,18 @@ export default function SuperAdminDashboard() {
     window.location.reload() // Reload to trigger the App.jsx routing logic
   }
 
+  const REGION_OPTIONS = [
+    "Gadhinglaj", "Jaysingpur", "Panahala", "Murgud", "Kurundwad",
+    "Kagal", "Wadgaon (Hatkanangale)", "Malkapur (Shahuwadi)", "Ajara",
+    "Chandgad", "Hupari", "Kolhapur", "Ichalkaranji"
+  ]
+
   const [regions, setRegions] = React.useState([])
-  const [availableRegions, setAvailableRegions] = React.useState([])
   const [selectedRegion, setSelectedRegion] = React.useState("all")
   const [adminEmail, setAdminEmail] = React.useState("")
   const [adminPassword, setAdminPassword] = React.useState("")
   const [adminName, setAdminName] = React.useState("")
   const [adminRegion, setAdminRegion] = React.useState("")
-  const [newRegionName, setNewRegionName] = React.useState("")
-  const [isCreateNewRegion, setIsCreateNewRegion] = React.useState(false)
   const [loading, setLoading] = React.useState(false)
   const [dialogOpen, setDialogOpen] = React.useState(false)
   const [regionsKey, setRegionsKey] = React.useState(0)
@@ -73,31 +76,9 @@ export default function SuperAdminDashboard() {
     const urlParams = new URLSearchParams(window.location.search)
     if (urlParams.get('createRegion') === 'true') {
       setDialogOpen(true)
-      // Clean the URL
       window.history.replaceState({}, '', '/super-dashboard')
-
-      // Try to get the requested region name from notifications
-      notificationService.getMyNotifications().then(notifications => {
-        const missingRegionNotification = notifications.find(n =>
-          n.type === 'MISSING_REGION' && !n.read
-        )
-        if (missingRegionNotification?.issue?.requestedRegionName) {
-          // Note: newRegionName was removed, we might need it back or handle differently
-          // But I'll just keep the structure for now.
-        }
-      }).catch(() => {
-        // Silently fail if we can't get notifications
-      })
     }
   }, [])
-
-  React.useEffect(() => {
-    if (dialogOpen) {
-      adminService.getAvailableRegions()
-        .then(setAvailableRegions)
-        .catch(() => toast({ title: "Failed to load available regions", variant: "destructive" }))
-    }
-  }, [dialogOpen])
 
   React.useEffect(() => {
     adminService.getRegions()
@@ -150,15 +131,11 @@ export default function SuperAdminDashboard() {
     e.preventDefault()
     setLoading(true)
     try {
-      const selectedRegionObj = availableRegions.find(r => r.id === adminRegion || r.name === adminRegion);
-      const isNew = selectedRegionObj && !selectedRegionObj.id;
-
       const result = await adminService.createRegionalAdmin({
         email: adminEmail,
         password: adminPassword,
         name: adminName,
-        regionId: isNew ? null : adminRegion || null,
-        regionName: isNew ? adminRegion : null,
+        regionName: adminRegion,
       })
       toast({ title: "Regional admin created successfully" })
       setDialogOpen(false)
@@ -243,9 +220,9 @@ export default function SuperAdminDashboard() {
                   required
                 >
                   <option value="">Select Region</option>
-                  {availableRegions.map((region) => (
-                    <option key={region.id || region.name} value={region.id || region.name}>
-                      {region.name}
+                  {REGION_OPTIONS.map((name) => (
+                    <option key={name} value={name}>
+                      {name}
                     </option>
                   ))}
                 </select>

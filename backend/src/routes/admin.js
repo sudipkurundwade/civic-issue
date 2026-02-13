@@ -142,11 +142,16 @@ router.get('/regions', authenticate, requireRole('super_admin'), async (req, res
   }
 });
 
-// List available regions (from seedRegions.js that don't have an admin yet)
+// Predefined regions list (same as scripts/seedRegions.js, inlined to avoid side-effect imports)
+const PREDEFINED_REGIONS = [
+  "Gadhinglaj", "Jaysingpur", "Panahala", "Murgud", "Kurundwad",
+  "Kagal", "Wadgaon (Hatkanangale)", "Malkapur (Shahuwadi)", "Ajara",
+  "Chandgad", "Hupari", "Kolhapur", "Ichalkaranji"
+];
+
+// List available regions (predefined regions that don't have an admin yet)
 router.get('/regions/available', authenticate, requireRole('super_admin'), async (req, res) => {
   try {
-    const { regions: allPredefinedRegions } = await import('../../scripts/seedRegions.js');
-
     // Get all existing regions and their admins
     const existingRegions = await Region.find().lean();
     const regionalAdmins = await User.find({ role: 'regional_admin' }).lean();
@@ -165,7 +170,7 @@ router.get('/regions/available', authenticate, requireRole('super_admin'), async
       regionDocByName[doc.name.toLowerCase().trim()] = doc;
     });
 
-    const result = allPredefinedRegions.map(name => {
+    const result = PREDEFINED_REGIONS.map(name => {
       const cleanName = name.trim();
       const existingDoc = regionDocByName[cleanName.toLowerCase()];
 
