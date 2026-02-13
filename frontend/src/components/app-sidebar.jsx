@@ -42,12 +42,9 @@ const ROLE_NAV = {
     { title: "Departments", url: "/region-departments", icon: Building2 },
     { title: "Reports", url: "/reports", icon: FileText },
     { title: "Analytics", url: "/analytics", icon: PieChart },
+        { title: "Announcements", url: "/announcements", icon: Megaphone },
     { title: "Notifications", url: "/notifications", icon: Bell },
-<<<<<<< HEAD
-=======
     { title: "Heat Map", url: "/heatmap", icon: Map },
-    { title: "Messages", url: "/chat", icon: MessageSquare },
->>>>>>> 53200b90396904a99170ac7ee8266b62bd96d819
     { title: "Profile", url: "/profile", icon: User },
   ],
   departmental_admin: [

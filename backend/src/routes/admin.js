@@ -170,12 +170,7 @@ router.get('/regions/available', authenticate, requireRole('super_admin'), async
       regionDocByName[doc.name.toLowerCase().trim()] = doc;
     });
 
-<<<<<<< HEAD
     const result = PREDEFINED_REGIONS.map(name => {
-=======
-    // Only return regions that are in the seedRegions list and don't have an admin
-    const result = allPredefinedRegions.map(name => {
->>>>>>> 53200b90396904a99170ac7ee8266b62bd96d819
       const cleanName = name.trim();
       const existingDoc = regionDocByName[cleanName.toLowerCase()];
 
@@ -187,14 +182,12 @@ router.get('/regions/available', authenticate, requireRole('super_admin'), async
         hasAdmin = !!adminByRegionId[id.toString()];
       }
 
-      if (!hasAdmin) {
-        return {
-          name: cleanName,
-          id: id,
-        };
-      }
-      return null;
-    }).filter(Boolean).sort((a, b) => a.name.localeCompare(b.name));
+      return {
+        name: cleanName,
+        id: id,
+        hasAdmin: hasAdmin
+      };
+    }).filter(r => !r.hasAdmin);
 
     res.json(result);
   } catch (err) {
