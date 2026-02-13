@@ -23,6 +23,7 @@ import {
     ArrowLeft,
     Camera,
     Upload,
+    Sparkles,
 } from "lucide-react"
 import { issueService } from "@/services/issueService"
 import { useToast } from "@/components/ui/use-toast"
@@ -85,6 +86,8 @@ export default function CitizenDashboard() {
     const [mapSelected, setMapSelected] = React.useState(null)
     const [reportForm, setReportForm] = React.useState({ description: "", regionName: "", departmentName: "", photo: null, photoPreview: null, address: "" })
     const [submitting, setSubmitting] = React.useState(false)
+    const [analyzing, setAnalyzing] = React.useState(false)
+    const [aiGenerated, setAiGenerated] = React.useState(false)
     const [cameraOpen, setCameraOpen] = React.useState(false)
     const [selectedIssue, setSelectedIssue] = React.useState(null)
     const [detailOpen, setDetailOpen] = React.useState(false)
@@ -120,6 +123,48 @@ export default function CitizenDashboard() {
             })
         } else if (isReporting) setLocationLoading(false)
     }, [isReporting])
+
+    const handleAnalyzeImage = async () => {
+        if (!reportForm.photo) {
+            toast({ title: "No photo to analyze", variant: "destructive" })
+            return
+        }
+
+        setAnalyzing(true)
+        try {
+            // Convert photo to base64
+            const reader = new FileReader()
+            reader.onloadend = async () => {
+                try {
+                    const base64 = reader.result
+                    const mimeType = reportForm.photo.type || 'image/jpeg'
+                    
+                    const result = await issueService.analyzeImage(base64, mimeType)
+                    
+                    setReportForm(f => ({ ...f, description: result.description }))
+                    setAiGenerated(true)
+                    toast({ 
+                        title: "✨ AI Analysis Complete", 
+                        description: "Description generated! You can edit it before submitting." 
+                    })
+                } catch (error) {
+                    console.error('Analysis error:', error)
+                    toast({ 
+                        title: "Analysis failed", 
+                        description: error.message || "Please write the description manually.",
+                        variant: "destructive" 
+                    })
+                } finally {
+                    setAnalyzing(false)
+                }
+            }
+            reader.readAsDataURL(reportForm.photo)
+        } catch (error) {
+            console.error('File read error:', error)
+            toast({ title: "Failed to read image", variant: "destructive" })
+            setAnalyzing(false)
+        }
+    }
 
     const resolved = myIssues.filter((i) => i.status === "COMPLETED").length
     const unresolved = myIssues.filter((i) => i.status !== "COMPLETED").length
@@ -290,12 +335,23 @@ export default function CitizenDashboard() {
                                     </div>
 
                                     <div className="space-y-2">
-                                        <Label>Issue Description *</Label>
+                                        <div className="flex items-center justify-between">
+                                            <Label>Issue Description *</Label>
+                                            {aiGenerated && (
+                                                <Badge variant="outline" className="gap-1 bg-gradient-to-r from-purple-50 to-blue-50 border-purple-200 text-purple-700">
+                                                    <Sparkles className="h-3 w-3" />
+                                                    AI Generated
+                                                </Badge>
+                                            )}
+                                        </div>
                                         <Textarea
                                             placeholder="Describe the issue in detail..."
                                             className="min-h-[100px]"
                                             value={reportForm.description}
-                                            onChange={(e) => setReportForm((f) => ({ ...f, description: e.target.value }))}
+                                            onChange={(e) => {
+                                                setReportForm((f) => ({ ...f, description: e.target.value }))
+                                                if (aiGenerated) setAiGenerated(false) // Clear AI flag on manual edit
+                                            }}
                                             required
                                         />
                                     </div>
@@ -344,15 +400,28 @@ export default function CitizenDashboard() {
                                             </Button>
                                         </div>
                                         {reportForm.photoPreview && (
-                                            <div className="mt-2">
+                                            <div className="mt-2 space-y-2">
                                                 <img
                                                     src={reportForm.photoPreview}
                                                     alt="Preview"
                                                     className="h-24 rounded border object-cover"
                                                 />
-                                                <p className="text-xs text-emerald-600 mt-1 font-medium">
-                                                    Photo added. Location captured.
-                                                </p>
+                                                <div className="flex items-center justify-between">
+                                                    <p className="text-xs text-emerald-600 font-medium">
+                                                        Photo added. Location captured.
+                                                    </p>
+                                                    <Button
+                                                        type="button"
+                                                        size="sm"
+                                                        variant="outline"
+                                                        className="gap-2 bg-gradient-to-r from-purple-50 to-blue-50 border-purple-200 hover:from-purple-100 hover:to-blue-100 text-purple-700"
+                                                        onClick={handleAnalyzeImage}
+                                                        disabled={analyzing}
+                                                    >
+                                                        <Sparkles className="h-3 w-3" />
+                                                        {analyzing ? "Analyzing..." : "Analyze with AI"}
+                                                    </Button>
+                                                </div>
                                             </div>
                                         )}
                                     </div>

@@ -7,8 +7,33 @@ import { uploadPhoto } from '../config/cloudinary.js';
 import { uploadToCloudinary } from '../lib/uploadToCloudinary.js';
 import { cloudinary } from '../config/cloudinary.js';
 import { notifyDepartmentNewIssue } from '../lib/notifications.js';
+import { analyzeIssueImage } from '../services/geminiService.js';
 
 const router = express.Router();
+
+// Analyze issue image with AI (Gemini)
+router.post('/analyze-image', authenticate, requireRole('civic'), async (req, res) => {
+  try {
+    const { image, mimeType } = req.body;
+
+    if (!image) {
+      return res.status(400).json({ error: 'Image data is required' });
+    }
+
+    // Remove data URI prefix if present
+    const base64Data = image.replace(/^data:image\/\w+;base64,/, '');
+    const imageMimeType = mimeType || 'image/jpeg';
+
+    const description = await analyzeIssueImage(base64Data, imageMimeType);
+
+    res.json({ description });
+  } catch (error) {
+    console.error('Image analysis error:', error);
+    res.status(500).json({
+      error: error.message || 'Failed to analyze image. Please write the description manually.'
+    });
+  }
+});
 
 // Multer middleware - only for multipart; otherwise next
 const maybeUploadPhoto = (req, res, next) => {

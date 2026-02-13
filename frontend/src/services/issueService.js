@@ -62,4 +62,15 @@ export const issueService = {
     if (!res.ok) throw new Error(data.error || 'Failed to add comment');
     return data;
   },
+
+  async analyzeImage(base64Image, mimeType = 'image/jpeg') {
+    const res = await fetch(`${API_URL}/issues/analyze-image`, {
+      method: 'POST',
+      headers: { ...headers(), 'Content-Type': 'application/json' },
+      body: JSON.stringify({ image: base64Image, mimeType }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Failed to analyze image');
+    return data;
+  },
 };
