@@ -12,6 +12,7 @@ import {
   List,
   Megaphone,
   Bell,
+  FileText,
 } from "lucide-react"
 
 import { NavMain } from "@/components/nav-main"
@@ -27,16 +28,18 @@ import {
 const ROLE_NAV = {
   super_admin: [
     { title: "Super Admin Dashboard", url: "/super-dashboard", icon: LayoutDashboard },
+    { title: "Reports", url: "/reports", icon: FileText },
     { title: "Notifications", url: "/notifications", icon: Bell },
     { title: "Analytics", url: "/analytics", icon: PieChart },
     { title: "Announcements", url: "/announcements", icon: Megaphone },
     { title: "My Announcements", url: "/my-announcements", icon: List },
-    { title: "Messages", url: "/chat", icon: MessageSquare },
     { title: "Profile", url: "/profile", icon: User },
   ],
   regional_admin: [
     { title: "Region Dashboard", url: "/region-dashboard", icon: Map },
     { title: "Departments", url: "/region-departments", icon: Building2 },
+    { title: "Reports", url: "/reports", icon: FileText },
+    { title: "Analytics", url: "/analytics", icon: PieChart },
     { title: "Notifications", url: "/notifications", icon: Bell },
     { title: "Messages", url: "/chat", icon: MessageSquare },
     { title: "Profile", url: "/profile", icon: User },
@@ -46,6 +49,7 @@ const ROLE_NAV = {
     { title: "Notifications", url: "/notifications", icon: Bell },
     { title: "Announcements", url: "/announcements", icon: Megaphone },
     { title: "Messages", url: "/chat", icon: MessageSquare },
+    { title: "Reports", url: "/reports", icon: FileText },
     { title: "Profile", url: "/profile", icon: User },
   ],
   civic: [
@@ -58,7 +62,21 @@ const ROLE_NAV = {
 }
 
 export function AppSidebar({ user, onLogout, page, onNavigate }) {
-  const navItems = ROLE_NAV[user?.role] || ROLE_NAV.civic
+  const baseNav = ROLE_NAV[user?.role] || ROLE_NAV.civic
+
+  const navItems = baseNav.map((item, idx) => {
+    if (idx !== 0) return item
+
+    if (user?.role === "departmental_admin" && user?.department?.name) {
+      return { ...item, title: user.department.name }
+    }
+
+    if (user?.role === "regional_admin" && user?.region?.name) {
+      return { ...item, title: user.region.name }
+    }
+
+    return item
+  })
 
   const handleNav = (e, url) => {
     e?.preventDefault?.()
@@ -71,7 +89,9 @@ export function AppSidebar({ user, onLogout, page, onNavigate }) {
       <SidebarHeader>
         <div className="px-2 py-2">
           <h2 className="font-semibold text-lg">Civic Issue</h2>
-          <p className="text-xs text-muted-foreground capitalize">{user?.role?.replace("_", " ")}</p>
+          <p className="text-xs text-muted-foreground capitalize">
+            {user?.role?.replace("_", " ")}
+          </p>
         </div>
       </SidebarHeader>
 

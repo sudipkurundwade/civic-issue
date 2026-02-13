@@ -122,4 +122,29 @@ router.get('/my', auth, isCreator, async (req, res) => {
     }
 });
 
+// Increment view count (Unique Viewers Only)
+router.post('/:id/view', auth, async (req, res) => {
+    try {
+        const userId = req.user.id || req.user.userId;
+
+        // Try to update only if user hasn't viewed it yet
+        const result = await Announcement.updateOne(
+            { _id: req.params.id, viewedBy: { $ne: userId } },
+            {
+                $push: { viewedBy: userId },
+                $inc: { views: 1 }
+            }
+        );
+
+        // Fetch the updated view count (whether we incremented or not)
+        const announcement = await Announcement.findById(req.params.id).select('views');
+
+        if (!announcement) return res.status(404).json({ error: 'Announcement not found' });
+
+        res.json({ views: announcement.views });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
 export default router;

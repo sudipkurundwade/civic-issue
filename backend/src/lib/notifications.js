@@ -84,3 +84,68 @@ export async function notifyDepartmentNewIssue(issue) {
   }
 }
 
+
+export async function notifyRegionalAdminMissingDepartment(issue) {
+  try {
+    if (!issue) return;
+    const issueId = issue._id || issue.id;
+    const regionId =
+      (issue.region && (issue.region._id || issue.region.id)) || issue.region;
+    if (!regionId || !issueId) return;
+
+    // Find regional admins for this region
+    const admins = await User.find({
+      role: 'regional_admin',
+      region: regionId,
+    }).select('_id');
+
+    if (!admins.length) return;
+
+    const shortDescription =
+      (issue.description || '').length > 50
+        ? `${issue.description.slice(0, 47)}...`
+        : issue.description || 'Issue';
+
+    const docs = admins.map((a) => ({
+      user: a._id,
+      title: 'Missing Department for Issue',
+      message: `Issue "${shortDescription}" needs department "${issue.requestedDepartmentName}" created in your region.`,
+      type: 'MISSING_DEPARTMENT',
+      issue: issueId,
+    }));
+
+    await Notification.insertMany(docs);
+  } catch (err) {
+    console.warn('notifyRegionalAdminMissingDepartment error:', err.message);
+  }
+}
+
+export async function notifySuperAdminMissingRegion(issue) {
+  try {
+    if (!issue) return;
+    const issueId = issue._id || issue.id;
+    if (!issueId) return;
+
+    // Find super admins
+    const admins = await User.find({ role: 'super_admin' }).select('_id');
+
+    if (!admins.length) return;
+
+    const shortDescription =
+      (issue.description || '').length > 50
+        ? `${issue.description.slice(0, 47)}...`
+        : issue.description || 'Issue';
+
+    const docs = admins.map((a) => ({
+      user: a._id,
+      title: 'Missing Region for Issue',
+      message: `Issue "${shortDescription}" requested unknown region "${issue.requestedRegionName}".`,
+      type: 'MISSING_REGION',
+      issue: issueId,
+    }));
+
+    await Notification.insertMany(docs);
+  } catch (err) {
+    console.warn('notifySuperAdminMissingRegion error:', err.message);
+  }
+}

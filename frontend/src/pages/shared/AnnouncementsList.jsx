@@ -1,8 +1,8 @@
 import * as React from "react"
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
+import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs"
-import { Clock, Calendar, Megaphone, AlertTriangle, Lock } from "lucide-react"
+import { Clock, Calendar, Megaphone, AlertTriangle, Lock, Eye } from "lucide-react"
 import { useAuth } from "@/context/AuthContext"
 
 export default function AnnouncementsList({ mode = "public" }) {
@@ -11,12 +11,14 @@ export default function AnnouncementsList({ mode = "public" }) {
     const [announcements, setAnnouncements] = React.useState([])
     const [loading, setLoading] = React.useState(true)
 
+    const observerRef = React.useRef(null)
+    const viewedIds = React.useRef(new Set())
+
     // Fetch announcements based on tab
     React.useEffect(() => {
         const fetchAnnouncements = async () => {
             setLoading(true)
             try {
-                // Fix: ensure we use the correct token key consistent with authService
                 const token = localStorage.getItem('civic_token')
                 let url = `http://localhost:3001/api/announcements?filter=${activeTab}`
 
@@ -42,6 +44,52 @@ export default function AnnouncementsList({ mode = "public" }) {
 
         fetchAnnouncements()
     }, [activeTab, mode])
+
+    const incrementViewCount = async (id) => {
+        try {
+            const token = localStorage.getItem('civic_token');
+            const response = await fetch(`http://localhost:3001/api/announcements/${id}/view`, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            });
+            if (response.ok) {
+                const { views } = await response.json();
+                setAnnouncements(prev => prev.map(a =>
+                    a._id === id ? { ...a, views } : a
+                ));
+            }
+        } catch (error) {
+            console.error("Failed to increment view count", error);
+        }
+    };
+
+    React.useEffect(() => {
+        if (loading || announcements.length === 0) return;
+
+        if (observerRef.current) observerRef.current.disconnect();
+
+        observerRef.current = new IntersectionObserver((entries) => {
+            entries.forEach((entry) => {
+                if (entry.isIntersecting) {
+                    const id = entry.target.dataset.id;
+                    if (id && !viewedIds.current.has(id)) {
+                        viewedIds.current.add(id);
+                        incrementViewCount(id);
+                    }
+                }
+            });
+        }, { threshold: 0.5 });
+
+        document.querySelectorAll('.announcement-card').forEach((el) => {
+            observerRef.current.observe(el);
+        });
+
+        return () => {
+            if (observerRef.current) observerRef.current.disconnect();
+        }
+    }, [announcements, loading]);
 
     const getPriorityColor = (priority) => {
         switch (priority) {
@@ -89,7 +137,7 @@ export default function AnnouncementsList({ mode = "public" }) {
                         </div>
                     ) : (
                         announcements.map((announcement) => (
-                            <Card key={announcement._id} className="overflow-hidden">
+                            <Card key={announcement._id} data-id={announcement._id} className="announcement-card overflow-hidden">
                                 <div className={`h-1 w-full ${getPriorityColor(announcement.priority)}`} />
                                 <CardHeader className="pb-2">
                                     <div className="flex justify-between items-start">
@@ -127,11 +175,17 @@ export default function AnnouncementsList({ mode = "public" }) {
                                     )}
                                     <p className="whitespace-pre-wrap">{announcement.content}</p>
                                 </CardContent>
+                                <CardFooter>
+                                    <div className="flex items-center gap-2 font-semibold text-base px-3 py-1 rounded-full bg-blue-50 text-blue-700 dark:bg-blue-950/40 dark:text-blue-200 ml-auto border border-blue-200 dark:border-blue-800">
+                                        <Eye className="w-5 h-5" />
+                                        {announcement.views || 0} views
+                                    </div>
+                                </CardFooter>
                             </Card>
                         ))
                     )}
                 </div>
-            </Tabs>
-        </div>
+            </Tabs >
+        </div >
     )
 }
