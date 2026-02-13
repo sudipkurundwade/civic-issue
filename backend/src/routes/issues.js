@@ -7,11 +7,8 @@ import { uploadPhoto } from '../config/cloudinary.js';
 import { uploadToCloudinary } from '../lib/uploadToCloudinary.js';
 import { cloudinary } from '../config/cloudinary.js';
 import { notifyDepartmentNewIssue } from '../lib/notifications.js';
-<<<<<<< HEAD
 import { analyzeIssueImage } from '../services/geminiService.js';
-=======
 import { calculateRankingScore } from '../lib/geminiService.js';
->>>>>>> 5543200c58ca16fff7c1abc54b0f9e3a4e902abd
 
 const router = express.Router();
 
