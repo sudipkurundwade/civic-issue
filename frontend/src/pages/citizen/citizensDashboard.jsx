@@ -45,13 +45,19 @@ const DEPARTMENT_OPTIONS = [
 ]
 
 const REGION_SUGGESTIONS = [
-    "Kagal",
-    "Jaysingpur",
-    "Karvir",
     "Gadhinglaj",
+    "Jaysingpur",
+    "Panahala",
     "Murgud",
-    "Panhala",
-    "Shirur",
+    "Kurundwad",
+    "Kagal",
+    "Wadgaon (Hatkanangale)",
+    "Malkapur (Shahuwadi)",
+    "Ajara",
+    "Chandgad",
+    "Hupari",
+    "Kolhapur",
+    "Ichalkaranji"
 ]
 
 const captureLocation = () => {
@@ -424,177 +430,178 @@ export default function CitizenDashboard() {
                             const commentText = commentTextByIssue[issue.id] || ""
                             const isCommentsOpen = openCommentsId === issue.id
                             return (
-                            <Card
-                                key={issue.id}
-                                className="overflow-hidden shadow-md border-muted hover:shadow-lg transition-shadow"
-                            >
-                                {/* Post Header */}
-                                <div className="p-4 flex items-center gap-3 border-b bg-muted/20">
-                                    <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
-                                        <MapPin className="h-5 w-5 text-primary" />
+                                <Card
+                                    key={issue.id}
+                                    className="overflow-hidden shadow-md border-muted hover:shadow-lg transition-shadow"
+                                >
+                                    {/* Post Header */}
+                                    <div className="p-4 flex items-center gap-3 border-b bg-muted/20">
+                                        <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
+                                            <MapPin className="h-5 w-5 text-primary" />
+                                        </div>
+                                        <div>
+                                            <h4 className="font-semibold text-sm">{issue.area}, {issue.region}</h4>
+                                            <p className="text-xs text-muted-foreground">{issue.date} · Reported by {issue.reporterName}</p>
+                                        </div>
+                                        <div className="ml-auto">
+                                            <Badge variant={issue.status === "pending" ? "destructive" : "secondary"}>
+                                                {issue.status}
+                                            </Badge>
+                                        </div>
                                     </div>
-                                    <div>
-                                        <h4 className="font-semibold text-sm">{issue.area}, {issue.region}</h4>
-                                        <p className="text-xs text-muted-foreground">{issue.date} · Reported by {issue.reporterName}</p>
-                                    </div>
-                                    <div className="ml-auto">
-                                        <Badge variant={issue.status === "pending" ? "destructive" : "secondary"}>
-                                            {issue.status}
-                                        </Badge>
-                                    </div>
-                                </div>
 
-                                {/* Post Content */}
-                                <div className="p-0 cursor-pointer" onClick={() => { setSelectedIssue(issue); setDetailOpen(true) }}>
-                                    <div className="aspect-video w-full bg-muted">
-                                        <img
-                                            src={issue.image}
-                                            alt={issue.title}
-                                            className="w-full h-full object-cover"
-                                        />
+                                    {/* Post Content */}
+                                    <div className="p-0 cursor-pointer" onClick={() => { setSelectedIssue(issue); setDetailOpen(true) }}>
+                                        <div className="aspect-video w-full bg-muted">
+                                            <img
+                                                src={issue.image}
+                                                alt={issue.title}
+                                                className="w-full h-full object-cover"
+                                            />
+                                        </div>
+                                        <div className="p-4 space-y-2">
+                                            <h3 className="font-bold text-lg">{issue.title}</h3>
+                                            <p className="text-sm text-foreground/80">{issue.description}</p>
+                                        </div>
                                     </div>
-                                    <div className="p-4 space-y-2">
-                                        <h3 className="font-bold text-lg">{issue.title}</h3>
-                                        <p className="text-sm text-foreground/80">{issue.description}</p>
-                                    </div>
-                                </div>
 
-                                {/* Post Actions */}
-                        <div className="p-3 border-t flex items-center justify-around text-muted-foreground bg-muted/10">
-                                    <Button
-                                        variant={issue.likedByMe ? "default" : "ghost"}
-                                        size="sm"
-                                        className="gap-2 hover:text-blue-600"
-                                        onClick={async (e) => {
-                                            e.stopPropagation()
-                                            try {
-                                                const result = await issueService.toggleLike(issue.id)
-                                                setAllIssues((prev) =>
-                                                    prev.map((it) =>
-                                                        it.id === issue.id
-                                                            ? {
-                                                                ...it,
-                                                                likesCount: result.likesCount,
-                                                                likedByMe: result.liked,
-                                                            }
-                                                            : it
-                                                    )
-                                                )
-                                            } catch {
-                                                toast({ title: "Failed to update like", variant: "destructive" })
-                                            }
-                                        }}
-                                    >
-                                        <ThumbsUp className="h-4 w-4" />
-                                        <span className="text-xs">{issue.likes} Supports</span>
-                                    </Button>
-                                    <Button
-                                        variant="ghost"
-                                        size="sm"
-                                        className="gap-2 hover:text-green-600"
-                                        onClick={async (e) => {
-                                            e.stopPropagation()
-                                            if (!isCommentsOpen) {
-                                                // Opening comments: fetch if not already loaded
-                                                if (!commentsByIssue[issue.id]) {
-                                                    try {
-                                                        const data = await issueService.getComments(issue.id)
-                                                        setCommentsByIssue((prev) => ({ ...prev, [issue.id]: data }))
-                                                    } catch {
-                                                        toast({ title: "Failed to load comments", variant: "destructive" })
-                                                    }
-                                                }
-                                                setOpenCommentsId(issue.id)
-                                            } else {
-                                                setOpenCommentsId(null)
-                                            }
-                                        }}
-                                    >
-                                        <MessageSquare className="h-4 w-4" />
-                                        <span className="text-xs">{issue.comments} Comments</span>
-                                    </Button>
-                                    <Button variant="ghost" size="sm" className="gap-2 hover:text-purple-600">
-                                        <Share2 className="h-4 w-4" />
-                                        <span className="text-xs">Share</span>
-                                    </Button>
-                                </div>
-                                {/* Inline Comments Thread */}
-                                {isCommentsOpen && (
-                                    <div className="border-t px-4 pb-4 pt-3 space-y-3 bg-muted/10">
-                                        {comments.length === 0 ? (
-                                            <p className="text-xs text-muted-foreground">
-                                                No comments yet. Be the first to comment.
-                                            </p>
-                                        ) : (
-                                            <div className="space-y-2 max-h-40 overflow-y-auto pr-1">
-                                                {comments.map((c) => (
-                                                    <div key={c.id} className="text-xs border rounded-md px-2 py-1 bg-background">
-                                                        <div className="flex justify-between items-center mb-0.5">
-                                                            <span className="font-semibold">
-                                                                {c.user?.name || c.user?.email || "User"}
-                                                            </span>
-                                                            <span className="text-[10px] text-muted-foreground">
-                                                                {c.createdAt ? new Date(c.createdAt).toLocaleString() : ""}
-                                                            </span>
-                                                        </div>
-                                                        <p className="text-xs whitespace-pre-wrap">{c.text}</p>
-                                                    </div>
-                                                ))}
-                                            </div>
-                                        )}
-
-                                        <form
-                                            className="flex gap-2 pt-1"
-                                            onSubmit={async (e) => {
-                                                e.preventDefault()
-                                                const text = (commentTextByIssue[issue.id] || "").trim()
-                                                if (!text) return
+                                    {/* Post Actions */}
+                                    <div className="p-3 border-t flex items-center justify-around text-muted-foreground bg-muted/10">
+                                        <Button
+                                            variant={issue.likedByMe ? "default" : "ghost"}
+                                            size="sm"
+                                            className="gap-2 hover:text-blue-600"
+                                            onClick={async (e) => {
+                                                e.stopPropagation()
                                                 try {
-                                                    const newComment = await issueService.addComment(issue.id, text)
-                                                    setCommentsByIssue((prev) => ({
-                                                        ...prev,
-                                                        [issue.id]: [newComment, ...(prev[issue.id] || [])],
-                                                    }))
-                                                    setCommentTextByIssue((prev) => ({ ...prev, [issue.id]: "" }))
-                                                    // Increment comment count on the issue in allIssues
+                                                    const result = await issueService.toggleLike(issue.id)
                                                     setAllIssues((prev) =>
                                                         prev.map((it) =>
                                                             it.id === issue.id
                                                                 ? {
                                                                     ...it,
-                                                                    commentsCount: (it.commentsCount || 0) + 1,
+                                                                    likesCount: result.likesCount,
+                                                                    likedByMe: result.liked,
                                                                 }
                                                                 : it
                                                         )
                                                     )
                                                 } catch {
-                                                    toast({ title: "Failed to add comment", variant: "destructive" })
+                                                    toast({ title: "Failed to update like", variant: "destructive" })
                                                 }
                                             }}
                                         >
-                                            <Input
-                                                placeholder="Write a comment..."
-                                                value={commentText}
-                                                onChange={(e) =>
-                                                    setCommentTextByIssue((prev) => ({
-                                                        ...prev,
-                                                        [issue.id]: e.target.value,
-                                                    }))
+                                            <ThumbsUp className="h-4 w-4" />
+                                            <span className="text-xs">{issue.likes} Supports</span>
+                                        </Button>
+                                        <Button
+                                            variant="ghost"
+                                            size="sm"
+                                            className="gap-2 hover:text-green-600"
+                                            onClick={async (e) => {
+                                                e.stopPropagation()
+                                                if (!isCommentsOpen) {
+                                                    // Opening comments: fetch if not already loaded
+                                                    if (!commentsByIssue[issue.id]) {
+                                                        try {
+                                                            const data = await issueService.getComments(issue.id)
+                                                            setCommentsByIssue((prev) => ({ ...prev, [issue.id]: data }))
+                                                        } catch {
+                                                            toast({ title: "Failed to load comments", variant: "destructive" })
+                                                        }
+                                                    }
+                                                    setOpenCommentsId(issue.id)
+                                                } else {
+                                                    setOpenCommentsId(null)
                                                 }
-                                                className="text-xs"
-                                            />
-                                            <Button
-                                                type="submit"
-                                                size="sm"
-                                                disabled={!commentText.trim()}
-                                            >
-                                                Post
-                                            </Button>
-                                        </form>
+                                            }}
+                                        >
+                                            <MessageSquare className="h-4 w-4" />
+                                            <span className="text-xs">{issue.comments} Comments</span>
+                                        </Button>
+                                        <Button variant="ghost" size="sm" className="gap-2 hover:text-purple-600">
+                                            <Share2 className="h-4 w-4" />
+                                            <span className="text-xs">Share</span>
+                                        </Button>
                                     </div>
-                                )}
-                            </Card>
-                        )})
+                                    {/* Inline Comments Thread */}
+                                    {isCommentsOpen && (
+                                        <div className="border-t px-4 pb-4 pt-3 space-y-3 bg-muted/10">
+                                            {comments.length === 0 ? (
+                                                <p className="text-xs text-muted-foreground">
+                                                    No comments yet. Be the first to comment.
+                                                </p>
+                                            ) : (
+                                                <div className="space-y-2 max-h-40 overflow-y-auto pr-1">
+                                                    {comments.map((c) => (
+                                                        <div key={c.id} className="text-xs border rounded-md px-2 py-1 bg-background">
+                                                            <div className="flex justify-between items-center mb-0.5">
+                                                                <span className="font-semibold">
+                                                                    {c.user?.name || c.user?.email || "User"}
+                                                                </span>
+                                                                <span className="text-[10px] text-muted-foreground">
+                                                                    {c.createdAt ? new Date(c.createdAt).toLocaleString() : ""}
+                                                                </span>
+                                                            </div>
+                                                            <p className="text-xs whitespace-pre-wrap">{c.text}</p>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            )}
+
+                                            <form
+                                                className="flex gap-2 pt-1"
+                                                onSubmit={async (e) => {
+                                                    e.preventDefault()
+                                                    const text = (commentTextByIssue[issue.id] || "").trim()
+                                                    if (!text) return
+                                                    try {
+                                                        const newComment = await issueService.addComment(issue.id, text)
+                                                        setCommentsByIssue((prev) => ({
+                                                            ...prev,
+                                                            [issue.id]: [newComment, ...(prev[issue.id] || [])],
+                                                        }))
+                                                        setCommentTextByIssue((prev) => ({ ...prev, [issue.id]: "" }))
+                                                        // Increment comment count on the issue in allIssues
+                                                        setAllIssues((prev) =>
+                                                            prev.map((it) =>
+                                                                it.id === issue.id
+                                                                    ? {
+                                                                        ...it,
+                                                                        commentsCount: (it.commentsCount || 0) + 1,
+                                                                    }
+                                                                    : it
+                                                            )
+                                                        )
+                                                    } catch {
+                                                        toast({ title: "Failed to add comment", variant: "destructive" })
+                                                    }
+                                                }}
+                                            >
+                                                <Input
+                                                    placeholder="Write a comment..."
+                                                    value={commentText}
+                                                    onChange={(e) =>
+                                                        setCommentTextByIssue((prev) => ({
+                                                            ...prev,
+                                                            [issue.id]: e.target.value,
+                                                        }))
+                                                    }
+                                                    className="text-xs"
+                                                />
+                                                <Button
+                                                    type="submit"
+                                                    size="sm"
+                                                    disabled={!commentText.trim()}
+                                                >
+                                                    Post
+                                                </Button>
+                                            </form>
+                                        </div>
+                                    )}
+                                </Card>
+                            )
+                        })
                     ) : (
                         <div className="text-center py-10">
                             <CheckCircle className="h-12 w-12 text-green-500 mx-auto mb-3" />
