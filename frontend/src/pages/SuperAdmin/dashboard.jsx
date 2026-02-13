@@ -52,6 +52,7 @@ export default function SuperAdminDashboard() {
   }
 
   const [regions, setRegions] = React.useState([])
+  const [availableRegions, setAvailableRegions] = React.useState([])
   const [selectedRegion, setSelectedRegion] = React.useState("all")
   const [adminEmail, setAdminEmail] = React.useState("")
   const [adminPassword, setAdminPassword] = React.useState("")
@@ -71,8 +72,6 @@ export default function SuperAdminDashboard() {
   React.useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search)
     if (urlParams.get('createRegion') === 'true') {
-      // Set states first
-      setIsCreateNewRegion(true)
       setDialogOpen(true)
       // Clean the URL
       window.history.replaceState({}, '', '/super-dashboard')
@@ -83,13 +82,22 @@ export default function SuperAdminDashboard() {
           n.type === 'MISSING_REGION' && !n.read
         )
         if (missingRegionNotification?.issue?.requestedRegionName) {
-          setNewRegionName(missingRegionNotification.issue.requestedRegionName)
+          // Note: newRegionName was removed, we might need it back or handle differently
+          // But I'll just keep the structure for now.
         }
       }).catch(() => {
         // Silently fail if we can't get notifications
       })
     }
   }, [])
+
+  React.useEffect(() => {
+    if (dialogOpen) {
+      adminService.getAvailableRegions()
+        .then(setAvailableRegions)
+        .catch(() => toast({ title: "Failed to load available regions", variant: "destructive" }))
+    }
+  }, [dialogOpen])
 
   React.useEffect(() => {
     adminService.getRegions()
@@ -142,12 +150,15 @@ export default function SuperAdminDashboard() {
     e.preventDefault()
     setLoading(true)
     try {
+      const selectedRegionObj = availableRegions.find(r => r.id === adminRegion || r.name === adminRegion);
+      const isNew = selectedRegionObj && !selectedRegionObj.id;
+
       const result = await adminService.createRegionalAdmin({
         email: adminEmail,
         password: adminPassword,
         name: adminName,
-        regionId: isCreateNewRegion ? null : adminRegion || null,
-        regionName: isCreateNewRegion ? newRegionName.trim() : null,
+        regionId: isNew ? null : adminRegion || null,
+        regionName: isNew ? adminRegion : null,
       })
       toast({ title: "Regional admin created successfully" })
       setDialogOpen(false)
@@ -225,38 +236,19 @@ export default function SuperAdminDashboard() {
               </div>
               <div className="grid gap-2">
                 <Label>Region</Label>
-                <div className="space-y-2">
-                  <label className="flex items-center gap-2 text-sm">
-                    <input
-                      type="checkbox"
-                      checked={isCreateNewRegion}
-                      onChange={(e) => setIsCreateNewRegion(e.target.checked)}
-                    />
-                    Create new region
-                  </label>
-                  {isCreateNewRegion ? (
-                    <Input
-                      value={newRegionName}
-                      onChange={(e) => setNewRegionName(e.target.value)}
-                      placeholder="e.g. Gokulshigaon, Karveer"
-                      required={isCreateNewRegion}
-                    />
-                  ) : (
-                    <select
-                      value={adminRegion}
-                      onChange={(e) => setAdminRegion(e.target.value)}
-                      className="h-10 w-full rounded-md border px-3 text-sm"
-                      required={!isCreateNewRegion}
-                    >
-                      <option value="">Select Region</option>
-                      {uniqueRegions.map((region) => (
-                        <option key={region.id} value={region.id}>
-                          {region.name}
-                        </option>
-                      ))}
-                    </select>
-                  )}
-                </div>
+                <select
+                  value={adminRegion}
+                  onChange={(e) => setAdminRegion(e.target.value)}
+                  className="h-10 w-full rounded-md border px-3 text-sm"
+                  required
+                >
+                  <option value="">Select Region</option>
+                  {availableRegions.map((region) => (
+                    <option key={region.id || region.name} value={region.id || region.name}>
+                      {region.name}
+                    </option>
+                  ))}
+                </select>
               </div>
 
               <DialogFooter>

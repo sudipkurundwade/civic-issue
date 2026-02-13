@@ -2,7 +2,7 @@ import 'dotenv/config'; // Load .env file
 import mongoose from 'mongoose';
 import Region from '../src/models/Region.js'; // Adjust path as needed based on where you run this
 
-const regions = [
+export const regions = [
     "Gadhinglaj",
     "Jaysingpur",
     "Panahala",
@@ -53,4 +53,7 @@ const seedRegions = async () => {
     }
 };
 
-seedRegions();
+// Only run if called directly
+if (import.meta.url === `file://${process.argv[1]}` || process.argv[1]?.endsWith('seedRegions.js')) {
+    seedRegions();
+}

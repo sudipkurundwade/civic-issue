@@ -142,6 +142,58 @@ router.get('/regions', authenticate, requireRole('super_admin'), async (req, res
   }
 });
 
+// List available regions (from seedRegions.js that don't have an admin yet)
+router.get('/regions/available', authenticate, requireRole('super_admin'), async (req, res) => {
+  try {
+    const { regions: allPredefinedRegions } = await import('../../scripts/seedRegions.js');
+
+    // Get all existing regions and their admins
+    const existingRegions = await Region.find().lean();
+    const regionalAdmins = await User.find({ role: 'regional_admin' }).lean();
+
+    // Create a map of regionId -> admin
+    const adminByRegionId = {};
+    regionalAdmins.forEach(admin => {
+      if (admin.region) {
+        adminByRegionId[admin.region.toString()] = admin;
+      }
+    });
+
+    // Create a map of regionName -> RegionDoc
+    const regionDocByName = {};
+    existingRegions.forEach(doc => {
+      regionDocByName[doc.name.toLowerCase().trim()] = doc;
+    });
+
+    // Only return regions that are in the seedRegions list and don't have an admin
+    const result = allPredefinedRegions.map(name => {
+      const cleanName = name.trim();
+      const existingDoc = regionDocByName[cleanName.toLowerCase()];
+
+      let hasAdmin = false;
+      let id = null;
+
+      if (existingDoc) {
+        id = existingDoc._id;
+        hasAdmin = !!adminByRegionId[id.toString()];
+      }
+
+      if (!hasAdmin) {
+        return {
+          name: cleanName,
+          id: id,
+        };
+      }
+      return null;
+    }).filter(Boolean).sort((a, b) => a.name.localeCompare(b.name));
+
+    res.json(result);
+  } catch (err) {
+    console.error('Available regions error:', err);
+    res.status(500).json({ error: 'Failed to fetch available regions' });
+  }
+});
+
 // Create region (super admin)
 router.post('/regions', authenticate, requireRole('super_admin'), async (req, res) => {
   try {
