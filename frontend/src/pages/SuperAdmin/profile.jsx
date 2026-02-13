@@ -123,7 +123,7 @@ export default function ProfilePage() {
   // --- SIMPLIFIED VIEW FOR CIVIC USERS ---
   if (user?.role === 'civic') {
     return (
-      <div className="container max-w-2xl mx-auto py-10 px-4 space-y-8">
+      <div className="space-y-6 p-6 max-w-7xl mx-auto">
         <div className="space-y-2">
           <h2 className="text-3xl font-bold">My Profile</h2>
           <p className="text-muted-foreground">Manage your account settings and preferences.</p>

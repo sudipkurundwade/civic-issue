@@ -4,7 +4,7 @@ import AnnouncementsList from "../shared/AnnouncementsList"
 
 export default function AnnouncementsPage() {
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 p-6 max-w-7xl mx-auto">
       {/* Reusing the shared list component. 
            By default it shows "active" (public/all). 
            We can add a toggle or just two sections if needed, 

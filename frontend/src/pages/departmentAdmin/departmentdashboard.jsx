@@ -135,10 +135,10 @@ export default function DepartmentAdminDashboard() {
     }
 
     return (
-        <div className="space-y-6 p-6">
+        <div className="space-y-6 p-6 max-w-7xl mx-auto">
             <div className="flex items-center justify-between">
                 <div className="space-y-1">
-                    <h2 className="text-3xl font-bold tracking-tight">
+                    <h2 className="text-3xl font-bold tracking-tight bg-gradient-to-r from-orange-600 to-orange-700 bg-clip-text text-transparent">
                         {user?.department?.name ? user.department.name : "Department Dashboard"}
                     </h2>
                     <p className="text-muted-foreground">
@@ -151,17 +151,32 @@ export default function DepartmentAdminDashboard() {
             <div className="grid gap-4 md:grid-cols-3">
                 {stats.map((stat, index) => {
                     const Icon = stat.icon
+                    const colorClasses = [
+                        "bg-gradient-to-br from-orange-50 to-orange-100/50 border-orange-200/50",
+                        "bg-gradient-to-br from-emerald-50 to-emerald-100/50 border-emerald-200/50",
+                        "bg-gradient-to-br from-amber-50 to-amber-100/50 border-amber-200/50"
+                    ]
+                    const iconColors = [
+                        "text-orange-600",
+                        "text-emerald-600",
+                        "text-amber-600"
+                    ]
+                    const valueColors = [
+                        "text-orange-700",
+                        "text-emerald-700",
+                        "text-amber-700"
+                    ]
                     return (
-                        <Card key={index}>
+                        <Card key={index} className={`${colorClasses[index]} border-2 shadow-sm hover:shadow-md transition-all duration-300`}>
                             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                                <CardTitle className="text-sm font-medium">
+                                <CardTitle className="text-sm font-semibold text-foreground">
                                     {stat.title}
                                 </CardTitle>
-                                <Icon className="h-4 w-4 text-muted-foreground" />
+                                <Icon className={`h-5 w-5 ${iconColors[index]}`} />
                             </CardHeader>
                             <CardContent>
-                                <div className="text-2xl font-bold">{stat.value}</div>
-                                <p className="text-xs text-muted-foreground">
+                                <div className={`text-3xl font-bold ${valueColors[index]}`}>{stat.value}</div>
+                                <p className="text-xs text-muted-foreground mt-1">
                                     {stat.description}
                                 </p>
                             </CardContent>
@@ -173,12 +188,13 @@ export default function DepartmentAdminDashboard() {
             {/* Filters & List */}
             <div className="space-y-4">
                 <div className="flex items-center gap-2">
-                    <Filter className="h-4 w-4 text-muted-foreground" />
-                    <span className="text-sm font-medium">Filter:</span>
+                    <Filter className="h-4 w-4 text-orange-600" />
+                    <span className="text-sm font-semibold text-foreground">Filter:</span>
                     <Button
                         variant={filter === "all" ? "default" : "outline"}
                         size="sm"
                         onClick={() => setFilter("all")}
+                        className={filter === "all" ? "bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white" : "hover:bg-orange-50 hover:text-orange-600 hover:border-orange-300"}
                     >
                         All
                     </Button>
@@ -186,6 +202,7 @@ export default function DepartmentAdminDashboard() {
                         variant={filter === "solved" ? "default" : "outline"}
                         size="sm"
                         onClick={() => setFilter("solved")}
+                        className={filter === "solved" ? "bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 text-white" : "hover:bg-emerald-50 hover:text-emerald-600 hover:border-emerald-300"}
                     >
                         Solved
                     </Button>
@@ -193,6 +210,7 @@ export default function DepartmentAdminDashboard() {
                         variant={filter === "unsolved" ? "default" : "outline"}
                         size="sm"
                         onClick={() => setFilter("unsolved")}
+                        className={filter === "unsolved" ? "bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white" : "hover:bg-amber-50 hover:text-amber-600 hover:border-amber-300"}
                     >
                         Unsolved
                     </Button>
@@ -201,38 +219,47 @@ export default function DepartmentAdminDashboard() {
                 <div className="grid gap-4 md:grid-cols-1">
                     {filteredComplaints.length > 0 ? (
                         filteredComplaints.map((complaint) => (
-                            <Card key={complaint.id} className="overflow-hidden">
+                            <Card key={complaint.id} className="overflow-hidden border-orange-100/50 hover:shadow-xl hover:border-orange-200 transition-all duration-300 bg-gradient-to-br from-background to-orange-50/20">
                                 <CardContent className="p-0">
                                     <div className="flex flex-col md:flex-row">
-                                        <div className="w-full md:w-48 h-32 bg-muted relative">
+                                        <div className="w-full md:w-48 h-32 bg-muted relative overflow-hidden">
                                             <img
                                                 src={complaint.image}
                                                 alt="Complaint"
-                                                className="absolute inset-0 w-full h-full object-cover"
+                                                className="absolute inset-0 w-full h-full object-cover hover:scale-105 transition-transform duration-300"
                                             />
                                         </div>
-                                        <div className="p-4 flex-1 flex flex-col justify-between">
+                                        <div className="p-4 flex-1 flex flex-col justify-between bg-gradient-to-r from-orange-50/30 to-transparent">
                                             <div>
                                                 <div className="flex justify-between items-start">
-                                                    <h3 className="font-semibold text-lg">{complaint.title}</h3>
-                                                    <Badge variant={complaint.status === "resolved" ? "default" : "secondary"}>
+                                                    <h3 className="font-semibold text-lg text-foreground">{complaint.title}</h3>
+                                                    <Badge 
+                                                        variant={complaint.status === "resolved" ? "default" : "secondary"}
+                                                        className={complaint.status === "resolved" ? "bg-emerald-500/10 text-emerald-700 border-emerald-300/50" : "bg-orange-500/10 text-orange-700 border-orange-300/50"}
+                                                    >
                                                         {complaint.status}
                                                     </Badge>
                                                 </div>
                                                 <p className="text-sm text-muted-foreground mt-1 flex items-center gap-1">
-                                                    <MapPin className="h-3 w-3" /> {complaint.location}
+                                                    <MapPin className="h-3 w-3 text-orange-600" /> {complaint.location}
                                                 </p>
                                                 <p className="text-sm text-muted-foreground flex items-center gap-1">
-                                                    <Clock className="h-3 w-3" /> Reported: {complaint.date}
+                                                    <Clock className="h-3 w-3 text-orange-600" /> Reported: {complaint.date}
                                                 </p>
                                             </div>
                                             <div className="mt-4 flex justify-end">
-                                                <Button size="sm" onClick={() => {
-                                                    setSelectedIssue(complaint)
-                                                    setSelectedStatus(complaint.status === "in-progress" ? "in-progress" : "assigned")
-                                                    setCompletionPhoto(null)
-                                                    setSheetOpen(true)
-                                                }}>View Details & Update</Button>
+                                                <Button 
+                                                    size="sm" 
+                                                    onClick={() => {
+                                                        setSelectedIssue(complaint)
+                                                        setSelectedStatus(complaint.status === "in-progress" ? "in-progress" : "assigned")
+                                                        setCompletionPhoto(null)
+                                                        setSheetOpen(true)
+                                                    }}
+                                                    className="bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white shadow-sm hover:shadow-md transition-all duration-300"
+                                                >
+                                                    View Details & Update
+                                                </Button>
                                             </div>
                                         </div>
                                     </div>
@@ -240,8 +267,14 @@ export default function DepartmentAdminDashboard() {
                             </Card>
                         ))
                     ) : (
-                        <div className="text-center py-12 text-muted-foreground">
-                            No complaints found matching this filter.
+                        <div className="text-center py-12 border-2 border-dashed border-orange-200 rounded-lg bg-gradient-to-br from-orange-50/50 to-transparent">
+                            <div className="flex flex-col items-center justify-center text-muted-foreground">
+                                <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gradient-to-br from-orange-100 to-orange-200 mb-4">
+                                    <AlertCircle className="h-8 w-8 text-orange-600" />
+                                </div>
+                                <p className="text-lg font-semibold text-foreground">No complaints found</p>
+                                <p className="text-sm">No complaints found matching this filter.</p>
+                            </div>
                         </div>
                     )}
                 </div>
@@ -312,7 +345,7 @@ export default function DepartmentAdminDashboard() {
                                                 <Label htmlFor="status-in-progress">In Progress</Label>
                                             </div>
                                         </RadioGroup>
-                                        <Button type="submit" className="w-full" disabled={loading}>Save Status</Button>
+                                        <Button type="submit" className="w-full bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white shadow-sm hover:shadow-md transition-all duration-300" disabled={loading}>Save Status</Button>
                                     </form>
                                 </div>
 
@@ -324,7 +357,7 @@ export default function DepartmentAdminDashboard() {
                                             <Label htmlFor="completion-photo" className="text-xs font-semibold uppercase text-muted-foreground">Upload Completion Photo</Label>
                                             <Input id="completion-photo" type="file" required accept="image/*" onChange={(e) => setCompletionPhoto(e.target.files?.[0])} />
                                         </div>
-                                        <Button type="submit" className="w-full" variant="secondary" disabled={loading}>Mark as Resolved</Button>
+                                        <Button type="submit" className="w-full bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 text-white shadow-sm hover:shadow-md transition-all duration-300" disabled={loading}>Mark as Resolved</Button>
                                     </form>
                                 </div>
                             </div>

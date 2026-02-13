@@ -55,10 +55,10 @@ export default function MyIssuesPage() {
 
     const getStatusColor = (status) => {
         switch (status) {
-            case "solved": return "bg-green-100 text-green-800 hover:bg-green-100"
-            case "in-progress": return "bg-blue-100 text-blue-800 hover:bg-blue-100"
-            case "awaiting-department": return "bg-amber-100 text-amber-800 hover:bg-amber-100"
-            default: return "bg-yellow-100 text-yellow-800 hover:bg-yellow-100"
+            case "solved": return "bg-emerald-100 text-emerald-800 hover:bg-emerald-100 border-emerald-300/50"
+            case "in-progress": return "bg-blue-100 text-blue-800 hover:bg-blue-100 border-blue-300/50"
+            case "awaiting-department": return "bg-orange-100 text-orange-800 hover:bg-orange-100 border-orange-300/50"
+            default: return "bg-amber-100 text-amber-800 hover:bg-amber-100 border-amber-300/50"
         }
     }
 
@@ -72,19 +72,19 @@ export default function MyIssuesPage() {
     }
 
     return (
-        <div className="space-y-6 p-6 max-w-5xl mx-auto">
+        <div className="space-y-6 p-6 max-w-7xl mx-auto">
             <div className="flex flex-col space-y-2">
-                <h2 className="text-3xl font-bold tracking-tight">My Issues</h2>
+                <h2 className="text-3xl font-bold tracking-tight bg-gradient-to-r from-orange-600 to-orange-700 bg-clip-text text-transparent">My Issues</h2>
                 <p className="text-muted-foreground">Track the status of issues you have reported.</p>
             </div>
 
             {/* Search */}
             <div className="relative">
-                <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-orange-600" />
                 <Input
                     type="search"
                     placeholder="Search by title or ticket ID..."
-                    className="pl-8 md:w-[300px] lg:w-[400px]"
+                    className="pl-8 md:w-[300px] lg:w-[400px] border-orange-200/50 focus:border-orange-400 focus:ring-orange-400/20"
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
                 />
@@ -93,12 +93,17 @@ export default function MyIssuesPage() {
             {/* Issues List */}
             <div className="space-y-4">
                 {loading ? (
-                    <div className="text-center py-12 text-muted-foreground">Loading your issues...</div>
+                    <div className="text-center py-12">
+                        <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-gradient-to-br from-orange-100 to-orange-200 mb-4">
+                            <Clock className="h-6 w-6 text-orange-600 animate-spin" />
+                        </div>
+                        <p className="text-muted-foreground font-medium">Loading your issues...</p>
+                    </div>
                 ) : filteredIssues.length > 0 ? (
                     filteredIssues.map((issue) => (
                         <Card
                             key={issue.id}
-                            className="overflow-hidden hover:shadow-md transition-shadow cursor-pointer"
+                            className="overflow-hidden hover:shadow-xl hover:border-orange-200 transition-all duration-300 cursor-pointer border-orange-100/50 bg-gradient-to-br from-background to-orange-50/20"
                             onClick={() => { setSelectedIssue(issue); setDetailOpen(true) }}
                             role="button"
                             tabIndex={0}
@@ -107,25 +112,25 @@ export default function MyIssuesPage() {
                             <CardContent className="p-0">
                                 <div className="flex flex-col md:flex-row">
                                     {/* Image Section */}
-                                    <div className="w-full md:w-48 h-32 bg-muted relative shrink-0">
+                                    <div className="w-full md:w-48 h-32 bg-muted relative shrink-0 overflow-hidden">
                                         <img
                                             src={issue.image}
                                             alt={issue.title}
-                                            className="w-full h-full object-cover"
+                                            className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
                                         />
                                         <div className="absolute top-2 left-2">
-                                            <Badge variant="secondary" className="bg-background/80 backdrop-blur-sm">
+                                            <Badge variant="secondary" className="bg-orange-500/90 backdrop-blur-sm text-white border-0 shadow-sm">
                                                 {issue.ticketId}
                                             </Badge>
                                         </div>
                                     </div>
 
                                     {/* Content Section */}
-                                    <div className="p-4 flex-1 flex flex-col justify-between">
+                                    <div className="p-4 flex-1 flex flex-col justify-between bg-gradient-to-r from-orange-50/30 to-transparent">
                                         <div>
                                             <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-2">
-                                                <h3 className="font-semibold text-lg">{issue.title}</h3>
-                                                <Badge className={`${getStatusColor(issue.status)} border-0`}>
+                                                <h3 className="font-semibold text-lg text-foreground">{issue.title}</h3>
+                                                <Badge className={`${getStatusColor(issue.status)} border`}>
                                                     {getStatusIcon(issue.status)}
                                                     {issue.status.charAt(0).toUpperCase() + issue.status.slice(1)}
                                                 </Badge>
@@ -133,11 +138,11 @@ export default function MyIssuesPage() {
 
                                             <div className="flex items-center text-sm text-muted-foreground mt-1 gap-4">
                                                 <span className="flex items-center">
-                                                    <MapPin className="h-3 w-3 mr-1" />
+                                                    <MapPin className="h-3 w-3 mr-1 text-orange-600" />
                                                     {issue.area}, {issue.region}
                                                 </span>
                                                 <span className="flex items-center">
-                                                    <Clock className="h-3 w-3 mr-1" />
+                                                    <Clock className="h-3 w-3 mr-1 text-orange-600" />
                                                     {issue.date}
                                                 </span>
                                             </div>
@@ -148,7 +153,12 @@ export default function MyIssuesPage() {
                                         </div>
 
                                         <div className="mt-4 flex justify-end">
-                                            <Button variant="outline" size="sm" onClick={(e) => { e.stopPropagation(); setSelectedIssue(issue); setDetailOpen(true) }}>
+                                            <Button 
+                                                variant="outline" 
+                                                size="sm" 
+                                                onClick={(e) => { e.stopPropagation(); setSelectedIssue(issue); setDetailOpen(true) }}
+                                                className="hover:bg-orange-50 hover:text-orange-600 hover:border-orange-300 transition-all duration-300"
+                                            >
                                                 View Details
                                             </Button>
                                         </div>
@@ -158,10 +168,12 @@ export default function MyIssuesPage() {
                         </Card>
                     ))
                 ) : (
-                    <div className="text-center py-12 border-2 border-dashed rounded-lg">
+                    <div className="text-center py-12 border-2 border-dashed border-orange-200 rounded-lg bg-gradient-to-br from-orange-50/50 to-transparent">
                         <div className="flex flex-col items-center justify-center text-muted-foreground">
-                            <AlertCircle className="h-10 w-10 mb-4 opacity-50" />
-                            <p className="text-lg font-medium">No issues found</p>
+                            <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gradient-to-br from-orange-100 to-orange-200 mb-4">
+                                <AlertCircle className="h-8 w-8 text-orange-600" />
+                            </div>
+                            <p className="text-lg font-semibold text-foreground">No issues found</p>
                             <p className="text-sm">You haven't reported any issues matching your search.</p>
                         </div>
                     </div>

@@ -216,7 +216,7 @@ export default function CreateAnnouncement() {
     }, [user, availableDepartments, selectedRegions])
 
     return (
-        <div className="max-w-4xl mx-auto p-6 space-y-8">
+        <div className="space-y-6 p-6 max-w-7xl mx-auto">
             <div>
                 <h2 className="text-3xl font-bold">Create New Announcement</h2>
                 <p className="text-muted-foreground">Publish updates to admins and citizens.</p>

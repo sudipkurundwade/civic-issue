@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react"
+import Landing from "@/pages/landing"
 import { LoginForm } from "@/components/login-form"
 import { SignupForm } from "@/components/signup-form"
 import { ThemeToggle } from "@/components/theme-toggle"
@@ -33,15 +34,15 @@ const ROLE_HOME = {
 
 function AppContent() {
   const { user, loading, logout } = useAuth()
-  const [page, setPage] = useState("login")
+  const [page, setPage] = useState("landing")
   const isAuthenticated = !!user
 
-  const homePath = user ? ROLE_HOME[user.role] || "/citizen-dashboard" : "/login"
+  const homePath = user ? ROLE_HOME[user.role] || "/citizen-dashboard" : "/"
 
   const navigate = (path) => {
     window.history.pushState({}, "", path)
-    const p = path === "/" ? homePath : path
-    setPage(p.slice(1) || "login")
+    const p = path === "/" ? (isAuthenticated ? homePath : "/") : path
+    setPage(p.slice(1) || "landing")
   }
 
   useEffect(() => {
@@ -57,8 +58,21 @@ function AppContent() {
       return
     }
 
+    if (path === "/" || path === "") {
+      if (isAuthenticated) {
+        const home = ROLE_HOME[user?.role] || "/citizen-dashboard"
+        window.history.replaceState({}, "", home)
+        setPage(home.slice(1))
+      } else {
+        setPage("landing")
+      }
+      return
+    }
+
+    // Protected routes: redirect unauthenticated users to landing
     if (!isAuthenticated) {
-      setPage("login")
+      window.history.replaceState({}, "", "/")
+      setPage("landing")
       return
     }
 
@@ -71,8 +85,14 @@ function AppContent() {
 
       if (path === "/login" || path === "/signup") {
         setPage(path.slice(1))
+      } else if (path === "/" || path === "") {
+        setPage(isAuthenticated ? homePath.slice(1) : "landing")
       } else if (isAuthenticated) {
         setPage(path.slice(1).replace(/\//g, "-") || homePath.slice(1))
+      } else {
+        // Unauthenticated user trying to access protected route
+        window.history.replaceState({}, "", "/")
+        setPage("landing")
       }
     }
 
@@ -113,6 +133,11 @@ function AppContent() {
         </div>
       </div>
     )
+  }
+
+  // Landing Page
+  if (!isAuthenticated && page === "landing") {
+    return <Landing />
   }
 
   // Login Page

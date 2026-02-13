@@ -174,7 +174,7 @@ export default function SuperAdminDashboard() {
     : recentIssues.filter((issue) => issue.region === selectedRegion)
 
   return (
-    <div className="space-y-6 p-6">
+    <div className="space-y-6 p-6 max-w-7xl mx-auto">
       {/* Header */}
       <div className="flex items-center justify-between">
         <h2 className="text-3xl font-bold">SuperAdmin Dashboard</h2>

@@ -69,7 +69,7 @@ export default function AnalyticsPage() {
 
   return (
     <div className="h-full overflow-y-auto bg-background">
-      <div className="container max-w-7xl mx-auto px-4 py-6 sm:py-8">
+      <div className="space-y-6 p-6 max-w-7xl mx-auto">
         <div className="flex items-center justify-between mb-6">
           <div>
             <h1 className="text-3xl font-bold tracking-tight">Analytics</h1>

@@ -66,14 +66,14 @@
   --chart-3: oklch(0.577 0.245 27.325);
   --chart-4: oklch(0.505 0.213 27.518);
   --chart-5: oklch(0.444 0.177 26.899);
-  --sidebar: oklch(0.985 0 0);
-  --sidebar-foreground: oklch(0.141 0.005 285.823);
-  --sidebar-primary: oklch(0.577 0.245 27.325);
-  --sidebar-primary-foreground: oklch(0.971 0.013 17.38);
-  --sidebar-accent: oklch(0.967 0.001 286.375);
-  --sidebar-accent-foreground: oklch(0.21 0.006 285.885);
-  --sidebar-border: oklch(0.92 0.004 286.32);
-  --sidebar-ring: oklch(0.704 0.191 22.216);
+  --sidebar: oklch(0.98 0.008 45);
+  --sidebar-foreground: oklch(0.25 0.02 45);
+  --sidebar-primary: oklch(0.65 0.22 45);
+  --sidebar-primary-foreground: oklch(0.98 0.005 45);
+  --sidebar-accent: oklch(0.95 0.03 45);
+  --sidebar-accent-foreground: oklch(0.35 0.02 45);
+  --sidebar-border: oklch(0.90 0.015 45);
+  --sidebar-ring: oklch(0.70 0.18 45);
 }
 
 .dark {
@@ -100,14 +100,14 @@
   --chart-3: oklch(0.577 0.245 27.325);
   --chart-4: oklch(0.505 0.213 27.518);
   --chart-5: oklch(0.444 0.177 26.899);
-  --sidebar: oklch(0.21 0.006 285.885);
-  --sidebar-foreground: oklch(0.985 0 0);
-  --sidebar-primary: oklch(0.637 0.237 25.331);
-  --sidebar-primary-foreground: oklch(0.971 0.013 17.38);
-  --sidebar-accent: oklch(0.274 0.006 286.033);
-  --sidebar-accent-foreground: oklch(0.985 0 0);
-  --sidebar-border: oklch(1 0 0 / 10%);
-  --sidebar-ring: oklch(0.396 0.141 25.723);
+  --sidebar: oklch(0.22 0.015 45);
+  --sidebar-foreground: oklch(0.95 0.008 45);
+  --sidebar-primary: oklch(0.68 0.22 45);
+  --sidebar-primary-foreground: oklch(0.98 0.005 45);
+  --sidebar-accent: oklch(0.30 0.02 45);
+  --sidebar-accent-foreground: oklch(0.95 0.008 45);
+  --sidebar-border: oklch(0.35 0.015 45 / 0.3);
+  --sidebar-ring: oklch(0.65 0.20 45);
 }
 
 @layer base {
@@ -116,5 +116,28 @@
   }
   body {
     @apply bg-background text-foreground;
+  }
+}
+
+/* Enhanced Sidebar Orange Accents */
+@layer components {
+  [data-sidebar="menu-button"][data-active="true"] {
+    @apply bg-gradient-to-r from-orange-500/15 to-orange-400/10 text-orange-700 border-l-2 border-orange-500;
+  }
+  
+  [data-sidebar="menu-button"]:hover:not([data-active="true"]) {
+    @apply bg-orange-50/50 text-orange-600;
+  }
+  
+  [data-sidebar="group-label"] {
+    @apply text-orange-600/80 font-semibold;
+  }
+  
+  [data-sidebar="sidebar"] {
+    @apply bg-gradient-to-b from-orange-50/20 via-background to-background;
+  }
+  
+  .dark [data-sidebar="sidebar"] {
+    @apply bg-gradient-to-b from-orange-950/10 via-background to-background;
   }
 }

@@ -131,13 +131,13 @@ export default function CitizenDashboard() {
     if (isReporting) {
         return (
             <div className="min-h-screen bg-background p-6">
-                <div className="max-w-6xl mx-auto space-y-6">
+                <div className="max-w-7xl mx-auto space-y-6">
                     {/* Header */}
                     <div className="flex items-center justify-between">
                         <Button variant="ghost" onClick={() => setIsReporting(false)} className="gap-2">
                             <ArrowLeft className="h-4 w-4" /> Back to Dashboard
                         </Button>
-                        <h2 className="text-2xl font-bold text-primary">Report New Issue</h2>
+                        <h2 className="text-2xl font-bold bg-gradient-to-r from-orange-600 to-orange-700 bg-clip-text text-transparent">Report New Issue</h2>
                         <div className="w-[100px]"></div> {/* Spacer for centering */}
                     </div>
 
@@ -146,7 +146,7 @@ export default function CitizenDashboard() {
                         <Card className="h-full min-h-[500px] flex flex-col">
                             <CardHeader>
                                 <CardTitle className="flex items-center gap-2">
-                                    <MapPin className="h-5 w-5 text-green-600" /> Issue Location
+                                    <MapPin className="h-5 w-5 text-orange-600" /> Issue Location
                                 </CardTitle>
                                 <CardDescription>Your current location is pinned by default. Click on the map to change it if needed.</CardDescription>
                             </CardHeader>
@@ -159,13 +159,13 @@ export default function CitizenDashboard() {
                                 />
                                 <div className="mt-2 space-y-1">
                                     {locationLoading && !(mapSelected || location.lat) && (
-                                        <p className="text-xs text-amber-600">Getting your current location... Allow GPS when prompted.</p>
+                                        <p className="text-xs text-orange-600 font-medium">Getting your current location... Allow GPS when prompted.</p>
                                     )}
                                     {!locationLoading && !(mapSelected || location.lat) && (
                                         <p className="text-xs text-destructive font-medium">Required: Select location on map (could not get your current location)</p>
                                     )}
                                     {(mapSelected || (location.lat != null)) && (
-                                        <p className="text-xs text-green-600">
+                                        <p className="text-xs text-emerald-600 font-medium">
                                             ✓ {mapSelected ? "Location updated" : "Your current location"}: {mapSelected ? `${mapSelected.lat.toFixed(5)}, ${mapSelected.lng.toFixed(5)}` : `${location.lat.toFixed(5)}, ${location.lng.toFixed(5)}`}
                                         </p>
                                     )}
@@ -332,7 +332,7 @@ export default function CitizenDashboard() {
                                                     alt="Preview"
                                                     className="h-24 rounded border object-cover"
                                                 />
-                                                <p className="text-xs text-green-600 mt-1">
+                                                <p className="text-xs text-emerald-600 mt-1 font-medium">
                                                     Photo added. Location captured.
                                                 </p>
                                             </div>
@@ -341,7 +341,7 @@ export default function CitizenDashboard() {
 
                                     <Button
                                         type="submit"
-                                        className="w-full bg-green-600 hover:bg-green-700 text-white"
+                                        className="w-full bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white shadow-md hover:shadow-lg transition-all duration-300 font-semibold"
                                         disabled={
                                             submitting ||
                                             !reportForm.photo ||
@@ -379,13 +379,13 @@ export default function CitizenDashboard() {
     }
 
     return (
-        <div className="space-y-8 p-6 max-w-5xl mx-auto">
+        <div className="space-y-6 p-6 max-w-7xl mx-auto">
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div className="space-y-1">
                     <h2 className="text-3xl font-bold tracking-tight">Citizen Dashboard</h2>
                     <p className="text-muted-foreground">Stay updated with civic issues in Kolhapur.</p>
                 </div>
-                <Button onClick={() => setIsReporting(true)} className="bg-primary text-primary-foreground shadow-lg hover:shadow-xl transition-all">
+                <Button onClick={() => setIsReporting(true)} className="bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white shadow-lg hover:shadow-xl transition-all duration-300 font-semibold">
                     <Plus className="mr-2 h-4 w-4" /> Report New Issue
                 </Button>
             </div>
@@ -394,17 +394,32 @@ export default function CitizenDashboard() {
             <div className="grid gap-4 md:grid-cols-3">
                 {stats.map((stat, index) => {
                     const Icon = stat.icon
+                    const colorClasses = [
+                        "bg-gradient-to-br from-orange-50 to-orange-100/50 border-orange-200/50",
+                        "bg-gradient-to-br from-emerald-50 to-emerald-100/50 border-emerald-200/50",
+                        "bg-gradient-to-br from-amber-50 to-amber-100/50 border-amber-200/50"
+                    ]
+                    const iconColors = [
+                        "text-orange-600",
+                        "text-emerald-600",
+                        "text-amber-600"
+                    ]
+                    const valueColors = [
+                        "text-orange-700",
+                        "text-emerald-700",
+                        "text-amber-700"
+                    ]
                     return (
-                        <Card key={index}>
+                        <Card key={index} className={`${colorClasses[index]} border-2 shadow-sm hover:shadow-md transition-all duration-300`}>
                             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                                <CardTitle className="text-sm font-medium">
+                                <CardTitle className="text-sm font-semibold text-foreground">
                                     {stat.title}
                                 </CardTitle>
-                                <Icon className="h-4 w-4 text-muted-foreground" />
+                                <Icon className={`h-5 w-5 ${iconColors[index]}`} />
                             </CardHeader>
                             <CardContent>
-                                <div className="text-2xl font-bold">{stat.value}</div>
-                                <p className="text-xs text-muted-foreground">
+                                <div className={`text-3xl font-bold ${valueColors[index]}`}>{stat.value}</div>
+                                <p className="text-xs text-muted-foreground mt-1">
                                     {stat.description}
                                 </p>
                             </CardContent>
@@ -426,19 +441,22 @@ export default function CitizenDashboard() {
                             return (
                             <Card
                                 key={issue.id}
-                                className="overflow-hidden shadow-md border-muted hover:shadow-lg transition-shadow"
+                                className="overflow-hidden shadow-md border-orange-100/50 hover:shadow-xl hover:border-orange-200 transition-all duration-300 bg-gradient-to-br from-background to-orange-50/20"
                             >
                                 {/* Post Header */}
-                                <div className="p-4 flex items-center gap-3 border-b bg-muted/20">
-                                    <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
-                                        <MapPin className="h-5 w-5 text-primary" />
+                                <div className="p-4 flex items-center gap-3 border-b border-orange-100/50 bg-gradient-to-r from-orange-50/50 to-transparent">
+                                    <div className="h-10 w-10 rounded-full bg-gradient-to-br from-orange-400 to-orange-500 flex items-center justify-center shadow-sm">
+                                        <MapPin className="h-5 w-5 text-white" />
                                     </div>
                                     <div>
-                                        <h4 className="font-semibold text-sm">{issue.area}, {issue.region}</h4>
+                                        <h4 className="font-semibold text-sm text-foreground">{issue.area}, {issue.region}</h4>
                                         <p className="text-xs text-muted-foreground">{issue.date} · Reported by {issue.reporterName}</p>
                                     </div>
                                     <div className="ml-auto">
-                                        <Badge variant={issue.status === "pending" ? "destructive" : "secondary"}>
+                                        <Badge 
+                                            variant={issue.status === "pending" ? "destructive" : "secondary"}
+                                            className={issue.status === "pending" ? "bg-orange-500/10 text-orange-700 border-orange-300/50" : "bg-emerald-500/10 text-emerald-700 border-emerald-300/50"}
+                                        >
                                             {issue.status}
                                         </Badge>
                                     </div>
@@ -460,11 +478,11 @@ export default function CitizenDashboard() {
                                 </div>
 
                                 {/* Post Actions */}
-                        <div className="p-3 border-t flex items-center justify-around text-muted-foreground bg-muted/10">
+                        <div className="p-3 border-t border-orange-100/50 flex items-center justify-around text-muted-foreground bg-gradient-to-r from-orange-50/30 to-transparent">
                                     <Button
                                         variant={issue.likedByMe ? "default" : "ghost"}
                                         size="sm"
-                                        className="gap-2 hover:text-blue-600"
+                                        className={`gap-2 ${issue.likedByMe ? "bg-orange-500 hover:bg-orange-600 text-white" : "hover:text-orange-600 hover:bg-orange-50"}`}
                                         onClick={async (e) => {
                                             e.stopPropagation()
                                             try {
@@ -491,7 +509,7 @@ export default function CitizenDashboard() {
                                     <Button
                                         variant="ghost"
                                         size="sm"
-                                        className="gap-2 hover:text-green-600"
+                                        className="gap-2 hover:text-emerald-600 hover:bg-emerald-50"
                                         onClick={async (e) => {
                                             e.stopPropagation()
                                             if (!isCommentsOpen) {
@@ -513,14 +531,14 @@ export default function CitizenDashboard() {
                                         <MessageSquare className="h-4 w-4" />
                                         <span className="text-xs">{issue.comments} Comments</span>
                                     </Button>
-                                    <Button variant="ghost" size="sm" className="gap-2 hover:text-purple-600">
+                                    <Button variant="ghost" size="sm" className="gap-2 hover:text-orange-600 hover:bg-orange-50">
                                         <Share2 className="h-4 w-4" />
                                         <span className="text-xs">Share</span>
                                     </Button>
                                 </div>
                                 {/* Inline Comments Thread */}
                                 {isCommentsOpen && (
-                                    <div className="border-t px-4 pb-4 pt-3 space-y-3 bg-muted/10">
+                                    <div className="border-t border-orange-100/50 px-4 pb-4 pt-3 space-y-3 bg-gradient-to-br from-orange-50/20 to-transparent">
                                         {comments.length === 0 ? (
                                             <p className="text-xs text-muted-foreground">
                                                 No comments yet. Be the first to comment.
@@ -597,8 +615,10 @@ export default function CitizenDashboard() {
                         )})
                     ) : (
                         <div className="text-center py-10">
-                            <CheckCircle className="h-12 w-12 text-green-500 mx-auto mb-3" />
-                            <h3 className="text-lg font-medium">No issues yet</h3>
+                            <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gradient-to-br from-orange-100 to-orange-200 mb-4">
+                                <CheckCircle className="h-8 w-8 text-orange-600" />
+                            </div>
+                            <h3 className="text-lg font-semibold text-foreground">No issues yet</h3>
                             <p className="text-muted-foreground">Be the first to report a civic issue.</p>
                         </div>
                     )}

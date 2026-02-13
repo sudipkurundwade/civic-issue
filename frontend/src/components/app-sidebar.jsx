@@ -24,6 +24,7 @@ import {
   SidebarHeader,
   SidebarRail,
 } from "@/components/ui/sidebar"
+import logoImg from "@/assets/logo.png"
 
 const ROLE_NAV = {
   super_admin: [
@@ -86,12 +87,26 @@ export function AppSidebar({ user, onLogout, page, onNavigate }) {
 
   return (
     <Sidebar collapsible="icon">
-      <SidebarHeader>
-        <div className="px-2 py-2">
-          <h2 className="font-semibold text-lg">Civic Issue</h2>
-          <p className="text-xs text-muted-foreground capitalize">
-            {user?.role?.replace("_", " ")}
-          </p>
+      <SidebarHeader className="border-b border-sidebar-border/50 bg-gradient-to-br from-orange-50/30 to-transparent">
+        <div className="flex items-center gap-3 px-2 py-3 transition-all duration-200 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:px-2">
+          {/* Logo - Always visible, size adjusts based on sidebar state */}
+          <div className="shrink-0 w-10 h-10 transition-all duration-200 group-data-[collapsible=icon]:w-14 group-data-[collapsible=icon]:h-14">
+            <img
+              src={logoImg}
+              alt="Civic Issue Reporter Logo"
+              className="w-full h-full object-contain drop-shadow-sm"
+            />
+          </div>
+          
+          {/* Text content - Hidden when collapsed */}
+          <div className="flex-1 min-w-0 overflow-hidden transition-all duration-200 group-data-[collapsible=icon]:hidden">
+            <h2 className="font-semibold text-lg bg-gradient-to-r from-orange-600 to-orange-700 bg-clip-text text-transparent truncate">
+              Civic Issue
+            </h2>
+            <p className="text-xs text-muted-foreground capitalize truncate">
+              {user?.role?.replace("_", " ")}
+            </p>
+          </div>
         </div>
       </SidebarHeader>
 

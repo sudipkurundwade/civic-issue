@@ -101,7 +101,7 @@ export default function AnnouncementsList({ mode = "public" }) {
     }
 
     return (
-        <div className="space-y-6 p-6">
+        <div className="space-y-6 p-6 max-w-7xl mx-auto">
             <div className="flex items-center justify-between">
                 <h2 className="text-3xl font-bold">{mode === 'my' ? 'My Announcements' : 'Announcements'}</h2>
                 {(mode === 'my' || (user && ['super_admin', 'regional_admin'].includes(user?.role))) && (

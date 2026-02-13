@@ -71,7 +71,7 @@ export default function NotificationsPage() {
   }
 
   return (
-    <div className="space-y-6 p-6 max-w-4xl mx-auto">
+    <div className="space-y-6 p-6 max-w-7xl mx-auto">
       <div className="flex items-center justify-between gap-4">
         <div className="space-y-1">
           <h2 className="text-3xl font-bold tracking-tight flex items-center gap-2">
