@@ -192,18 +192,18 @@ export default function CitizenDashboard() {
         rec.lang = voiceLang.code
         rec.continuous = true
         rec.interimResults = true
-        
+
         // Capture existing text to append to
         voicePrefixRef.current = reportForm.description ? reportForm.description + " " : ""
-        
+
         rec.onresult = (e) => {
             const transcript = Array.from(e.results)
                 .map(r => r[0].transcript)
                 .join('')
-            
+
             const fullText = voicePrefixRef.current + transcript
             setReportForm(f => ({ ...f, description: fullText }))
-            
+
             // try auto-routing on full voice result
             const detected = autoDetectDepartment(fullText)
             if (detected && !deptManual) {
@@ -561,7 +561,7 @@ export default function CitizenDashboard() {
 
                                                         <AnimatePresence mode="popLayout">
                                                             {isListening && (
-                                                                <motion.div 
+                                                                <motion.div
                                                                     initial={{ width: 0, opacity: 0, x: -5 }}
                                                                     animate={{ width: "auto", opacity: 1, x: 0 }}
                                                                     exit={{ width: 0, opacity: 0, x: -5 }}
@@ -570,7 +570,7 @@ export default function CitizenDashboard() {
                                                                     {[1, 2, 3, 4].map((i) => (
                                                                         <motion.div
                                                                             key={i}
-                                                                            animate={{ 
+                                                                            animate={{
                                                                                 height: [4, 12, 6, 14, 4],
                                                                             }}
                                                                             transition={{
@@ -592,26 +592,20 @@ export default function CitizenDashboard() {
                                                             whileTap={{ scale: 0.95 }}
                                                             onClick={toggleVoice}
                                                             title={isListening ? t("form.stopVoice") : t("form.voice")}
-<<<<<<< HEAD
-                                                            className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium border transition-all ${isListening
-                                                                ? "bg-red-50 border-red-300 text-red-600 animate-pulse"
-                                                                : "bg-gray-50 border-gray-200 text-gray-600 hover:bg-orange-50 hover:border-orange-300 hover:text-orange-600"
-=======
                                                             className={`relative flex items-center gap-2 rounded-full px-3 py-1 text-[11px] font-bold transition-all shadow-sm shrink-0 ${isListening
-                                                                    ? "bg-red-500 text-white shadow-red-200"
-                                                                    : "bg-white border-orange-100 text-orange-600 hover:bg-orange-50 hover:border-orange-200"
->>>>>>> 0562c29a91a7b27489b4a1de1d54777159a1e415
+                                                                ? "bg-red-500 text-white shadow-red-200"
+                                                                : "bg-white border-orange-100 text-orange-600 hover:bg-orange-50 hover:border-orange-200"
                                                                 }`}
                                                         >
                                                             {isListening && (
-                                                                <motion.span 
+                                                                <motion.span
                                                                     initial={{ scale: 0 }}
                                                                     animate={{ scale: [1, 1.5, 1] }}
                                                                     transition={{ repeat: Infinity, duration: 1.5 }}
                                                                     className="absolute inset-0 rounded-full bg-red-400/20"
                                                                 />
                                                             )}
-                                                            
+
                                                             <span className="relative z-10 flex items-center gap-1.5">
                                                                 {isListening ? (
                                                                     <motion.div
