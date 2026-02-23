@@ -27,7 +27,9 @@ import {
     Mic,
     MicOff,
     AlertTriangle,
+    Volume2
 } from "lucide-react"
+import { motion, AnimatePresence } from "framer-motion"
 import { issueService } from "@/services/issueService"
 import { useToast } from "@/components/ui/use-toast"
 import { LocationMap } from "@/components/LocationMap"
@@ -135,6 +137,7 @@ export default function CitizenDashboard() {
     // Voice-to-text state
     const [isListening, setIsListening] = React.useState(false)
     const recognitionRef = React.useRef(null)
+    const voicePrefixRef = React.useRef("")
     const speechSupported = typeof window !== 'undefined' && ('SpeechRecognition' in window || 'webkitSpeechRecognition' in window)
     const [voiceLang, setVoiceLang] = React.useState(VOICE_LANGS[0])
 
@@ -186,16 +189,23 @@ export default function CitizenDashboard() {
         rec.lang = voiceLang.code
         rec.continuous = true
         rec.interimResults = true
+        
+        // Capture existing text to append to
+        voicePrefixRef.current = reportForm.description ? reportForm.description + " " : ""
+        
         rec.onresult = (e) => {
             const transcript = Array.from(e.results)
                 .map(r => r[0].transcript)
                 .join('')
-            setReportForm(f => ({ ...f, description: transcript }))
-            // try auto-routing on voice result
-            const detected = autoDetectDepartment(transcript)
+            
+            const fullText = voicePrefixRef.current + transcript
+            setReportForm(f => ({ ...f, description: fullText }))
+            
+            // try auto-routing on full voice result
+            const detected = autoDetectDepartment(fullText)
             if (detected && !deptManual) {
                 setAutoDept(detected)
-                setReportForm(f => ({ ...f, departmentName: detected }))
+                setReportForm(f => ({ ...f, description: fullText, departmentName: detected }))
             }
         }
         rec.onend = () => setIsListening(false)
@@ -517,15 +527,15 @@ export default function CitizenDashboard() {
 
                                     <div className="space-y-2">
                                         <div className="flex items-center justify-between">
-                                            <div className="flex items-center gap-2">
-                                                <Label>{t("form.issueDesc")}</Label>
+                                            <div className="flex items-center gap-3">
+                                                <Label className="font-semibold text-sm">{t("form.issueDesc")}</Label>
                                                 {speechSupported && (
-                                                    <>
+                                                    <div className="flex items-center gap-2 p-1 bg-muted/30 rounded-full border border-orange-100/50 backdrop-blur-sm">
                                                         {/* Voice language selector */}
                                                         <select
                                                             value={voiceLang.code}
                                                             onChange={e => setVoiceLang(VOICE_LANGS.find(l => l.code === e.target.value) || VOICE_LANGS[0])}
-                                                            className="h-6 rounded border text-xs px-1 text-muted-foreground bg-background"
+                                                            className="h-7 rounded-full border-none text-[10px] px-2 text-muted-foreground bg-background/50 focus:ring-1 focus:ring-orange-200 outline-none transition-all"
                                                             disabled={isListening}
                                                             title={t("form.voiceLang")}
                                                         >
@@ -533,19 +543,69 @@ export default function CitizenDashboard() {
                                                                 <option key={l.code} value={l.code}>{l.label}</option>
                                                             ))}
                                                         </select>
-                                                        <button
+
+                                                        <AnimatePresence mode="popLayout">
+                                                            {isListening && (
+                                                                <motion.div 
+                                                                    initial={{ width: 0, opacity: 0, x: -5 }}
+                                                                    animate={{ width: "auto", opacity: 1, x: 0 }}
+                                                                    exit={{ width: 0, opacity: 0, x: -5 }}
+                                                                    className="overflow-hidden flex items-center gap-[2px] h-4 px-1"
+                                                                >
+                                                                    {[1, 2, 3, 4].map((i) => (
+                                                                        <motion.div
+                                                                            key={i}
+                                                                            animate={{ 
+                                                                                height: [4, 12, 6, 14, 4],
+                                                                            }}
+                                                                            transition={{
+                                                                                duration: 0.6,
+                                                                                repeat: Infinity,
+                                                                                delay: i * 0.1,
+                                                                                ease: "easeInOut"
+                                                                            }}
+                                                                            className="w-1 bg-orange-500 rounded-full"
+                                                                        />
+                                                                    ))}
+                                                                </motion.div>
+                                                            )}
+                                                        </AnimatePresence>
+
+                                                        <motion.button
                                                             type="button"
+                                                            whileHover={{ scale: 1.05 }}
+                                                            whileTap={{ scale: 0.95 }}
                                                             onClick={toggleVoice}
                                                             title={isListening ? t("form.stopVoice") : t("form.voice")}
-                                                            className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium border transition-all ${isListening
-                                                                    ? "bg-red-50 border-red-300 text-red-600 animate-pulse"
-                                                                    : "bg-gray-50 border-gray-200 text-gray-600 hover:bg-orange-50 hover:border-orange-300 hover:text-orange-600"
+                                                            className={`relative flex items-center gap-2 rounded-full px-3 py-1 text-[11px] font-bold transition-all shadow-sm shrink-0 ${isListening
+                                                                    ? "bg-red-500 text-white shadow-red-200"
+                                                                    : "bg-white border-orange-100 text-orange-600 hover:bg-orange-50 hover:border-orange-200"
                                                                 }`}
                                                         >
-                                                            {isListening ? <MicOff className="h-3 w-3" /> : <Mic className="h-3 w-3" />}
-                                                            {isListening ? t("form.stopVoice") : t("form.voice")}
-                                                        </button>
-                                                    </>
+                                                            {isListening && (
+                                                                <motion.span 
+                                                                    initial={{ scale: 0 }}
+                                                                    animate={{ scale: [1, 1.5, 1] }}
+                                                                    transition={{ repeat: Infinity, duration: 1.5 }}
+                                                                    className="absolute inset-0 rounded-full bg-red-400/20"
+                                                                />
+                                                            )}
+                                                            
+                                                            <span className="relative z-10 flex items-center gap-1.5">
+                                                                {isListening ? (
+                                                                    <motion.div
+                                                                        animate={{ opacity: [1, 0.5, 1] }}
+                                                                        transition={{ repeat: Infinity, duration: 1 }}
+                                                                    >
+                                                                        <MicOff className="h-3 w-3" />
+                                                                    </motion.div>
+                                                                ) : (
+                                                                    <Mic className="h-3 w-3" />
+                                                                )}
+                                                                {isListening ? t("form.stopVoice") : t("form.voice")}
+                                                            </span>
+                                                        </motion.button>
+                                                    </div>
                                                 )}
                                             </div>
                                             {aiGenerated && (
