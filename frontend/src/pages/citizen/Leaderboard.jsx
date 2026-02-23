@@ -10,11 +10,13 @@ import { Badge } from "@/components/ui/badge"
 import { Trophy, Medal, Award, Star } from "lucide-react"
 import { authService } from "@/services/authService"
 import { useToast } from "@/components/ui/use-toast"
+import { useLanguage } from "@/context/LanguageContext"
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api'
 
 export default function Leaderboard() {
     const { toast } = useToast()
+    const { t } = useLanguage()
     const [leaderboard, setLeaderboard] = React.useState([])
     const [loading, setLoading] = React.useState(true)
     const [currentUser, setCurrentUser] = React.useState(null)
@@ -88,8 +90,8 @@ export default function Leaderboard() {
         return (
             <div className="space-y-6 p-6 max-w-5xl mx-auto">
                 <div className="flex flex-col gap-4">
-                    <h2 className="text-3xl font-bold tracking-tight">Leaderboard</h2>
-                    <p className="text-muted-foreground">Loading...</p>
+                    <h2 className="text-3xl font-bold tracking-tight">{t("leaderboard.title")}</h2>
+                    <p className="text-muted-foreground">{t("common.loading")}</p>
                 </div>
             </div>
         )
@@ -101,10 +103,10 @@ export default function Leaderboard() {
             <div className="flex flex-col gap-4">
                 <div className="flex items-center gap-3">
                     <Trophy className="h-8 w-8 text-orange-600" />
-                    <h2 className="text-3xl font-bold tracking-tight">Leaderboard</h2>
+                    <h2 className="text-3xl font-bold tracking-tight">{t("leaderboard.title")}</h2>
                 </div>
                 <p className="text-muted-foreground">
-                    Top citizens ranked by points earned for reporting civic issues. Earn 10 points for each issue you report!
+                    {t("leaderboard.subtitle")}
                 </p>
             </div>
 
@@ -138,8 +140,8 @@ export default function Leaderboard() {
                         <Card
                             key={user.id}
                             className={`transition-all duration-200 ${getRankColor(user.rank)} ${isCurrentUser(user.id)
-                                    ? "border-2 border-orange-500 shadow-md"
-                                    : "border hover:shadow-md"
+                                ? "border-2 border-orange-500 shadow-md"
+                                : "border hover:shadow-md"
                                 }`}
                         >
                             <CardContent className="p-4">
@@ -176,7 +178,7 @@ export default function Leaderboard() {
 
                                     {/* Points */}
                                     <div className="text-right">
-                                        <p className="text-sm text-muted-foreground">Points</p>
+                                        <p className="text-sm text-muted-foreground">{t("leaderboard.points")}</p>
                                         <p className="text-2xl font-bold text-orange-600">
                                             {user.points}
                                         </p>

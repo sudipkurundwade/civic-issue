@@ -12,6 +12,7 @@ import { Clock, Bell, CheckCircle } from "lucide-react"
 import { notificationService } from "@/services/notificationService"
 import { useToast } from "@/components/ui/use-toast"
 import { useAuth } from "@/context/AuthContext"
+import { useLanguage } from "@/context/LanguageContext"
 
 const formatWhen = (dateString) => {
   if (!dateString) return ""
@@ -27,6 +28,7 @@ const formatWhen = (dateString) => {
 export default function NotificationsPage() {
   const { user } = useAuth()
   const { toast } = useToast()
+  const { t } = useLanguage()
   const [notifications, setNotifications] = React.useState([])
   const [loading, setLoading] = React.useState(true)
   const [markingAll, setMarkingAll] = React.useState(false)
@@ -107,15 +109,15 @@ export default function NotificationsPage() {
         <div className="space-y-1">
           <h2 className="text-3xl font-bold tracking-tight flex items-center gap-2 bg-gradient-to-r from-orange-600 to-orange-700 bg-clip-text text-transparent">
             <Bell className="h-6 w-6 text-orange-600" />
-            Notifications
+            {t("notif.title")}
           </h2>
           <p className="text-muted-foreground">
-            Stay up to date when your issues move forward or new work is assigned.
+            {t("notif.subtitle")}
           </p>
         </div>
         <div className="flex flex-col items-end gap-2">
           <Badge variant={unreadCount ? "destructive" : "secondary"}>
-            {unreadCount ? `${unreadCount} unread` : "All caught up"}
+            {unreadCount ? `${unreadCount} ${t("notif.unread")}` : t("notif.allCaughtUp")}
           </Badge>
           {notifications.length > 0 && (
             <Button
@@ -125,7 +127,7 @@ export default function NotificationsPage() {
               disabled={markingAll || unreadCount === 0}
               className="hover:bg-orange-50 hover:text-orange-600 hover:border-orange-300 transition-all duration-300"
             >
-              {markingAll ? "Marking..." : "Mark all as read"}
+              {markingAll ? t("notif.marking") : t("notif.markAllRead")}
             </Button>
           )}
         </div>
@@ -133,21 +135,21 @@ export default function NotificationsPage() {
 
       <Card>
         <CardHeader>
-          <CardTitle>Activity</CardTitle>
+          <CardTitle>{t("notif.activity")}</CardTitle>
           <CardDescription>
-            Changes to your reported issues or assignments for your department.
+            {t("notif.activityDesc")}
           </CardDescription>
         </CardHeader>
         <CardContent>
           {loading ? (
             <div className="py-8 text-center text-muted-foreground text-sm">
-              Loading notifications...
+              {t("notif.loading")}
             </div>
           ) : notifications.length === 0 ? (
             <div className="py-10 text-center text-muted-foreground space-y-2">
               <CheckCircle className="h-8 w-8 mx-auto mb-2 text-green-500" />
-              <p className="font-medium">No notifications yet</p>
-              <p className="text-sm">You&apos;ll see updates here when things change.</p>
+              <p className="font-medium">{t("notif.noneYet")}</p>
+              <p className="text-sm">{t("notif.noneHint")}</p>
             </div>
           ) : (
             <div className="space-y-3">
@@ -174,11 +176,11 @@ export default function NotificationsPage() {
                           <p className="font-medium text-sm">{n.title}</p>
                           {isResolved ? (
                             <Badge variant="outline" className="text-[10px] h-4 bg-green-50 text-green-700 border-green-200">
-                              Resolved
+                              {t("notif.resolved")}
                             </Badge>
                           ) : isPending ? (
                             <Badge variant="outline" className="text-[10px] h-4 bg-orange-100 text-orange-700 border-orange-200">
-                              Action Required
+                              {t("notif.actionRequired")}
                             </Badge>
                           ) : null}
                         </div>
@@ -194,13 +196,13 @@ export default function NotificationsPage() {
                           <Button
                             size="sm"
                             className={`h-8 text-xs transition-all ${isResolved
-                                ? 'bg-muted text-muted-foreground opacity-70 cursor-not-allowed'
-                                : 'bg-orange-600 hover:bg-orange-700 text-white shadow-sm'
+                              ? 'bg-muted text-muted-foreground opacity-70 cursor-not-allowed'
+                              : 'bg-orange-600 hover:bg-orange-700 text-white shadow-sm'
                               }`}
                             disabled={isResolved}
                             onClick={() => !isResolved && handleAction(n)}
                           >
-                            {isResolved ? 'Action Completed' : 'Take Action'}
+                            {isResolved ? t("notif.actionCompleted") : t("notif.takeAction")}
                           </Button>
                         </div>
                       )}
@@ -211,7 +213,7 @@ export default function NotificationsPage() {
                         variant="ghost"
                         onClick={() => handleMarkRead(n.id || n._id)}
                       >
-                        Mark read
+                        {t("notif.markReadBtn")}
                       </Button>
                     )}
                   </div>

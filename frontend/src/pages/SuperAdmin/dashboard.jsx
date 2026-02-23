@@ -34,6 +34,7 @@ import { issueService } from "@/services/issueService"
 import { notificationService } from "@/services/notificationService"
 import { useToast } from "@/components/ui/use-toast"
 import { IssueDetailDialog } from "@/components/IssueDetailDialog"
+import { useLanguage } from "@/context/LanguageContext"
 
 const formatTimeAgo = (date) => {
   const sec = Math.floor((Date.now() - date) / 1000)
@@ -46,6 +47,7 @@ const formatTimeAgo = (date) => {
 
 export default function SuperAdminDashboard() {
   const { toast } = useToast()
+  const { t } = useLanguage()
 
   // Navigation function
   const navigate = (path) => {
@@ -129,10 +131,10 @@ export default function SuperAdminDashboard() {
   const totalPending = recentIssues.filter((i) => i.status !== "completed").length
   const totalSolved = recentIssues.filter((i) => i.status === "completed").length
   const stats = [
-    { title: "Total Regions", value: String(uniqueRegions.length), change: "", icon: MapPin, description: "administrative regions" },
-    { title: "Total Issues", value: String(allIssues.length), change: "", icon: AlertCircle, description: "all reported issues" },
-    { title: "Pending", value: String(totalPending), change: "", icon: Clock, description: "awaiting resolution" },
-    { title: "Solved", value: String(totalSolved), change: "", icon: CheckCircle, description: "resolved" },
+    { title: t("superAdmin.totalRegions"), value: String(uniqueRegions.length), change: "", icon: MapPin, description: t("superAdmin.adminRegions") },
+    { title: t("superAdmin.totalIssues"), value: String(allIssues.length), change: "", icon: AlertCircle, description: t("superAdmin.allReported") },
+    { title: t("superAdmin.pending"), value: String(totalPending), change: "", icon: Clock, description: t("superAdmin.awaitingResolution") },
+    { title: t("superAdmin.solved"), value: String(totalSolved), change: "", icon: CheckCircle, description: t("superAdmin.resolvedDesc") },
   ]
 
   const handleCreateRegionalAdmin = async (e) => {
@@ -207,14 +209,14 @@ export default function SuperAdminDashboard() {
     <div className="space-y-6 p-6 max-w-7xl mx-auto">
       {/* Header */}
       <div className="flex items-center justify-between">
-        <h2 className="text-3xl font-bold tracking-tight bg-gradient-to-r from-orange-600 to-orange-700 bg-clip-text text-transparent">SuperAdmin Dashboard</h2>
+        <h2 className="text-3xl font-bold tracking-tight bg-gradient-to-r from-orange-600 to-orange-700 bg-clip-text text-transparent">{t("superAdmin.title")}</h2>
 
         <div className="flex gap-2">
           {/* Bulk Upload Dialog */}
           <Dialog open={bulkDialogOpen} onOpenChange={(open) => { setBulkDialogOpen(open); if (!open) { setBulkFile(null); setBulkResults(null) } }}>
             <DialogTrigger asChild>
               <Button variant="outline" className="border-orange-300 text-orange-600 hover:bg-orange-50 hover:border-orange-400 transition-all duration-300">
-                <Upload className="mr-2 h-4 w-4" /> Bulk Upload Regional Admins
+                <Upload className="mr-2 h-4 w-4" /> {t("superAdmin.bulkUpload")}
               </Button>
             </DialogTrigger>
             <DialogContent className="max-w-lg">
@@ -248,7 +250,7 @@ export default function SuperAdminDashboard() {
               </div>
               <DialogFooter>
                 <Button onClick={handleBulkUpload} disabled={!bulkFile || bulkLoading} className="bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white">
-                  {bulkLoading ? "Uploading..." : "Upload & Create"}
+                  {bulkLoading ? t("superAdmin.uploading") : t("superAdmin.uploadCreate")}
                 </Button>
               </DialogFooter>
             </DialogContent>
@@ -257,7 +259,7 @@ export default function SuperAdminDashboard() {
           <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
             <DialogTrigger asChild>
               <Button className="bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white shadow-md hover:shadow-lg transition-all duration-300">
-                <Plus className="mr-2 h-4 w-4" /> Add Regional Admin
+                <Plus className="mr-2 h-4 w-4" /> {t("superAdmin.addRegionalAdmin")}
               </Button>
             </DialogTrigger>
 
@@ -318,7 +320,7 @@ export default function SuperAdminDashboard() {
 
                 <DialogFooter>
                   <Button type="submit" disabled={loading}>
-                    {loading ? "Creating..." : "Create Admin"}
+                    {loading ? t("superAdmin.creating") : t("superAdmin.createAdminBtn")}
                   </Button>
                 </DialogFooter>
               </form>
@@ -362,8 +364,8 @@ export default function SuperAdminDashboard() {
         {/* Regions */}
         <Card className="md:col-span-4 lg:col-span-3">
           <CardHeader>
-            <CardTitle>Select Region</CardTitle>
-            <CardDescription>Filter issues by region or view all</CardDescription>
+            <CardTitle>{t("superAdmin.selectRegion")}</CardTitle>
+            <CardDescription>{t("superAdmin.filterByRegion")}</CardDescription>
           </CardHeader>
           <CardContent className="space-y-2">
             <div
@@ -373,7 +375,7 @@ export default function SuperAdminDashboard() {
                 : "hover:bg-accent"
                 }`}
             >
-              <span>All Issues</span>
+              <span>{t("superAdmin.allIssues")}</span>
             </div>
             {uniqueRegions.map((region) => (
               <div
@@ -430,8 +432,8 @@ export default function SuperAdminDashboard() {
                   <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gradient-to-br from-orange-100 to-orange-200 mb-4">
                     <AlertCircle className="h-8 w-8 text-orange-600" />
                   </div>
-                  <p className="text-lg font-semibold text-foreground">No issues found</p>
-                  <p className="text-sm">No recent issues in this region.</p>
+                  <p className="text-lg font-semibold text-foreground">{t("superAdmin.noIssues")}</p>
+                  <p className="text-sm">{t("superAdmin.noIssuesRegion")}</p>
                 </div>
               </div>
             )}
@@ -444,7 +446,7 @@ export default function SuperAdminDashboard() {
       {/* Admin Actions */}
       <Card>
         <CardHeader>
-          <CardTitle>Admin Actions</CardTitle>
+          <CardTitle>{t("superAdmin.adminActions")}</CardTitle>
         </CardHeader>
         <CardContent className="flex gap-4 flex-wrap">
           <Button
@@ -460,15 +462,15 @@ export default function SuperAdminDashboard() {
             }}
           >
             <ArrowUpRight className="mr-2 h-4 w-4" />
-            Generate Report
+            {t("superAdmin.generateReport")}
           </Button>
           <Button variant="outline" className="hover:bg-emerald-50 hover:text-emerald-600 hover:border-emerald-300 transition-all duration-300">
             <CheckCircle className="mr-2 h-4 w-4" />
-            Review Solved Cases
+            {t("superAdmin.reviewSolved")}
           </Button>
           <Button variant="outline" className="text-red-600 hover:bg-red-50 hover:border-red-300 transition-all duration-300">
             <AlertCircle className="mr-2 h-4 w-4" />
-            View Critical Issues
+            {t("superAdmin.viewCritical")}
           </Button>
         </CardContent>
       </Card>
@@ -476,8 +478,8 @@ export default function SuperAdminDashboard() {
       {report && (
         <Card>
           <CardHeader>
-            <CardTitle>System Report Summary</CardTitle>
-            <CardDescription>High-level overview of issues, performance, and SLA.</CardDescription>
+            <CardTitle>{t("superAdmin.reportTitle")}</CardTitle>
+            <CardDescription>{t("superAdmin.reportDesc")}</CardDescription>
           </CardHeader>
           <CardContent className="space-y-2 text-sm">
             <p><span className="font-semibold">Total Issues:</span> {report.totalIssues}</p>

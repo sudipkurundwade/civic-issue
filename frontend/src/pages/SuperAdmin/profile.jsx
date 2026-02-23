@@ -37,9 +37,11 @@ import {
   User,
 } from "lucide-react"
 import { useAuth } from "@/context/AuthContext"
+import { useLanguage } from "@/context/LanguageContext"
 
 export default function ProfilePage() {
   const { user } = useAuth()
+  const { t } = useLanguage()
 
   // --- STATE FOR REGULAR PROFILE (ADMINS) ---
   const [isEditingPersonal, setIsEditingPersonal] = React.useState(false)
@@ -111,15 +113,15 @@ export default function ProfilePage() {
     return (
       <div className="space-y-6 p-6 max-w-7xl mx-auto">
         <div className="space-y-2">
-          <h2 className="text-3xl font-bold tracking-tight bg-gradient-to-r from-orange-600 to-orange-700 bg-clip-text text-transparent">My Profile</h2>
-          <p className="text-muted-foreground">Manage your account settings and preferences.</p>
+          <h2 className="text-3xl font-bold tracking-tight bg-gradient-to-r from-orange-600 to-orange-700 bg-clip-text text-transparent">{t("profile.myProfile")}</h2>
+          <p className="text-muted-foreground">{t("profile.manageAccount")}</p>
         </div>
 
         {/* Personal Info Card */}
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <User className="h-5 w-5" /> Personal Information
+              <User className="h-5 w-5" /> {t("profile.personalInfo")}
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-6">
@@ -130,17 +132,17 @@ export default function ProfilePage() {
               </Avatar>
               <div className="space-y-1">
                 <h3 className="text-xl font-semibold">{user?.name}</h3>
-                <p className="text-sm text-muted-foreground">Citizen</p>
+                <p className="text-sm text-muted-foreground">{t("profile.citizen")}</p>
               </div>
             </div>
 
             <div className="grid gap-4">
               <div className="grid gap-2">
-                <Label htmlFor="name">Full Name</Label>
+                <Label htmlFor="name">{t("profile.fullName")}</Label>
                 <Input id="name" value={user?.name || ""} disabled />
               </div>
               <div className="grid gap-2">
-                <Label htmlFor="email">Email Address</Label>
+                <Label htmlFor="email">{t("profile.emailAddress")}</Label>
                 <Input id="email" value={user?.email || ""} disabled />
               </div>
             </div>
@@ -151,26 +153,26 @@ export default function ProfilePage() {
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <Lock className="h-5 w-5" /> Change Password
+              <Lock className="h-5 w-5" /> {t("profile.changePassword")}
             </CardTitle>
-            <CardDescription>Update your password to keep your account secure.</CardDescription>
+            <CardDescription>{t("profile.passwordDesc")}</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="grid gap-2">
-              <Label htmlFor="current-password">Current Password</Label>
+              <Label htmlFor="current-password">{t("profile.currentPassword")}</Label>
               <Input id="current-password" type="password" />
             </div>
             <div className="grid gap-2">
-              <Label htmlFor="new-password">New Password</Label>
+              <Label htmlFor="new-password">{t("profile.newPassword")}</Label>
               <Input id="new-password" type="password" />
             </div>
             <div className="grid gap-2">
-              <Label htmlFor="confirm-password">Confirm New Password</Label>
+              <Label htmlFor="confirm-password">{t("profile.confirmPassword")}</Label>
               <Input id="confirm-password" type="password" />
             </div>
           </CardContent>
           <CardFooter>
-            <Button className="bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white shadow-sm hover:shadow-md transition-all duration-300">Update Password</Button>
+            <Button className="bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white shadow-sm hover:shadow-md transition-all duration-300">{t("profile.updatePassword")}</Button>
           </CardFooter>
         </Card>
       </div>
@@ -236,7 +238,7 @@ export default function ProfilePage() {
               <CardContent className="pt-6">
                 <Tabs defaultValue="personal" className="w-full">
                   <TabsList className="mb-6">
-                    <TabsTrigger value="personal" className="w-full">Personal Info</TabsTrigger>
+                    <TabsTrigger value="personal" className="w-full">{t("profile.personalInfoTab")}</TabsTrigger>
                   </TabsList>
 
                   {/* Personal & Business Tab */}
@@ -250,7 +252,7 @@ export default function ProfilePage() {
                           onClick={() => setIsEditingPersonal(!isEditingPersonal)}
                         >
                           <Edit2 className="h-4 w-4 mr-2" />
-                          Edit
+                          {t("profile.editBtn")}
                         </Button>
                       </div>
 
@@ -299,14 +301,14 @@ export default function ProfilePage() {
                                 onClick={() => setIsEditingPersonal(false)}
                                 className="flex-1 bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white shadow-sm hover:shadow-md transition-all duration-300"
                               >
-                                Save Changes
+                                {t("profile.saveChanges")}
                               </Button>
                               <Button
                                 variant="outline"
                                 onClick={() => setIsEditingPersonal(false)}
                                 className="flex-1"
                               >
-                                Cancel
+                                {t("profile.cancelBtn")}
                               </Button>
                             </div>
                           </CardContent>
