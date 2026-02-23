@@ -36,6 +36,58 @@ router.post('/analyze-image', authenticate, requireRole('civic'), async (req, re
   }
 });
 
+// Check for duplicate/similar complaints
+router.get('/check-duplicate', authenticate, async (req, res) => {
+  try {
+    const { description, regionName, departmentName } = req.query;
+    if (!description || description.trim().length < 10) {
+      return res.json({ duplicate: false });
+    }
+
+    // Build query: narrow to region and/or department in last 30 days
+    const since = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+    const query = { createdAt: { $gte: since } };
+
+    if (regionName) {
+      const region = await Region.findOne({ name: { $regex: new RegExp('^' + regionName.trim() + '$', 'i') } });
+      if (region) query.region = region._id;
+    }
+    if (departmentName) {
+      const dept = await Department.findOne({ name: { $regex: new RegExp('^' + departmentName.trim() + '$', 'i') } });
+      if (dept) query.department = dept._id;
+    }
+
+    const candidates = await Issue.find(query).select('description createdAt _id').lean();
+
+    // Word-overlap similarity
+    const words = (text) => new Set(text.toLowerCase().match(/\b\w{4,}\b/g) || []);
+    const similarity = (a, b) => {
+      const aW = words(a), bW = words(b);
+      if (!aW.size || !bW.size) return 0;
+      const intersection = [...aW].filter(w => bW.has(w)).length;
+      return intersection / Math.max(aW.size, bW.size);
+    };
+
+    let best = null, bestScore = 0;
+    for (const c of candidates) {
+      const score = similarity(description, c.description || '');
+      if (score > bestScore) { bestScore = score; best = c; }
+    }
+
+    if (bestScore >= 0.5 && best) {
+      const daysAgo = Math.floor((Date.now() - new Date(best.createdAt)) / (1000 * 60 * 60 * 24));
+      return res.json({ duplicate: true, issueId: best._id, daysAgo, similarity: bestScore });
+    }
+
+    res.json({ duplicate: false });
+  } catch (err) {
+    console.error('Duplicate check error:', err);
+    res.json({ duplicate: false }); // fail silently – non-blocking
+  }
+});
+
+
+
 // Multer middleware - only for multipart; otherwise next
 const maybeUploadPhoto = (req, res, next) => {
   if (req.headers['content-type']?.includes('multipart/form-data')) {

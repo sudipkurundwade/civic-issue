@@ -24,6 +24,9 @@ import {
     Camera,
     Upload,
     Sparkles,
+    Mic,
+    MicOff,
+    AlertTriangle,
 } from "lucide-react"
 import { issueService } from "@/services/issueService"
 import { useToast } from "@/components/ui/use-toast"
@@ -31,6 +34,13 @@ import { LocationMap } from "@/components/LocationMap"
 import { CameraCapture } from "@/components/CameraCapture"
 import { IssueDetailDialog } from "@/components/IssueDetailDialog"
 import { publicService } from "@/services/adminService"
+import { useLanguage } from "@/context/LanguageContext"
+
+const VOICE_LANGS = [
+    { code: "en-IN", label: "English" },
+    { code: "hi-IN", label: "हिंदी" },
+    { code: "mr-IN", label: "मराठी" },
+]
 
 const DEPARTMENT_OPTIONS = [
     "Roads & Infrastructure",
@@ -45,6 +55,31 @@ const DEPARTMENT_OPTIONS = [
     "Animal Control",
     "Other",
 ]
+
+// Keyword → department auto-routing map
+const KEYWORD_TO_DEPT = {
+    "Roads & Infrastructure": ["road", "pothole", "bridge", "footpath", "pavement", "highway", "construction", "crater", "asphalt", "tar"],
+    "Water Supply": ["water", "pipe", "leak", "tap", "supply", "drinking", "bore"],
+    "Sanitation & Garbage": ["garbage", "waste", "trash", "dump", "litter", "sanitation", "dustbin", "rubbish", "smell", "stink"],
+    "Electricity / Street Lights": ["light", "electricity", "electric", "streetlight", "power", "bulb", "wire", "transformer"],
+    "Drainage & Sewage": ["drain", "sewage", "sewer", "flood", "waterlog", "overflow", "gutter", "manhole"],
+    "Public Health": ["health", "hospital", "clinic", "mosquito", "dengue", "malaria", "disease", "vaccination"],
+    "Encroachment / Illegal Construction": ["encroach", "illegal", "unauthorised", "unauthorised", "building", "encroachment"],
+    "Traffic & Public Safety": ["traffic", "signal", "accident", "speed", "safety", "zebra", "crosswalk", "parking"],
+    "Parks & Public Spaces": ["park", "garden", "playground", "tree", "bench", "open space", "ground"],
+    "Animal Control": ["dog", "stray", "animal", "cow", "cattle", "rabies", "bite"],
+}
+
+function autoDetectDepartment(text) {
+    if (!text || text.length < 6) return null
+    const lower = text.toLowerCase()
+    let best = null, bestCount = 0
+    for (const [dept, keywords] of Object.entries(KEYWORD_TO_DEPT)) {
+        const count = keywords.filter(k => lower.includes(k)).length
+        if (count > bestCount) { bestCount = count; best = dept }
+    }
+    return bestCount > 0 ? best : null
+}
 
 const REGION_SUGGESTIONS_DEFAULT = [
     "Gadhinglaj",
@@ -78,6 +113,7 @@ const captureLocation = () => {
 
 export default function CitizenDashboard() {
     const { toast } = useToast()
+    const { t } = useLanguage()
     const [isReporting, setIsReporting] = React.useState(false)
     const [allIssues, setAllIssues] = React.useState([])
     const [myIssues, setMyIssues] = React.useState([])
@@ -95,6 +131,19 @@ export default function CitizenDashboard() {
     const [commentsByIssue, setCommentsByIssue] = React.useState({})
     const [commentTextByIssue, setCommentTextByIssue] = React.useState({})
     const uploadInputRef = React.useRef(null)
+
+    // Voice-to-text state
+    const [isListening, setIsListening] = React.useState(false)
+    const recognitionRef = React.useRef(null)
+    const speechSupported = typeof window !== 'undefined' && ('SpeechRecognition' in window || 'webkitSpeechRecognition' in window)
+    const [voiceLang, setVoiceLang] = React.useState(VOICE_LANGS[0])
+
+    // Auto-routing state
+    const [autoDept, setAutoDept] = React.useState(null) // dept name auto-detected
+    const [deptManual, setDeptManual] = React.useState(false) // user manually picked dept
+
+    // Duplicate detection state
+    const [duplicate, setDuplicate] = React.useState(null) // { issueId, daysAgo } or null
 
     React.useEffect(() => {
         issueService.getAllIssues().then(setAllIssues).catch(() => { })
@@ -124,6 +173,55 @@ export default function CitizenDashboard() {
         } else if (isReporting) setLocationLoading(false)
     }, [isReporting])
 
+    // Voice-to-text toggle
+    const toggleVoice = () => {
+        if (!speechSupported) return
+        if (isListening) {
+            recognitionRef.current?.stop()
+            setIsListening(false)
+            return
+        }
+        const SR = window.SpeechRecognition || window.webkitSpeechRecognition
+        const rec = new SR()
+        rec.lang = voiceLang.code
+        rec.continuous = true
+        rec.interimResults = true
+        rec.onresult = (e) => {
+            const transcript = Array.from(e.results)
+                .map(r => r[0].transcript)
+                .join('')
+            setReportForm(f => ({ ...f, description: transcript }))
+            // try auto-routing on voice result
+            const detected = autoDetectDepartment(transcript)
+            if (detected && !deptManual) {
+                setAutoDept(detected)
+                setReportForm(f => ({ ...f, departmentName: detected }))
+            }
+        }
+        rec.onend = () => setIsListening(false)
+        rec.onerror = () => setIsListening(false)
+        recognitionRef.current = rec
+        rec.start()
+        setIsListening(true)
+    }
+
+    // Debounced duplicate detection
+    React.useEffect(() => {
+        if (!reportForm.description || reportForm.description.length < 20) {
+            setDuplicate(null)
+            return
+        }
+        const timer = setTimeout(async () => {
+            const result = await issueService.checkDuplicate({
+                description: reportForm.description,
+                regionName: reportForm.regionName,
+                departmentName: reportForm.departmentName,
+            })
+            setDuplicate(result.duplicate ? result : null)
+        }, 900)
+        return () => clearTimeout(timer)
+    }, [reportForm.description, reportForm.regionName, reportForm.departmentName])
+
     const handleAnalyzeImage = async () => {
         if (!reportForm.photo) {
             toast({ title: "No photo to analyze", variant: "destructive" })
@@ -138,21 +236,21 @@ export default function CitizenDashboard() {
                 try {
                     const base64 = reader.result
                     const mimeType = reportForm.photo.type || 'image/jpeg'
-                    
+
                     const result = await issueService.analyzeImage(base64, mimeType)
-                    
+
                     setReportForm(f => ({ ...f, description: result.description }))
                     setAiGenerated(true)
-                    toast({ 
-                        title: "✨ AI Analysis Complete", 
-                        description: "Description generated! You can edit it before submitting." 
+                    toast({
+                        title: "✨ AI Analysis Complete",
+                        description: "Description generated! You can edit it before submitting."
                     })
                 } catch (error) {
                     console.error('Analysis error:', error)
-                    toast({ 
-                        title: "Analysis failed", 
+                    toast({
+                        title: "Analysis failed",
                         description: error.message || "Please write the description manually.",
-                        variant: "destructive" 
+                        variant: "destructive"
                     })
                 } finally {
                     setAnalyzing(false)
@@ -169,9 +267,9 @@ export default function CitizenDashboard() {
     const resolved = myIssues.filter((i) => i.status === "COMPLETED").length
     const unresolved = myIssues.filter((i) => i.status !== "COMPLETED").length
     const stats = [
-        { title: "My Issues", value: String(myIssues.length), description: "Total reported by you", icon: MapPin },
-        { title: "Resolved", value: String(resolved), description: "Successfully fixed", icon: CheckCircle },
-        { title: "Unresolved", value: String(unresolved), description: "Pending attention", icon: AlertCircle },
+        { title: t("citizen.myIssues"), value: String(myIssues.length), description: t("citizen.totalReported"), icon: MapPin },
+        { title: t("citizen.resolved"), value: String(resolved), description: t("citizen.successfullyFixed"), icon: CheckCircle },
+        { title: t("citizen.unresolved"), value: String(unresolved), description: t("citizen.pendingAttention"), icon: AlertCircle },
     ]
 
     const feedIssues = allIssues.map((i) => ({
@@ -198,9 +296,9 @@ export default function CitizenDashboard() {
                     {/* Header */}
                     <div className="flex items-center justify-between">
                         <Button variant="ghost" onClick={() => setIsReporting(false)} className="gap-2">
-                            <ArrowLeft className="h-4 w-4" /> Back to Dashboard
+                            <ArrowLeft className="h-4 w-4" /> {t("form.backDashboard")}
                         </Button>
-                        <h2 className="text-2xl font-bold bg-gradient-to-r from-orange-600 to-orange-700 bg-clip-text text-transparent">Report New Issue</h2>
+                        <h2 className="text-2xl font-bold bg-gradient-to-r from-orange-600 to-orange-700 bg-clip-text text-transparent">{t("form.reportTitle")}</h2>
                         <div className="w-[100px]"></div> {/* Spacer for centering */}
                     </div>
 
@@ -209,9 +307,9 @@ export default function CitizenDashboard() {
                         <Card className="h-full min-h-[500px] flex flex-col">
                             <CardHeader>
                                 <CardTitle className="flex items-center gap-2">
-                                    <MapPin className="h-5 w-5 text-orange-600" /> Issue Location
+                                    <MapPin className="h-5 w-5 text-orange-600" /> {t("form.issueLocation")}
                                 </CardTitle>
-                                <CardDescription>Your current location is pinned by default. Click on the map to change it if needed.</CardDescription>
+                                <CardDescription>{t("form.locationDesc")}</CardDescription>
                             </CardHeader>
                             <CardContent className="flex-1 p-4">
                                 <LocationMap
@@ -222,14 +320,14 @@ export default function CitizenDashboard() {
                                 />
                                 <div className="mt-2 space-y-1">
                                     {locationLoading && !(mapSelected || location.lat) && (
-                                        <p className="text-xs text-orange-600 font-medium">Getting your current location... Allow GPS when prompted.</p>
+                                        <p className="text-xs text-orange-600 font-medium">{t("form.gettingLocation")}</p>
                                     )}
                                     {!locationLoading && !(mapSelected || location.lat) && (
-                                        <p className="text-xs text-destructive font-medium">Required: Select location on map (could not get your current location)</p>
+                                        <p className="text-xs text-destructive font-medium">{t("form.locationRequired")}</p>
                                     )}
                                     {(mapSelected || (location.lat != null)) && (
                                         <p className="text-xs text-emerald-600 font-medium">
-                                            ✓ {mapSelected ? "Location updated" : "Your current location"}: {mapSelected ? `${mapSelected.lat.toFixed(5)}, ${mapSelected.lng.toFixed(5)}` : `${location.lat.toFixed(5)}, ${location.lng.toFixed(5)}`}
+                                            ✓ {mapSelected ? t("form.locationUpdated") : t("form.currentLocation")}: {mapSelected ? `${mapSelected.lat.toFixed(5)}, ${mapSelected.lng.toFixed(5)}` : `${location.lat.toFixed(5)}, ${location.lng.toFixed(5)}`}
                                         </p>
                                     )}
                                 </div>
@@ -239,7 +337,7 @@ export default function CitizenDashboard() {
                         {/* Right Column: Form */}
                         <Card>
                             <CardHeader>
-                                <CardTitle>Issue Details</CardTitle>
+                                <CardTitle>{t("form.issueDetails")}</CardTitle>
                             </CardHeader>
                             <CardContent className="space-y-6">
                                 <form
@@ -289,14 +387,14 @@ export default function CitizenDashboard() {
                                     className="space-y-6"
                                 >
                                     <div className="space-y-3">
-                                        <Label>Region *</Label>
+                                        <Label>{t("form.region")}</Label>
                                         <select
                                             value={reportForm.regionName}
                                             onChange={(e) => setReportForm((f) => ({ ...f, regionName: e.target.value }))}
                                             className="h-10 w-full rounded-md border px-3 text-sm"
                                             required
                                         >
-                                            <option value="">Select region</option>
+                                            <option value="">{t("form.selectRegion")}</option>
                                             {regions.map((name) => (
                                                 <option key={name} value={name}>
                                                     {name}
@@ -306,14 +404,25 @@ export default function CitizenDashboard() {
                                     </div>
 
                                     <div className="space-y-3">
-                                        <Label>Department *</Label>
+                                        <div className="flex items-center gap-2">
+                                            <Label>{t("form.department")}</Label>
+                                            {autoDept && !deptManual && (
+                                                <span className="inline-flex items-center gap-1 rounded-full bg-blue-50 border border-blue-200 text-blue-700 text-xs px-2 py-0.5">
+                                                    🤖 {t("form.autoDetected")}
+                                                </span>
+                                            )}
+                                        </div>
                                         <select
                                             value={reportForm.departmentName}
-                                            onChange={(e) => setReportForm((f) => ({ ...f, departmentName: e.target.value }))}
+                                            onChange={(e) => {
+                                                setDeptManual(true)
+                                                setAutoDept(null)
+                                                setReportForm((f) => ({ ...f, departmentName: e.target.value }))
+                                            }}
                                             className="h-10 w-full rounded-md border px-3 text-sm"
                                             required
                                         >
-                                            <option value="">Select Department</option>
+                                            <option value="">{t("form.selectDepartment")}</option>
                                             {DEPARTMENT_OPTIONS.map((name) => (
                                                 <option key={name} value={name}>
                                                     {name}
@@ -323,23 +432,23 @@ export default function CitizenDashboard() {
                                     </div>
 
                                     <div className="space-y-2">
-                                        <Label>Address (optional)</Label>
+                                        <Label>{t("form.address")}</Label>
                                         <Input
-                                            placeholder="Street, landmark, etc."
+                                            placeholder={t("form.addressPlaceholder")}
                                             value={reportForm.address ?? ""}
                                             onChange={(e) => setReportForm((f) => ({ ...f, address: e.target.value }))}
                                         />
                                         <p className="text-xs text-muted-foreground">
-                                            Location is auto-tracked. Add address for easier navigation.
+                                            {t("form.addressHint")}
                                         </p>
                                     </div>
 
-                                  
+
 
                                     <div className="space-y-2">
-                                        <Label>Issue Photo *</Label>
+                                        <Label>{t("form.issuePhoto")}</Label>
                                         <p className="text-xs text-muted-foreground">
-                                            Take a photo with camera or upload one. Location is captured automatically.
+                                            {t("form.photoHint")}
                                         </p>
                                         <div className="flex gap-3">
                                             <input
@@ -368,7 +477,7 @@ export default function CitizenDashboard() {
                                                 className="flex-1 gap-2"
                                                 onClick={() => setCameraOpen(true)}
                                             >
-                                                <Camera className="h-4 w-4" /> Take Photo
+                                                <Camera className="h-4 w-4" /> {t("form.takePhoto")}
                                             </Button>
                                             <Button
                                                 type="button"
@@ -376,7 +485,7 @@ export default function CitizenDashboard() {
                                                 className="flex-1 gap-2"
                                                 onClick={() => uploadInputRef.current?.click()}
                                             >
-                                                <Upload className="h-4 w-4" /> Upload
+                                                <Upload className="h-4 w-4" /> {t("form.upload")}
                                             </Button>
                                         </div>
                                         {reportForm.photoPreview && (
@@ -388,7 +497,7 @@ export default function CitizenDashboard() {
                                                 />
                                                 <div className="flex items-center justify-between">
                                                     <p className="text-xs text-emerald-600 font-medium">
-                                                        Photo added. Location captured.
+                                                        {t("form.photoAdded")}
                                                     </p>
                                                     <Button
                                                         type="button"
@@ -399,30 +508,81 @@ export default function CitizenDashboard() {
                                                         disabled={analyzing}
                                                     >
                                                         <Sparkles className="h-3 w-3" />
-                                                        {analyzing ? "Analyzing..." : "Analyze with AI"}
+                                                        {analyzing ? t("form.analyzing") : t("form.analyzeAI")}
                                                     </Button>
                                                 </div>
                                             </div>
                                         )}
                                     </div>
 
-                                      <div className="space-y-2">
+                                    <div className="space-y-2">
                                         <div className="flex items-center justify-between">
-                                            <Label>Issue Description *</Label>
+                                            <div className="flex items-center gap-2">
+                                                <Label>{t("form.issueDesc")}</Label>
+                                                {speechSupported && (
+                                                    <>
+                                                        {/* Voice language selector */}
+                                                        <select
+                                                            value={voiceLang.code}
+                                                            onChange={e => setVoiceLang(VOICE_LANGS.find(l => l.code === e.target.value) || VOICE_LANGS[0])}
+                                                            className="h-6 rounded border text-xs px-1 text-muted-foreground bg-background"
+                                                            disabled={isListening}
+                                                            title={t("form.voiceLang")}
+                                                        >
+                                                            {VOICE_LANGS.map(l => (
+                                                                <option key={l.code} value={l.code}>{l.label}</option>
+                                                            ))}
+                                                        </select>
+                                                        <button
+                                                            type="button"
+                                                            onClick={toggleVoice}
+                                                            title={isListening ? t("form.stopVoice") : t("form.voice")}
+                                                            className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium border transition-all ${isListening
+                                                                    ? "bg-red-50 border-red-300 text-red-600 animate-pulse"
+                                                                    : "bg-gray-50 border-gray-200 text-gray-600 hover:bg-orange-50 hover:border-orange-300 hover:text-orange-600"
+                                                                }`}
+                                                        >
+                                                            {isListening ? <MicOff className="h-3 w-3" /> : <Mic className="h-3 w-3" />}
+                                                            {isListening ? t("form.stopVoice") : t("form.voice")}
+                                                        </button>
+                                                    </>
+                                                )}
+                                            </div>
                                             {aiGenerated && (
                                                 <Badge variant="outline" className="gap-1 bg-gradient-to-r from-purple-50 to-blue-50 border-purple-200 text-purple-700">
                                                     <Sparkles className="h-3 w-3" />
-                                                    AI Generated
+                                                    {t("form.aiGenerated")}
                                                 </Badge>
                                             )}
                                         </div>
+                                        {duplicate && (
+                                            <div className="flex items-start gap-2 rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-amber-800 text-xs">
+                                                <AlertTriangle className="h-4 w-4 mt-0.5 shrink-0 text-amber-500" />
+                                                <span>
+                                                    ⚠️ {t("form.duplicateWarning")}
+                                                    {duplicate.daysAgo === 0 ? ` ${t("form.duplicateToday")}` : ` ${duplicate.daysAgo} ${t("form.daysAgo_other")}`}.
+                                                    {t("form.duplicateHint")}
+                                                </span>
+                                            </div>
+                                        )}
                                         <Textarea
-                                            placeholder="Describe the issue in detail..."
+                                            placeholder={t("form.descPlaceholder")}
                                             className="min-h-[100px]"
                                             value={reportForm.description}
                                             onChange={(e) => {
-                                                setReportForm((f) => ({ ...f, description: e.target.value }))
-                                                if (aiGenerated) setAiGenerated(false) // Clear AI flag on manual edit
+                                                const val = e.target.value
+                                                setReportForm((f) => ({ ...f, description: val }))
+                                                if (aiGenerated) setAiGenerated(false)
+                                                // Auto-routing on typing
+                                                if (!deptManual) {
+                                                    const detected = autoDetectDepartment(val)
+                                                    if (detected) {
+                                                        setAutoDept(detected)
+                                                        setReportForm(f => ({ ...f, description: val, departmentName: detected }))
+                                                    } else {
+                                                        setAutoDept(null)
+                                                    }
+                                                }
                                             }}
                                             required
                                         />
@@ -440,12 +600,12 @@ export default function CitizenDashboard() {
                                         }
                                         title={
                                             !(mapSelected || location.lat)
-                                                ? "Select location on map if GPS is not available"
+                                                ? t("form.selectLocation")
                                                 : ""
                                         }
                                     >
                                         <Share2 className="mr-2 h-4 w-4" />{" "}
-                                        {submitting ? "Submitting..." : "Submit Issue"}
+                                        {submitting ? t("form.submitting") : t("form.submitIssue")}
                                     </Button>
                                 </form>
                             </CardContent>
@@ -471,11 +631,11 @@ export default function CitizenDashboard() {
         <div className="space-y-6 p-6 max-w-7xl mx-auto">
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div className="space-y-1">
-                    <h2 className="text-3xl font-bold tracking-tight">Citizen Dashboard</h2>
-                    <p className="text-muted-foreground">Stay updated with civic issues in Kolhapur.</p>
+                    <h2 className="text-3xl font-bold tracking-tight">{t("citizen.title")}</h2>
+                    <p className="text-muted-foreground">{t("citizen.subtitle")}</p>
                 </div>
                 <Button onClick={() => setIsReporting(true)} className="bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white shadow-lg hover:shadow-xl transition-all duration-300 font-semibold">
-                    <Plus className="mr-2 h-4 w-4" /> Report New Issue
+                    <Plus className="mr-2 h-4 w-4" /> {t("citizen.reportBtn")}
                 </Button>
             </div>
 
@@ -519,7 +679,7 @@ export default function CitizenDashboard() {
 
             {/* All Issues (visible to all users) */}
             <div className="space-y-6">
-                <h3 className="text-xl font-semibold">All Issues</h3>
+                <h3 className="text-xl font-semibold">{t("citizen.allIssues")}</h3>
 
                 <div className="grid gap-6 md:grid-cols-1 lg:max-w-2xl mx-auto">
                     {feedIssues.length > 0 ? (
@@ -539,7 +699,7 @@ export default function CitizenDashboard() {
                                         </div>
                                         <div>
                                             <h4 className="font-semibold text-sm">{issue.area}, {issue.region}</h4>
-                                            <p className="text-xs text-muted-foreground">{issue.date} · Reported by {issue.reporterName}</p>
+                                            <p className="text-xs text-muted-foreground">{issue.date} · {t("citizen.reportedBy")} {issue.reporterName}</p>
                                         </div>
                                         <div className="ml-auto">
                                             <Badge variant={issue.status === "pending" ? "destructive" : "secondary"}>
@@ -590,7 +750,7 @@ export default function CitizenDashboard() {
                                             }}
                                         >
                                             <ThumbsUp className="h-4 w-4" />
-                                            <span className="text-xs">{issue.likes} Supports</span>
+                                            <span className="text-xs">{issue.likes} {t("citizen.supports")}</span>
                                         </Button>
                                         <Button
                                             variant="ghost"
@@ -615,11 +775,11 @@ export default function CitizenDashboard() {
                                             }}
                                         >
                                             <MessageSquare className="h-4 w-4" />
-                                            <span className="text-xs">{issue.comments} Comments</span>
+                                            <span className="text-xs">{issue.comments} {t("citizen.comments")}</span>
                                         </Button>
                                         <Button variant="ghost" size="sm" className="gap-2 hover:text-purple-600">
                                             <Share2 className="h-4 w-4" />
-                                            <span className="text-xs">Share</span>
+                                            <span className="text-xs">{t("citizen.share")}</span>
                                         </Button>
                                     </div>
                                     {/* Inline Comments Thread */}
@@ -627,7 +787,7 @@ export default function CitizenDashboard() {
                                         <div className="border-t px-4 pb-4 pt-3 space-y-3 bg-muted/10">
                                             {comments.length === 0 ? (
                                                 <p className="text-xs text-muted-foreground">
-                                                    No comments yet. Be the first to comment.
+                                                    {t("comment.noComments")}
                                                 </p>
                                             ) : (
                                                 <div className="space-y-2 max-h-40 overflow-y-auto pr-1">
@@ -677,7 +837,7 @@ export default function CitizenDashboard() {
                                                 }}
                                             >
                                                 <Input
-                                                    placeholder="Write a comment..."
+                                                    placeholder={t("comment.placeholder")}
                                                     value={commentText}
                                                     onChange={(e) =>
                                                         setCommentTextByIssue((prev) => ({
@@ -692,7 +852,7 @@ export default function CitizenDashboard() {
                                                     size="sm"
                                                     disabled={!commentText.trim()}
                                                 >
-                                                    Post
+                                                    {t("comment.post")}
                                                 </Button>
                                             </form>
                                         </div>
@@ -705,8 +865,8 @@ export default function CitizenDashboard() {
                             <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gradient-to-br from-orange-100 to-orange-200 mb-4">
                                 <CheckCircle className="h-8 w-8 text-orange-600" />
                             </div>
-                            <h3 className="text-lg font-semibold text-foreground">No issues yet</h3>
-                            <p className="text-muted-foreground">Be the first to report a civic issue.</p>
+                            <h3 className="text-lg font-semibold text-foreground">{t("citizen.noIssues")}</h3>
+                            <p className="text-muted-foreground">{t("citizen.beFirst")}</p>
                         </div>
                     )}
                 </div>

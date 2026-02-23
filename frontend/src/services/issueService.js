@@ -73,4 +73,15 @@ export const issueService = {
     if (!res.ok) throw new Error(data.error || 'Failed to analyze image');
     return data;
   },
+
+  async checkDuplicate({ description, regionName, departmentName }) {
+    const params = new URLSearchParams({ description: description || '' });
+    if (regionName) params.set('regionName', regionName);
+    if (departmentName) params.set('departmentName', departmentName);
+    const res = await fetch(`${API_URL}/issues/check-duplicate?${params}`, {
+      headers: headers(),
+    });
+    if (!res.ok) return { duplicate: false };
+    return res.json();
+  },
 };
