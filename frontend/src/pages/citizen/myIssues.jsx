@@ -16,6 +16,7 @@ import { Input } from "@/components/ui/input"
 import { issueService } from "@/services/issueService"
 import { IssueDetailDialog } from "@/components/IssueDetailDialog"
 import { useLanguage } from "@/context/LanguageContext"
+import { useIssueTranslation } from "@/hooks/useIssueTranslation"
 
 const statusMap = { PENDING: "pending", PENDING_DEPARTMENT: "awaiting-department", IN_PROGRESS: "in-progress", COMPLETED: "solved" }
 
@@ -23,6 +24,7 @@ export default function MyIssuesPage() {
     const { t } = useLanguage()
     const [searchTerm, setSearchTerm] = React.useState("")
     const [myIssues, setMyIssues] = React.useState([])
+    const getDesc = useIssueTranslation(myIssues)
     const [loading, setLoading] = React.useState(true)
     const [selectedIssue, setSelectedIssue] = React.useState(null)
     const [detailOpen, setDetailOpen] = React.useState(false)
@@ -38,6 +40,7 @@ export default function MyIssuesPage() {
         id: i.id,
         title: i.description?.slice(0, 60) || "Issue",
         description: i.description,
+        _rawIssue: i, // keep raw for translation hook
         region: i.department?.region?.name || "—",
         area: i.address || `${i.latitude}, ${i.longitude}`,
         date: i.createdAt ? new Date(i.createdAt).toLocaleDateString() : "",
@@ -150,7 +153,7 @@ export default function MyIssuesPage() {
                                             </div>
 
                                             <p className="text-sm text-muted-foreground mt-2 line-clamp-2">
-                                                {issue.description}
+                                                {getDesc(issue)}
                                             </p>
                                         </div>
 

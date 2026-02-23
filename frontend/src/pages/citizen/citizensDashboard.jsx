@@ -35,6 +35,8 @@ import { CameraCapture } from "@/components/CameraCapture"
 import { IssueDetailDialog } from "@/components/IssueDetailDialog"
 import { publicService } from "@/services/adminService"
 import { useLanguage } from "@/context/LanguageContext"
+import { useIssueTranslation } from "@/hooks/useIssueTranslation"
+
 
 const VOICE_LANGS = [
     { code: "en-IN", label: "English" },
@@ -116,6 +118,7 @@ export default function CitizenDashboard() {
     const { t } = useLanguage()
     const [isReporting, setIsReporting] = React.useState(false)
     const [allIssues, setAllIssues] = React.useState([])
+    const getDesc = useIssueTranslation(allIssues)
     const [myIssues, setMyIssues] = React.useState([])
     const [location, setLocation] = React.useState({ lat: null, lng: null, address: "" })
     const [locationLoading, setLocationLoading] = React.useState(true)
@@ -207,20 +210,23 @@ export default function CitizenDashboard() {
 
     // Debounced duplicate detection
     React.useEffect(() => {
-        if (!reportForm.description || reportForm.description.length < 20) {
+        if (!reportForm.description || reportForm.description.length < 10) {
             setDuplicate(null)
             return
         }
         const timer = setTimeout(async () => {
+            const pos = mapSelected || (location.lat != null ? location : null)
             const result = await issueService.checkDuplicate({
                 description: reportForm.description,
                 regionName: reportForm.regionName,
                 departmentName: reportForm.departmentName,
+                lat: pos?.lat,
+                lng: pos?.lng
             })
             setDuplicate(result.duplicate ? result : null)
         }, 900)
         return () => clearTimeout(timer)
-    }, [reportForm.description, reportForm.regionName, reportForm.departmentName])
+    }, [reportForm.description, reportForm.regionName, reportForm.departmentName, mapSelected, location.lat, location.lng])
 
     const handleAnalyzeImage = async () => {
         if (!reportForm.photo) {
@@ -379,7 +385,16 @@ export default function CitizenDashboard() {
                                             issueService.getMyIssues().then(setMyIssues)
                                             issueService.getAllIssues().then(setAllIssues)
                                         } catch (err) {
-                                            toast({ title: err.message || "Failed to submit", variant: "destructive" })
+                                            // Handle duplicate rejection specifically
+                                            if (err.message?.toLowerCase().includes('duplicate')) {
+                                                toast({
+                                                    title: "Duplicate Prevented",
+                                                    description: err.message,
+                                                    variant: "destructive"
+                                                })
+                                            } else {
+                                                toast({ title: err.message || "Failed to submit", variant: "destructive" })
+                                            }
                                         } finally {
                                             setSubmitting(false)
                                         }
@@ -538,8 +553,8 @@ export default function CitizenDashboard() {
                                                             onClick={toggleVoice}
                                                             title={isListening ? t("form.stopVoice") : t("form.voice")}
                                                             className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium border transition-all ${isListening
-                                                                    ? "bg-red-50 border-red-300 text-red-600 animate-pulse"
-                                                                    : "bg-gray-50 border-gray-200 text-gray-600 hover:bg-orange-50 hover:border-orange-300 hover:text-orange-600"
+                                                                ? "bg-red-50 border-red-300 text-red-600 animate-pulse"
+                                                                : "bg-gray-50 border-gray-200 text-gray-600 hover:bg-orange-50 hover:border-orange-300 hover:text-orange-600"
                                                                 }`}
                                                         >
                                                             {isListening ? <MicOff className="h-3 w-3" /> : <Mic className="h-3 w-3" />}
@@ -556,13 +571,17 @@ export default function CitizenDashboard() {
                                             )}
                                         </div>
                                         {duplicate && (
-                                            <div className="flex items-start gap-2 rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-amber-800 text-xs">
-                                                <AlertTriangle className="h-4 w-4 mt-0.5 shrink-0 text-amber-500" />
-                                                <span>
-                                                    ⚠️ {t("form.duplicateWarning")}
-                                                    {duplicate.daysAgo === 0 ? ` ${t("form.duplicateToday")}` : ` ${duplicate.daysAgo} ${t("form.daysAgo_other")}`}.
-                                                    {t("form.duplicateHint")}
-                                                </span>
+                                            <div className="flex items-start gap-2 rounded-md border-2 border-orange-500 bg-orange-50 px-3 py-2 text-orange-900 text-sm font-bold shadow-md animate-in fade-in slide-in-from-top-2 duration-300">
+                                                <AlertTriangle className="h-5 w-5 mt-0.5 shrink-0 text-orange-600" />
+                                                <div className="flex flex-col gap-1">
+                                                    <span>
+                                                        ⚠️ {t("form.duplicateWarning")}
+                                                        {duplicate.daysAgo === 0 ? ` ${t("form.duplicateToday")}` : ` ${duplicate.daysAgo} ${t("form.daysAgo_other")}`}.
+                                                    </span>
+                                                    <p className="font-normal text-xs text-orange-800 italic">
+                                                        {t("form.duplicateHint")}
+                                                    </p>
+                                                </div>
                                             </div>
                                         )}
                                         <Textarea
@@ -719,7 +738,7 @@ export default function CitizenDashboard() {
                                         </div>
                                         <div className="p-4 space-y-2">
                                             <h3 className="font-bold text-lg">{issue.title}</h3>
-                                            <p className="text-sm text-foreground/80">{issue.description}</p>
+                                            <p className="text-sm text-foreground/80">{getDesc(issue)}</p>
                                         </div>
                                     </div>
 

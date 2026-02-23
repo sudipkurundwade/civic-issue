@@ -8,6 +8,7 @@ import { IssueDetailDialog } from "@/components/IssueDetailDialog"
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { MapPin, Info } from "lucide-react"
+import { useLanguage } from "@/context/LanguageContext"
 
 // Fix default marker icon
 delete L.Icon.Default.prototype._getIconUrl
@@ -40,6 +41,7 @@ function HeatLayer({ points }) {
 }
 
 export default function HeatMap() {
+    const { t } = useLanguage()
     const [issues, setIssues] = React.useState([])
     const [selectedIssue, setSelectedIssue] = React.useState(null)
     const [detailOpen, setDetailOpen] = React.useState(false)
@@ -83,12 +85,12 @@ export default function HeatMap() {
         <div className="p-6 space-y-6 h-[calc(100vh-4rem)] flex flex-col">
             <div className="flex items-center justify-between">
                 <div>
-                    <h2 className="text-3xl font-bold tracking-tight">Issue Analytics Heat Map</h2>
-                    <p className="text-muted-foreground">Visualizing complaint density across Kolhapur.</p>
+                    <h2 className="text-3xl font-bold tracking-tight">{t("heatmap.title")}</h2>
+                    <p className="text-muted-foreground">{t("heatmap.subtitle")}</p>
                 </div>
                 <div className="flex gap-2">
                     <Badge variant="outline" className="bg-orange-50 text-orange-700 border-orange-200">
-                        Total Complaints: {issues.length}
+                        {t("heatmap.totalComplaints")}: {issues.length}
                     </Badge>
                 </div>
             </div>
@@ -99,7 +101,7 @@ export default function HeatMap() {
                         <div className="absolute inset-0 z-[1000] bg-background/50 backdrop-blur-sm flex items-center justify-center">
                             <div className="flex flex-col items-center gap-2">
                                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-600"></div>
-                                <span className="text-sm font-medium">Generating heatmap...</span>
+                                <span className="text-sm font-medium">{t("heatmap.generating")}</span>
                             </div>
                         </div>
                     )}
@@ -146,13 +148,13 @@ export default function HeatMap() {
 
                     {/* Legend */}
                     <div className="absolute bottom-6 right-6 z-[1000] bg-background/90 backdrop-blur-md p-3 rounded-lg border shadow-lg space-y-2 pointer-events-none">
-                        <h4 className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Intensity Legend</h4>
+                        <h4 className="text-xs font-bold uppercase tracking-wider text-muted-foreground">{t("heatmap.legend")}</h4>
                         <div className="flex items-center gap-3">
                             <div className="h-3 w-24 rounded-full bg-gradient-to-r from-blue-500 via-lime-500 to-red-500"></div>
-                            <span className="text-[10px] whitespace-nowrap">Low → High</span>
+                            <span className="text-[10px] whitespace-nowrap">{t("heatmap.lowHigh")}</span>
                         </div>
                         <div className="flex items-center gap-2 pt-1 border-t text-[10px] text-muted-foreground">
-                            <Info className="h-3 w-3" /> Click pins for details
+                            <Info className="h-3 w-3" /> {t("heatmap.clickPins")}
                         </div>
                     </div>
                 </CardContent>

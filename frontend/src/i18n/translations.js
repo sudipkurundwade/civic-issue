@@ -246,7 +246,41 @@ export const translations = {
         "announce.postedOn": "Posted on",
 
         // Heat Map
+        "heatmap.title": "Issue Analytics Heat Map",
         "heatmap.subtitle": "Visual density of reported civic issues.",
+        "heatmap.totalComplaints": "Total Complaints",
+        "heatmap.generating": "Generating heatmap...",
+        "heatmap.legend": "Intensity Legend",
+        "heatmap.lowHigh": "Low \u2192 High",
+        "heatmap.clickPins": "Click pins for details",
+
+        // Reports page
+        "reports.systemWide": "System-wide Report",
+        "reports.regionReport": "Region Report",
+        "reports.deptReport": "Department Report",
+        "reports.generateDesc": "Generate and download a PDF summary of key metrics for your level.",
+        "reports.generating": "Generating...",
+        "reports.generateBtn": "Generate Report",
+        "reports.downloadPdf": "Download PDF",
+        "reports.notAvailable": "Reports not available",
+        "reports.civicNoAccess": "Civic users do not have access to admin reports.",
+        "reports.subtitle": "Detailed issue reports and analytics.",
+        "reports.export": "Export",
+        "reports.noData": "No reports found.",
+
+        // Announcements
+        "announce.myTitle": "My Announcements",
+        "announce.createNew": "Create New",
+        "announce.active": "Active Announcements",
+        "announce.past": "Past Announcements",
+        "announce.noneAtThisTime": "No announcements at this time.",
+        "announce.expires": "Expires",
+        "announce.views": "views",
+        "announce.subtitle": "Official civic announcements by administrators.",
+        "announce.create": "Create Announcement",
+        "announce.noAnnounce": "No announcements found.",
+        "announce.by": "By",
+        "announce.postedOn": "Posted",
 
         // Region Admin Dashboard
         "regionAdmin.title": "Region Admin Dashboard",
@@ -564,7 +598,34 @@ export const translations = {
         "announce.postedOn": "पर पोस्ट किया",
 
         // Heat Map
+        "heatmap.title": "समस्या विश्लेषण हीट मैप",
         "heatmap.subtitle": "रिपोर्ट की गई नागरिक समस्याओं का विज़ुअल घनत्व।",
+        "heatmap.totalComplaints": "कुल शिकायतें",
+        "heatmap.generating": "हीटमैप बन रहा है...",
+        "heatmap.legend": "तीव्रता सूचक",
+        "heatmap.lowHigh": "कम \u2192 अधिक",
+        "heatmap.clickPins": "विवरण के लिए पिन पर क्लिक करें",
+
+        // Reports page
+        "reports.systemWide": "सिस्टम-व्यापी रिपोर्ट",
+        "reports.regionReport": "क्षेत्र रिपोर्ट",
+        "reports.deptReport": "विभाग रिपोर्ट",
+        "reports.generateDesc": "अपने स्तर के प्रमुख मेट्रिक्स का PDF सारांश बनाएं और डाउनलोड करें।",
+        "reports.generating": "बन रहा है...",
+        "reports.generateBtn": "रिपोर्ट बनाएं",
+        "reports.downloadPdf": "PDF डाउनलोड करें",
+        "reports.notAvailable": "रिपोर्ट उपलब्ध नहीं",
+        "reports.civicNoAccess": "नागरिक उपयोगकर्ताओं को एडमिन रिपोर्ट तक पहुंच नहीं है।",
+
+        // Announcements
+        "announce.myTitle": "मेरी घोषणाएं",
+        "announce.createNew": "नई बनाएं",
+        "announce.active": "सक्रिय घोषणाएं",
+        "announce.past": "पुरानी घोषणाएं",
+        "announce.noneAtThisTime": "इस समय कोई घोषणा नहीं है।",
+        "announce.expires": "समाप्त",
+        "announce.views": "देखे",
+        "announce.noAnnounce": "कोई घोषणा नहीं मिली।",
 
         // Region Admin Dashboard
         "regionAdmin.title": "क्षेत्र एडमिन डैशबोर्ड",
@@ -882,7 +943,34 @@ export const translations = {
         "announce.postedOn": "रोजी पोस्ट केले",
 
         // Heat Map
+        "heatmap.title": "तक्रार विश्लेषण हीट मॅप",
         "heatmap.subtitle": "नोंदवलेल्या नागरिक तक्रारींची दृश्य घनता.",
+        "heatmap.totalComplaints": "एकूण तक्रारी",
+        "heatmap.generating": "हीटमॅप तयार होत आहे...",
+        "heatmap.legend": "तीव्रता सूचक",
+        "heatmap.lowHigh": "कमी \u2192 जास्त",
+        "heatmap.clickPins": "तपशीलासाठी पिनवर क्लिक करा",
+
+        // Reports page
+        "reports.systemWide": "संपूर्ण प्रणाली अहवाल",
+        "reports.regionReport": "प्रदेश अहवाल",
+        "reports.deptReport": "विभाग अहवाल",
+        "reports.generateDesc": "आपल्या स्तरावरील प्रमुख मेट्रिक्सचा PDF सारांश तयार करा आणि डाउनलोड करा.",
+        "reports.generating": "तयार होत आहे...",
+        "reports.generateBtn": "अहवाल तयार करा",
+        "reports.downloadPdf": "PDF डाउनलोड करा",
+        "reports.notAvailable": "अहवाल उपलब्ध नाही",
+        "reports.civicNoAccess": "नागरिक वापरकर्त्यांना अॅडमिन अहवालात प्रवेश नाही.",
+
+        // Announcements
+        "announce.myTitle": "माझ्या घोषणा",
+        "announce.createNew": "नवीन तयार करा",
+        "announce.active": "सक्रिय घोषणा",
+        "announce.past": "जुन्या घोषणा",
+        "announce.noneAtThisTime": "सध्या कोणत्याही घोषणा नाहीत.",
+        "announce.expires": "संपते",
+        "announce.views": "पाहिले",
+        "announce.noAnnounce": "कोणत्याही घोषणा सापडल्या नाहीत.",
 
         // Region Admin Dashboard
         "regionAdmin.title": "प्रदेश अॅडमिन डॅशबोर्ड",

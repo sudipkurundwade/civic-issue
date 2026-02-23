@@ -7,10 +7,26 @@ import { uploadPhoto } from '../config/cloudinary.js';
 import { uploadToCloudinary } from '../lib/uploadToCloudinary.js';
 import { cloudinary } from '../config/cloudinary.js';
 import { notifyDepartmentNewIssue } from '../lib/notifications.js';
-import { analyzeIssueImage } from '../services/geminiService.js';
+import { analyzeIssueImage, translateText } from '../services/geminiService.js';
 import { calculateRankingScore } from '../lib/geminiService.js';
 
 const router = express.Router();
+
+// Translate issue description text using Gemini
+router.post('/translate-text', authenticate, async (req, res) => {
+  try {
+    const { text, targetLang } = req.body;
+    if (!text) return res.status(400).json({ error: 'text is required' });
+    if (!targetLang || targetLang === 'en') return res.json({ translated: text });
+
+    const translated = await translateText(text, targetLang);
+    res.json({ translated });
+  } catch (err) {
+    console.error('Translate text error:', err);
+    res.status(500).json({ error: 'Translation failed', translated: req.body.text });
+  }
+});
+
 
 // Analyze issue image with AI (Gemini)
 router.post('/analyze-image', authenticate, requireRole('civic'), async (req, res) => {
@@ -36,57 +52,109 @@ router.post('/analyze-image', authenticate, requireRole('civic'), async (req, re
   }
 });
 
+const findDuplicateIssue = async ({ description, regionName, departmentName, lat, lng }) => {
+  if (!description || description.trim().length < 10) return null;
+
+  const since = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+  const query = { createdAt: { $gte: since } };
+
+  const candidates = await Issue.find(query)
+    .select('description createdAt _id latitude longitude region requestedRegionName department requestedDepartmentName')
+    .populate('region', 'name')
+    .populate('department', 'name')
+    .lean();
+
+  // AI Noise & Stop words reduction
+  const AI_NOISE = new Set([
+    'image', 'shows', 'photo', 'condition', 'clear', 'view', 'captured', 'appears', 'present', 'located', 'area', 'civic', 'issue', 'problem',
+    'the', 'and', 'with', 'this', 'that', 'for', 'from', 'are', 'was', 'were', 'been', 'has', 'have', 'had', 'will', 'shall', 'should', 'could', 'would',
+    'which', 'who', 'whom', 'whose', 'where', 'when', 'why', 'how', 'all', 'any', 'both', 'each', 'few', 'more', 'most', 'other', 'some', 'such', 'than',
+    'too', 'very', 'can', 'just', 'only', 'very'
+  ]);
+
+  const words = (text) => {
+    const all = text.toLowerCase().match(/\b\w{3,}\b/g) || []; // Allow 3+ chars
+    const filtered = all.filter(w => !AI_NOISE.has(w));
+    // Very basic stemming: remove 's' or 'es' from the end
+    return new Set(filtered.map(w => w.replace(/(es|s)$/, '')));
+  };
+
+  const similarity = (a, b) => {
+    const aW = words(a), bW = words(b);
+    if (!aW.size || !bW.size) return 0;
+    const intersection = [...aW].filter(w => bW.has(w)).length;
+    return intersection / Math.max(aW.size, bW.size);
+  };
+
+  const getDistance = (lat1, lon1, lat2, lon2) => {
+    const R = 6371e3;
+    const φ1 = (lat1 * Math.PI) / 180;
+    const φ2 = (lat2 * Math.PI) / 180;
+    const Δφ = ((lat2 - lat1) * Math.PI) / 180;
+    const Δλ = ((lon2 - lon1) * Math.PI) / 180;
+    const a = Math.sin(Δφ / 2) * Math.sin(Δφ / 2) + Math.cos(φ1) * Math.cos(φ2) * Math.sin(Δλ / 2) * Math.sin(Δλ / 2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    return R * c;
+  };
+
+  let best = null, bestScore = 0, bestDist = Infinity, bestReqThreshold = 0.5;
+  const uLat = parseFloat(lat), uLng = parseFloat(lng);
+
+  for (const c of candidates) {
+    if (regionName) {
+      const cRegion = c.region?.name || c.requestedRegionName;
+      if (cRegion && cRegion.toLowerCase() !== regionName.trim().toLowerCase()) continue;
+    }
+    if (departmentName) {
+      const cDept = c.department?.name || c.requestedDepartmentName;
+      if (cDept && cDept.toLowerCase() !== departmentName.trim().toLowerCase()) continue;
+    }
+
+    let dist = Infinity;
+    if (!isNaN(uLat) && !isNaN(uLng) && c.latitude != null && c.longitude != null) {
+      dist = getDistance(uLat, uLng, c.latitude, c.longitude);
+      if (dist > 50) continue;
+    }
+
+    // GRADUATED THRESHOLD based on proximity
+    // Closer items need less text similarity to be flagged as duplicates
+    let reqThreshold = 0.5; // Default for distant/no-coord matches
+    if (dist < 10) reqThreshold = 0.10;
+    else if (dist < 30) reqThreshold = 0.30;
+    else if (dist < 50) reqThreshold = 0.45;
+
+    const score = similarity(description, c.description || '');
+
+    if (score >= reqThreshold && score > bestScore) {
+      bestScore = score;
+      best = c;
+      bestDist = dist;
+      bestReqThreshold = reqThreshold;
+    }
+  }
+
+  if (best) {
+    console.log(`[DuplicateCheck] Match Found! Score: ${bestScore.toFixed(2)} (Req: ${bestReqThreshold.toFixed(2)}) Dist: ${bestDist.toFixed(1)}m IssueId: ${best._id}`);
+    return {
+      issueId: best._id,
+      daysAgo: Math.floor((Date.now() - new Date(best.createdAt)) / (1000 * 60 * 60 * 24)),
+      similarity: bestScore,
+      distance: bestDist
+    };
+  }
+  return null;
+};
+
 // Check for duplicate/similar complaints
 router.get('/check-duplicate', authenticate, async (req, res) => {
   try {
-    const { description, regionName, departmentName } = req.query;
-    if (!description || description.trim().length < 10) {
-      return res.json({ duplicate: false });
-    }
-
-    // Build query: narrow to region and/or department in last 30 days
-    const since = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
-    const query = { createdAt: { $gte: since } };
-
-    if (regionName) {
-      const region = await Region.findOne({ name: { $regex: new RegExp('^' + regionName.trim() + '$', 'i') } });
-      if (region) query.region = region._id;
-    }
-    if (departmentName) {
-      const dept = await Department.findOne({ name: { $regex: new RegExp('^' + departmentName.trim() + '$', 'i') } });
-      if (dept) query.department = dept._id;
-    }
-
-    const candidates = await Issue.find(query).select('description createdAt _id').lean();
-
-    // Word-overlap similarity
-    const words = (text) => new Set(text.toLowerCase().match(/\b\w{4,}\b/g) || []);
-    const similarity = (a, b) => {
-      const aW = words(a), bW = words(b);
-      if (!aW.size || !bW.size) return 0;
-      const intersection = [...aW].filter(w => bW.has(w)).length;
-      return intersection / Math.max(aW.size, bW.size);
-    };
-
-    let best = null, bestScore = 0;
-    for (const c of candidates) {
-      const score = similarity(description, c.description || '');
-      if (score > bestScore) { bestScore = score; best = c; }
-    }
-
-    if (bestScore >= 0.5 && best) {
-      const daysAgo = Math.floor((Date.now() - new Date(best.createdAt)) / (1000 * 60 * 60 * 24));
-      return res.json({ duplicate: true, issueId: best._id, daysAgo, similarity: bestScore });
-    }
-
-    res.json({ duplicate: false });
+    const result = await findDuplicateIssue(req.query);
+    res.json(result ? { duplicate: true, ...result } : { duplicate: false });
   } catch (err) {
     console.error('Duplicate check error:', err);
-    res.json({ duplicate: false }); // fail silently – non-blocking
+    res.json({ duplicate: false });
   }
 });
-
-
 
 // Multer middleware - only for multipart; otherwise next
 const maybeUploadPhoto = (req, res, next) => {
@@ -103,6 +171,25 @@ const maybeUploadPhoto = (req, res, next) => {
 // Civic: Submit new issue (photo via file upload OR base64 in body)
 router.post('/', authenticate, requireRole('civic'), maybeUploadPhoto, async (req, res) => {
   try {
+    const { latitude, longitude, address, description, departmentId, departmentName, regionName, regionId } = req.body;
+
+    // AVOID DUPLICATES on submission
+    const duplicate = await findDuplicateIssue({
+      description,
+      regionName,
+      departmentName,
+      lat: latitude,
+      lng: longitude
+    });
+
+    if (duplicate) {
+      return res.status(409).json({
+        error: 'Duplicate issue detected',
+        message: `A similar issue was already reported ${duplicate.daysAgo === 0 ? 'today' : duplicate.daysAgo + ' days ago'}. Please support the existing report instead.`,
+        issueId: duplicate.issueId
+      });
+    }
+
     let photoUrl = req.body.photoUrl;
 
     if (req.file?.buffer) {
@@ -127,8 +214,6 @@ router.post('/', authenticate, requireRole('civic'), maybeUploadPhoto, async (re
     if (!photoUrl) {
       return res.status(400).json({ error: 'Issue photo required (upload file or send photoBase64)' });
     }
-
-    const { latitude, longitude, address, description, departmentId, departmentName, regionName, regionId } = req.body;
 
     if (!latitude || !longitude || !description) {
       return res.status(400).json({

@@ -5,10 +5,12 @@ import { useAuth } from "@/context/AuthContext"
 import { adminService } from "@/services/adminService"
 import { departmentalService } from "@/services/departmentalService"
 import { useToast } from "@/components/ui/use-toast"
+import { useLanguage } from "@/context/LanguageContext"
 
 export default function ReportsPage() {
   const { user } = useAuth()
   const { toast } = useToast()
+  const { t } = useLanguage()
   const [loading, setLoading] = React.useState(false)
   const [report, setReport] = React.useState(null)
 
@@ -52,12 +54,12 @@ export default function ReportsPage() {
   const departmentName = user?.department?.name || report?.data?.departmentName || ""
   const scopeLabel =
     role === "super_admin"
-      ? "System-wide Report"
+      ? t("reports.systemWide")
       : role === "regional_admin"
-      ? `Region Report${regionName ? ` — ${regionName}` : ""}`
-      : role === "departmental_admin"
-      ? `Department Report${departmentName ? ` — ${departmentName}` : ""}`
-      : "Reports"
+        ? `${t("reports.regionReport")}${regionName ? ` — ${regionName}` : ""}`
+        : role === "departmental_admin"
+          ? `${t("reports.deptReport")}${departmentName ? ` — ${departmentName}` : ""}`
+          : t("nav.reports")
 
   return (
     <div className="space-y-6 p-6 max-w-7xl mx-auto">
@@ -65,16 +67,16 @@ export default function ReportsPage() {
         <div>
           <h2 className="text-3xl font-bold tracking-tight bg-gradient-to-r from-orange-600 to-orange-700 bg-clip-text text-transparent">{scopeLabel}</h2>
           <p className="text-muted-foreground text-sm">
-            Generate and download a PDF summary of key metrics for your level.
+            {t("reports.generateDesc")}
           </p>
         </div>
         <div className="flex gap-2">
           <Button variant="outline" onClick={loadReport} disabled={loading} className="hover:bg-orange-50 hover:text-orange-600 hover:border-orange-300 transition-all duration-300">
-            {loading ? "Generating..." : "Generate Report"}
+            {loading ? t("reports.generating") : t("reports.generateBtn")}
           </Button>
           {report && (
             <Button onClick={handleDownloadPdf} className="bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white shadow-sm hover:shadow-md transition-all duration-300">
-              Download PDF
+              {t("reports.downloadPdf")}
             </Button>
           )}
         </div>
@@ -83,8 +85,8 @@ export default function ReportsPage() {
       {role === "civic" && (
         <Card>
           <CardHeader>
-            <CardTitle>Reports not available</CardTitle>
-            <CardDescription>Civic users do not have access to admin reports.</CardDescription>
+            <CardTitle>{t("reports.notAvailable")}</CardTitle>
+            <CardDescription>{t("reports.civicNoAccess")}</CardDescription>
           </CardHeader>
         </Card>
       )}
