@@ -14,6 +14,7 @@ const userSchema = new mongoose.Schema(
     },
     region: { type: mongoose.Schema.Types.ObjectId, ref: 'Region' },
     department: { type: mongoose.Schema.Types.ObjectId, ref: 'Department' },
+    points: { type: Number, default: 0 },
   },
   { timestamps: true }
 );

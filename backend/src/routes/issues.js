@@ -170,6 +170,12 @@ router.post('/', authenticate, requireRole('civic'), maybeUploadPhoto, async (re
       });
     }).catch(err => console.error('Error calculating initial ranking:', err));
 
+    // Award points to citizen for reporting issue
+    const User = (await import('../models/User.js')).default;
+    await User.findByIdAndUpdate(req.user.id, {
+      $inc: { points: 10 }
+    });
+
     // Notifications
     if (populated.department) {
       notifyDepartmentNewIssue(populated);
@@ -179,7 +185,6 @@ router.post('/', authenticate, requireRole('civic'), maybeUploadPhoto, async (re
       notifyRegionalAdminMissingDepartment(populated);
 
       // Check if regional admin actually exists
-      const User = (await import('../models/User.js')).default;
       const adminExists = await User.exists({ role: 'regional_admin', region: populated.region._id });
       if (!adminExists) {
         const { notifySuperAdminMissingRegionalAdmin } = await import('../lib/notifications.js');

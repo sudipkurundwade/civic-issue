@@ -26,7 +26,9 @@ import {
   MapPin,
   ArrowUpRight,
   Plus,
+  Upload,
 } from "lucide-react"
+import * as XLSX from "xlsx"
 import { adminService } from "@/services/adminService"
 import { issueService } from "@/services/issueService"
 import { notificationService } from "@/services/notificationService"
@@ -70,6 +72,12 @@ export default function SuperAdminDashboard() {
   const [selectedIssue, setSelectedIssue] = React.useState(null)
   const [detailOpen, setDetailOpen] = React.useState(false)
   const [report, setReport] = React.useState(null)
+
+  // Bulk upload state
+  const [bulkDialogOpen, setBulkDialogOpen] = React.useState(false)
+  const [bulkFile, setBulkFile] = React.useState(null)
+  const [bulkLoading, setBulkLoading] = React.useState(false)
+  const [bulkResults, setBulkResults] = React.useState(null)
 
   // Check for URL parameters to auto-open dialogs
   React.useEffect(() => {
@@ -156,6 +164,41 @@ export default function SuperAdminDashboard() {
     }
   }
 
+  const handleBulkUpload = async () => {
+    if (!bulkFile) return
+    setBulkLoading(true)
+    setBulkResults(null)
+    try {
+      const buffer = await bulkFile.arrayBuffer()
+      const wb = XLSX.read(buffer, { type: "array" })
+      const ws = wb.Sheets[wb.SheetNames[0]]
+      const rows = XLSX.utils.sheet_to_json(ws, { defval: "" })
+      // Expected columns: name, email, password, regionName
+      const admins = rows.map((row) => ({
+        name: String(row.name || row.Name || "").trim(),
+        email: String(row.email || row.Email || "").trim(),
+        password: String(row.password || row.Password || "").trim(),
+        regionName: String(row.regionName || row.RegionName || row.region || row.Region || "").trim(),
+      })).filter((a) => a.email)
+
+      if (admins.length === 0) {
+        toast({ title: "No valid rows found in file", variant: "destructive" })
+        setBulkLoading(false)
+        return
+      }
+
+      const results = await adminService.bulkUploadRegionalAdmins(admins)
+      setBulkResults(results)
+      const successCount = results.filter((r) => r.success).length
+      toast({ title: `Bulk upload done: ${successCount}/${results.length} created` })
+      setRegionsKey((k) => k + 1)
+    } catch (err) {
+      toast({ title: err.message || "Bulk upload failed", variant: "destructive" })
+    } finally {
+      setBulkLoading(false)
+    }
+  }
+
   const filteredIssues = !selectedRegion || selectedRegion === "all"
     ? recentIssues
     : recentIssues.filter((issue) => issue.region === selectedRegion)
@@ -166,76 +209,122 @@ export default function SuperAdminDashboard() {
       <div className="flex items-center justify-between">
         <h2 className="text-3xl font-bold tracking-tight bg-gradient-to-r from-orange-600 to-orange-700 bg-clip-text text-transparent">SuperAdmin Dashboard</h2>
 
-        <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-          <DialogTrigger asChild>
-            <Button className="bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white shadow-md hover:shadow-lg transition-all duration-300">
-              <Plus className="mr-2 h-4 w-4" /> Add Regional Admin
-            </Button>
-          </DialogTrigger>
-
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Create Regional Admin</DialogTitle>
-              <DialogDescription>
-                Create a new administrator for a region. They can manage departments and create departmental admins.
-              </DialogDescription>
-            </DialogHeader>
-
-            <form onSubmit={handleCreateRegionalAdmin} className="grid gap-4 py-4">
-              <div className="grid gap-2">
-                <Label>Name</Label>
-                <Input
-                  value={adminName}
-                  onChange={(e) => setAdminName(e.target.value)}
-                  placeholder="Admin name"
-                  required
-                />
+        <div className="flex gap-2">
+          {/* Bulk Upload Dialog */}
+          <Dialog open={bulkDialogOpen} onOpenChange={(open) => { setBulkDialogOpen(open); if (!open) { setBulkFile(null); setBulkResults(null) } }}>
+            <DialogTrigger asChild>
+              <Button variant="outline" className="border-orange-300 text-orange-600 hover:bg-orange-50 hover:border-orange-400 transition-all duration-300">
+                <Upload className="mr-2 h-4 w-4" /> Bulk Upload Regional Admins
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="max-w-lg">
+              <DialogHeader>
+                <DialogTitle>Bulk Upload Regional Admins</DialogTitle>
+                <DialogDescription>
+                  Upload an Excel (.xlsx) or CSV file. Required columns: <strong>name</strong>, <strong>email</strong>, <strong>password</strong>, <strong>regionName</strong>.
+                </DialogDescription>
+              </DialogHeader>
+              <div className="grid gap-4 py-4">
+                <div className="grid gap-2">
+                  <Label htmlFor="bulkFile">Select File (.xlsx / .csv)</Label>
+                  <Input
+                    id="bulkFile"
+                    type="file"
+                    accept=".xlsx,.xls,.csv"
+                    onChange={(e) => { setBulkFile(e.target.files?.[0] || null); setBulkResults(null) }}
+                  />
+                </div>
+                {bulkResults && (
+                  <div className="max-h-48 overflow-y-auto space-y-1 text-sm">
+                    {bulkResults.map((r, i) => (
+                      <div key={i} className={`flex items-center gap-2 p-2 rounded ${r.success ? "bg-emerald-50 text-emerald-700" : "bg-red-50 text-red-700"}`}>
+                        {r.success ? <CheckCircle className="h-4 w-4 shrink-0" /> : <AlertCircle className="h-4 w-4 shrink-0" />}
+                        <span className="truncate">{r.email}</span>
+                        {!r.success && <span className="ml-auto shrink-0 text-xs">({r.error})</span>}
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
-              <div className="grid gap-2">
-                <Label>Email</Label>
-                <Input
-                  type="email"
-                  value={adminEmail}
-                  onChange={(e) => setAdminEmail(e.target.value)}
-                  placeholder="admin@region.com"
-                  required
-                />
-              </div>
-              <div className="grid gap-2">
-                <Label>Password</Label>
-                <Input
-                  type="password"
-                  value={adminPassword}
-                  onChange={(e) => setAdminPassword(e.target.value)}
-                  placeholder="••••••••"
-                  required
-                />
-              </div>
-              <div className="grid gap-2">
-                <Label>Region</Label>
-                <select
-                  value={adminRegion}
-                  onChange={(e) => setAdminRegion(e.target.value)}
-                  className="h-10 w-full rounded-md border px-3 text-sm"
-                  required
-                >
-                  <option value="">Select Region</option>
-                  {REGION_OPTIONS.map((name) => (
-                    <option key={name} value={name}>
-                      {name}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
               <DialogFooter>
-                <Button type="submit" disabled={loading}>
-                  {loading ? "Creating..." : "Create Admin"}
+                <Button onClick={handleBulkUpload} disabled={!bulkFile || bulkLoading} className="bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white">
+                  {bulkLoading ? "Uploading..." : "Upload & Create"}
                 </Button>
               </DialogFooter>
-            </form>
-          </DialogContent>
-        </Dialog>
+            </DialogContent>
+          </Dialog>
+
+          <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+            <DialogTrigger asChild>
+              <Button className="bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white shadow-md hover:shadow-lg transition-all duration-300">
+                <Plus className="mr-2 h-4 w-4" /> Add Regional Admin
+              </Button>
+            </DialogTrigger>
+
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Create Regional Admin</DialogTitle>
+                <DialogDescription>
+                  Create a new administrator for a region. They can manage departments and create departmental admins.
+                </DialogDescription>
+              </DialogHeader>
+
+              <form onSubmit={handleCreateRegionalAdmin} className="grid gap-4 py-4">
+                <div className="grid gap-2">
+                  <Label>Name</Label>
+                  <Input
+                    value={adminName}
+                    onChange={(e) => setAdminName(e.target.value)}
+                    placeholder="Admin name"
+                    required
+                  />
+                </div>
+                <div className="grid gap-2">
+                  <Label>Email</Label>
+                  <Input
+                    type="email"
+                    value={adminEmail}
+                    onChange={(e) => setAdminEmail(e.target.value)}
+                    placeholder="admin@region.com"
+                    required
+                  />
+                </div>
+                <div className="grid gap-2">
+                  <Label>Password</Label>
+                  <Input
+                    type="password"
+                    value={adminPassword}
+                    onChange={(e) => setAdminPassword(e.target.value)}
+                    placeholder="••••••••"
+                    required
+                  />
+                </div>
+                <div className="grid gap-2">
+                  <Label>Region</Label>
+                  <select
+                    value={adminRegion}
+                    onChange={(e) => setAdminRegion(e.target.value)}
+                    className="h-10 w-full rounded-md border px-3 text-sm"
+                    required
+                  >
+                    <option value="">Select Region</option>
+                    {REGION_OPTIONS.map((name) => (
+                      <option key={name} value={name}>
+                        {name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <DialogFooter>
+                  <Button type="submit" disabled={loading}>
+                    {loading ? "Creating..." : "Create Admin"}
+                  </Button>
+                </DialogFooter>
+              </form>
+            </DialogContent>
+          </Dialog>
+        </div>
       </div>
 
 

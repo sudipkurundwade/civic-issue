@@ -13,6 +13,7 @@ import {
   Megaphone,
   Bell,
   FileText,
+  Trophy,
 } from "lucide-react"
 
 import { NavMain } from "@/components/nav-main"
@@ -42,7 +43,7 @@ const ROLE_NAV = {
     { title: "Departments", url: "/region-departments", icon: Building2 },
     { title: "Reports", url: "/reports", icon: FileText },
     { title: "Analytics", url: "/analytics", icon: PieChart },
-        { title: "Announcements", url: "/announcements", icon: Megaphone },
+    { title: "Announcements", url: "/announcements", icon: Megaphone },
     { title: "Notifications", url: "/notifications", icon: Bell },
     { title: "Heat Map", url: "/heatmap", icon: Map },
     { title: "Profile", url: "/profile", icon: User },
@@ -60,6 +61,7 @@ const ROLE_NAV = {
     { title: "Heat Map", url: "/heatmap", icon: Map },
     { title: "Announcements", url: "/announcements", icon: Megaphone },
     { title: "My Issues", url: "/my-issues", icon: List },
+    { title: "Leaderboard", url: "/leaderboard", icon: Trophy },
     { title: "Notifications", url: "/notifications", icon: Bell },
     { title: "Profile", url: "/profile", icon: User },
   ],
