@@ -2,8 +2,10 @@ import * as React from "react"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs"
-import { Clock, Calendar, Megaphone, AlertTriangle, Lock, Eye } from "lucide-react"
+import { Clock, Calendar, Megaphone, AlertTriangle, Lock, Eye, X } from "lucide-react"
 import { useAuth } from "@/context/AuthContext"
+import { Button } from "@/components/ui/button"
+import { ImageViewer } from "@/components/ui/image-viewer"
 
 export default function AnnouncementsList({ mode = "public" }) {
     const { user } = useAuth()
@@ -13,6 +15,7 @@ export default function AnnouncementsList({ mode = "public" }) {
 
     const observerRef = React.useRef(null)
     const viewedIds = React.useRef(new Set())
+    const [selectedImage, setSelectedImage] = React.useState({ src: null, alt: '' })
 
     // Fetch announcements based on tab
     React.useEffect(() => {
@@ -172,11 +175,16 @@ export default function AnnouncementsList({ mode = "public" }) {
                                 <CardContent>
                                     {announcement.image && (
                                         <div className="mb-4 rounded-md overflow-hidden">
-                                            <img
-                                                src={announcement.image}
-                                                alt={announcement.title}
-                                                className="w-full h-48 object-cover"
-                                            />
+                                            <div 
+                                                className="w-full h-48 overflow-hidden cursor-pointer hover:opacity-90 transition-opacity"
+                                                onClick={() => setSelectedImage({ src: announcement.image, alt: announcement.title })}
+                                            >
+                                                <img
+                                                    src={announcement.image}
+                                                    alt={announcement.title}
+                                                    className="w-full h-full object-cover"
+                                                />
+                                            </div>
                                         </div>
                                     )}
                                     <p className="whitespace-pre-wrap">{announcement.content}</p>
@@ -191,7 +199,16 @@ export default function AnnouncementsList({ mode = "public" }) {
                         ))
                     )}
                 </div>
-            </Tabs >
-        </div >
+            </Tabs>
+            
+            {/* Image Viewer Modal */}
+            {selectedImage.src && (
+                <ImageViewer 
+                    src={selectedImage.src} 
+                    alt={selectedImage.alt}
+                    onClose={() => setSelectedImage({ src: null, alt: '' })}
+                />
+            )}
+        </div>
     )
 }
