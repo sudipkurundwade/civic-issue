@@ -27,22 +27,22 @@ router.post('/regional-admin', authenticate, requireRole('super_admin'), async (
       region = await Region.findById(regionId);
       if (!region) return res.status(404).json({ error: 'Region not found' });
     } else if (regionName) {
-      // Check if region already exists (case-insensitive)
+      // Check if region already exists (case-insensitive); reuse it if so
       const existingRegion = await Region.findOne({
         name: { $regex: new RegExp('^' + regionName.trim() + '$', 'i') }
       });
 
       if (existingRegion) {
-        return res.status(400).json({ error: 'Region with this name already exists' });
+        region = existingRegion; // reuse existing region
+      } else {
+        region = await Region.create({ name: regionName.trim() });
+
+        // Retroactively assign pending issues that were waiting for this region
+        await Issue.updateMany(
+          { status: 'PENDING_REGION', requestedRegionName: regionName },
+          { $set: { region: region._id, status: 'PENDING_DEPARTMENT' }, $unset: { requestedRegionName: 1 } }
+        );
       }
-
-      region = await Region.create({ name: regionName.trim() });
-
-      // Retroactively assign pending issues that were waiting for this region
-      await Issue.updateMany(
-        { status: 'PENDING_REGION', requestedRegionName: regionName },
-        { $set: { region: region._id, status: 'PENDING_DEPARTMENT' }, $unset: { requestedRegionName: 1 } }
-      );
     } else {
       return res.status(400).json({ error: 'regionId or regionName required' });
     }

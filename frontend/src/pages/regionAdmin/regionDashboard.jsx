@@ -34,6 +34,7 @@ import { notificationService } from "@/services/notificationService"
 import { useToast } from "@/components/ui/use-toast"
 import { IssueDetailDialog } from "@/components/IssueDetailDialog"
 import { useAuth } from "@/context/AuthContext"
+import { useLanguage } from "@/context/LanguageContext"
 
 // Standard department options for a region.
 const PREDEFINED_DEPARTMENTS = [
@@ -52,6 +53,7 @@ const PREDEFINED_DEPARTMENTS = [
 export default function DepartmentDashboard() {
   const { user } = useAuth()
   const { toast } = useToast()
+  const { t } = useLanguage()
 
   // Navigation function
   const navigate = (path) => {
@@ -188,39 +190,39 @@ export default function DepartmentDashboard() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex flex-col gap-1">
-          <h2 className="text-3xl font-bold tracking-tight bg-gradient-to-r from-orange-600 to-orange-700 bg-clip-text text-transparent">{user?.region?.name ? user.region.name : "Region Admin Dashboard"}</h2>
+          <h2 className="text-3xl font-bold tracking-tight bg-gradient-to-r from-orange-600 to-orange-700 bg-clip-text text-transparent">{user?.region?.name ? user.region.name : t("regionAdmin.title")}</h2>
         </div>
 
         <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
           <DialogTrigger asChild>
             <Button className="bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white shadow-md hover:shadow-lg transition-all duration-300">
-              <Plus className="mr-2 h-4 w-4" /> Add Departmental Admin
+              <Plus className="mr-2 h-4 w-4" /> {t("regionAdmin.addDeptAdmin")}
             </Button>
           </DialogTrigger>
 
           <DialogContent>
             <DialogHeader>
-              <DialogTitle>Create Departmental Admin</DialogTitle>
+              <DialogTitle>{t("regionAdmin.createDeptAdmin")}</DialogTitle>
               <DialogDescription>
-                Create a new administrator for a department. They can receive and resolve issues.
+                {t("regionAdmin.createDeptAdminDesc")}
               </DialogDescription>
             </DialogHeader>
 
             <form onSubmit={handleCreateDepartmentalAdmin} className="grid gap-4 py-4">
               <div className="grid gap-2">
-                <Label>Name</Label>
+                <Label>{t("profile.fullName")}</Label>
                 <Input value={adminName} onChange={(e) => setAdminName(e.target.value)} placeholder="Admin name" required />
               </div>
               <div className="grid gap-2">
-                <Label>Email</Label>
+                <Label>{t("profile.emailAddress")}</Label>
                 <Input type="email" value={adminEmail} onChange={(e) => setAdminEmail(e.target.value)} placeholder="admin@dept.com" required />
               </div>
               <div className="grid gap-2">
-                <Label>Password</Label>
+                <Label>{t("login.password")}</Label>
                 <Input type="password" value={adminPassword} onChange={(e) => setAdminPassword(e.target.value)} required />
               </div>
               <div className="grid gap-2">
-                <Label>Department</Label>
+                <Label>{t("regionAdmin.deptLabel")}</Label>
                 <label className="flex items-center gap-2 text-sm">
                   <input
                     type="checkbox"
@@ -232,7 +234,7 @@ export default function DepartmentDashboard() {
                       setNewDeptName("")
                     }}
                   />
-                  Create new department
+                  {t("regionAdmin.createNewDept")}
                 </label>
                 {isCreateNewDept ? (
                   availableDeptNames.length > 0 ? (
@@ -242,7 +244,7 @@ export default function DepartmentDashboard() {
                       className="h-10 w-full rounded-md border px-3 text-sm"
                       required
                     >
-                      <option value="">Select Department</option>
+                      <option value="">{t("regionAdmin.selectDept")}</option>
                       {availableDeptNames.map((name) => (
                         <option key={name} value={name}>
                           {name}
@@ -251,7 +253,7 @@ export default function DepartmentDashboard() {
                     </select>
                   ) : (
                     <p className="text-sm text-muted-foreground">
-                      All standard departments have already been created for this region.
+                      {t("regionAdmin.allDeptCreated")}
                     </p>
                   )
                 ) : (
@@ -262,7 +264,7 @@ export default function DepartmentDashboard() {
                       className="h-10 w-full rounded-md border px-3 text-sm"
                       required
                     >
-                      <option value="">Select Department</option>
+                      <option value="">{t("regionAdmin.selectDept")}</option>
                       {unassignedDepartments.map((dept) => (
                         <option key={dept.id} value={dept.id}>
                           {dept.name}
@@ -271,7 +273,7 @@ export default function DepartmentDashboard() {
                     </select>
                   ) : (
                     <p className="text-sm text-muted-foreground">
-                      All existing departments already have an administrator.
+                      {t("regionAdmin.allDeptHaveAdmin")}
                     </p>
                   )
                 )}
@@ -281,7 +283,7 @@ export default function DepartmentDashboard() {
                   type="submit"
                   disabled={loading || (isCreateNewDept ? availableDeptNames.length === 0 : unassignedDepartments.length === 0)}
                 >
-                  {loading ? "Creating..." : "Create Admin"}
+                  {loading ? t("regionAdmin.creating") : t("regionAdmin.createAdmin")}
                 </Button>
               </DialogFooter>
             </form>
@@ -297,8 +299,8 @@ export default function DepartmentDashboard() {
         {/* Departments List */}
         <Card className="md:col-span-4 lg:col-span-3">
           <CardHeader>
-            <CardTitle>Select Department</CardTitle>
-            <CardDescription>Filter issues by department or view all</CardDescription>
+            <CardTitle>{t("regionAdmin.selectDeptFilter")}</CardTitle>
+            <CardDescription>{t("regionAdmin.filterDept")}</CardDescription>
           </CardHeader>
 
           <CardContent className="space-y-2">
@@ -306,7 +308,7 @@ export default function DepartmentDashboard() {
               onClick={() => setSelectedDepartment("all")}
               className={`flex justify-between p-3 rounded cursor-pointer ${(!selectedDepartment || selectedDepartment === "all") ? "bg-primary text-primary-foreground" : "hover:bg-accent"}`}
             >
-              <span>All Issues</span>
+              <span>{t("regionAdmin.allIssues")}</span>
             </div>
             {departments.map((dept) => (
               <div
@@ -326,7 +328,7 @@ export default function DepartmentDashboard() {
         {/* Issues Section */}
         <Card className="md:col-span-8 lg:col-span-9">
           <CardHeader>
-            <CardTitle>Issues {selectedDepartment && selectedDepartment !== "all" ? `in ${selectedDepartment}` : "(All in your region)"}</CardTitle>
+            <CardTitle>{selectedDepartment && selectedDepartment !== "all" ? `${t("regionAdmin.issuesIn")} ${selectedDepartment}` : t("regionAdmin.issuesAll")}</CardTitle>
           </CardHeader>
 
           <CardContent>
@@ -361,8 +363,8 @@ export default function DepartmentDashboard() {
                   <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gradient-to-br from-orange-100 to-orange-200 mb-4">
                     <AlertCircle className="h-8 w-8 text-orange-600" />
                   </div>
-                  <p className="text-lg font-semibold text-foreground">No issues found</p>
-                  <p className="text-sm">No issues in {selectedDepartment && selectedDepartment !== "all" ? "this department" : "your region"}.</p>
+                  <p className="text-lg font-semibold text-foreground">{t("regionAdmin.noIssues")}</p>
+                  <p className="text-sm">{selectedDepartment && selectedDepartment !== "all" ? t("regionAdmin.noIssuesDept") : t("regionAdmin.noIssuesRegion")}</p>
                 </div>
               </div>
             )}
@@ -375,7 +377,7 @@ export default function DepartmentDashboard() {
       {/* Department Actions */}
       <Card>
         <CardHeader>
-          <CardTitle>Region Admin Actions</CardTitle>
+          <CardTitle>{t("regionAdmin.adminActions")}</CardTitle>
         </CardHeader>
         <CardContent className="flex gap-4 flex-wrap">
           <Button
@@ -391,15 +393,15 @@ export default function DepartmentDashboard() {
             }}
           >
             <ArrowUpRight className="mr-2 h-4 w-4" />
-            Generate Report
+            {t("regionAdmin.generateReport")}
           </Button>
           <Button variant="outline" className="hover:bg-emerald-50 hover:text-emerald-600 hover:border-emerald-300 transition-all duration-300">
             <CheckCircle className="mr-2 h-4 w-4" />
-            Review Solved Cases
+            {t("regionAdmin.reviewSolved")}
           </Button>
           <Button variant="outline" className="text-red-600 hover:bg-red-50 hover:border-red-300 transition-all duration-300">
             <AlertCircle className="mr-2 h-4 w-4" />
-            View Critical Issues
+            {t("regionAdmin.viewCritical")}
           </Button>
         </CardContent>
       </Card>
@@ -407,8 +409,8 @@ export default function DepartmentDashboard() {
       {report && (
         <Card>
           <CardHeader>
-            <CardTitle>Region Report Summary</CardTitle>
-            <CardDescription>Status and performance across departments in your region.</CardDescription>
+            <CardTitle>{t("regionAdmin.reportTitle")}</CardTitle>
+            <CardDescription>{t("regionAdmin.reportDesc")}</CardDescription>
           </CardHeader>
           <CardContent className="space-y-2 text-sm">
             <p><span className="font-semibold">Total Issues:</span> {report.totalIssues}</p>

@@ -18,9 +18,11 @@ import { Button } from "@/components/ui/button"
 import { MoreHorizontal, Mail, User, Building2 } from "lucide-react"
 import { adminService } from "@/services/adminService"
 import { useToast } from "@/components/ui/use-toast"
+import { useLanguage } from "@/context/LanguageContext"
 
 export default function RegionDepartments() {
     const { toast } = useToast()
+    const { t } = useLanguage()
     const [departments, setDepartments] = React.useState([])
     const [loading, setLoading] = React.useState(true)
 
@@ -48,18 +50,18 @@ export default function RegionDepartments() {
         <div className="space-y-6 p-6 max-w-7xl mx-auto">
             <div className="flex items-center justify-between">
                 <div>
-                    <h2 className="text-3xl font-bold tracking-tight bg-gradient-to-r from-orange-600 to-orange-700 bg-clip-text text-transparent">Departments</h2>
+                    <h2 className="text-3xl font-bold tracking-tight bg-gradient-to-r from-orange-600 to-orange-700 bg-clip-text text-transparent">{t("regionDepts.title")}</h2>
                     <p className="text-muted-foreground">
-                        Manage and view all departments in your region.
+                        {t("regionDepts.subtitle")}
                     </p>
                 </div>
             </div>
 
             <Card>
                 <CardHeader>
-                    <CardTitle>All Departments</CardTitle>
+                    <CardTitle>{t("regionDepts.allDepts")}</CardTitle>
                     <CardDescription>
-                        A list of all departments and their assigned administrators.
+                        {t("regionDepts.allDeptsDesc")}
                     </CardDescription>
                 </CardHeader>
 
@@ -74,16 +76,16 @@ export default function RegionDepartments() {
                                 <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gradient-to-br from-orange-100 to-orange-200 mb-4">
                                     <Building2 className="h-8 w-8 text-orange-600" />
                                 </div>
-                                <p className="text-lg font-semibold text-foreground">No departments found</p>
-                                <p className="text-sm">Create a new department to get started.</p>
+                                <p className="text-lg font-semibold text-foreground">{t("regionDepts.noDepts")}</p>
+                                <p className="text-sm">{t("regionDepts.noDeptsHint")}</p>
                             </div>
                         </div>
                     ) : (
                         <Table>
                             <TableHeader>
                                 <TableRow>
-                                    <TableHead>Department Name</TableHead>
-                                    <TableHead>Assigned Email</TableHead>
+                                    <TableHead>{t("regionDepts.deptName")}</TableHead>
+                                    <TableHead>{t("regionDepts.assignedEmail")}</TableHead>
                                 </TableRow>
                             </TableHeader>
 
@@ -107,7 +109,7 @@ export default function RegionDepartments() {
                                                 </div>
                                             ) : (
                                                 <span className="text-muted-foreground italic">
-                                                    No Email
+                                                    {t("regionDepts.noEmail")}
                                                 </span>
                                             )}
                                         </TableCell>

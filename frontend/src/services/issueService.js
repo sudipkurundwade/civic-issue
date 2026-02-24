@@ -73,4 +73,39 @@ export const issueService = {
     if (!res.ok) throw new Error(data.error || 'Failed to analyze image');
     return data;
   },
+
+  async checkDuplicate({ description, regionName, departmentName, lat, lng }) {
+    const params = new URLSearchParams({ description: description || '' });
+    if (regionName) params.set('regionName', regionName);
+    if (departmentName) params.set('departmentName', departmentName);
+    if (lat) params.set('lat', lat);
+    if (lng) params.set('lng', lng);
+    const res = await fetch(`${API_URL}/issues/check-duplicate?${params}`, {
+      headers: headers(),
+    });
+    if (!res.ok) return { duplicate: false };
+    return res.json();
+  },
+
+  /**
+   * Translate user-generated text (e.g. issue description) via Gemini backend.
+   * Returns the original text if translation fails or lang is 'en'.
+   * @param {string} text - Original text
+   * @param {string} targetLang - 'hi' | 'mr' | 'en'
+   */
+  async translateText(text, targetLang) {
+    if (!text || targetLang === 'en') return text;
+    try {
+      const res = await fetch(`${API_URL}/issues/translate-text`, {
+        method: 'POST',
+        headers: { ...headers(), 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text, targetLang }),
+      });
+      const data = await res.json();
+      return data.translated || text;
+    } catch {
+      return text; // Graceful fallback
+    }
+  },
 };
+

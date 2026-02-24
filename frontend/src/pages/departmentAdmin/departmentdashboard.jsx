@@ -33,10 +33,12 @@ import { departmentalService } from "@/services/departmentalService"
 import { useToast } from "@/components/ui/use-toast"
 import { LocationMap } from "@/components/LocationMap"
 import { useAuth } from "@/context/AuthContext"
+import { useLanguage } from "@/context/LanguageContext"
 
 export default function DepartmentAdminDashboard() {
     const { user } = useAuth()
     const { toast } = useToast()
+    const { t } = useLanguage()
     const [filter, setFilter] = React.useState("all")
     const [complaints, setComplaints] = React.useState([])
     const [selectedIssue, setSelectedIssue] = React.useState(null)
@@ -73,9 +75,9 @@ export default function DepartmentAdminDashboard() {
     const pending = complaints.filter((c) => c.status !== "resolved").length
     const solved = complaints.filter((c) => c.status === "resolved").length
     const stats = [
-        { title: "Total Complaints", value: String(complaints.length), description: "assigned to this department", icon: AlertCircle },
-        { title: "Solved", value: String(solved), description: "successfully resolved", icon: CheckCircle },
-        { title: "Unsolved", value: String(pending), description: "currently pending", icon: Clock },
+        { title: t("deptAdmin.totalComplaints"), value: String(complaints.length), description: t("deptAdmin.assignedToDept"), icon: AlertCircle },
+        { title: t("deptAdmin.solved"), value: String(solved), description: t("deptAdmin.successfullyResolved"), icon: CheckCircle },
+        { title: t("deptAdmin.unsolved"), value: String(pending), description: t("deptAdmin.currentlyPending"), icon: Clock },
     ]
 
     const filteredComplaints = complaints.filter((c) => {
@@ -142,7 +144,7 @@ export default function DepartmentAdminDashboard() {
                         {user?.department?.name ? user.department.name : "Department Dashboard"}
                     </h2>
                     <p className="text-muted-foreground">
-                        Manage issues assigned to your department.
+                        {t("deptAdmin.subtitle")}
                     </p>
                 </div>
             </div>
@@ -189,14 +191,14 @@ export default function DepartmentAdminDashboard() {
             <div className="space-y-4">
                 <div className="flex items-center gap-2">
                     <Filter className="h-4 w-4 text-orange-600" />
-                    <span className="text-sm font-semibold text-foreground">Filter:</span>
+                    <span className="text-sm font-semibold text-foreground">{t("deptAdmin.filter")}</span>
                     <Button
                         variant={filter === "all" ? "default" : "outline"}
                         size="sm"
                         onClick={() => setFilter("all")}
                         className={filter === "all" ? "bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white" : "hover:bg-orange-50 hover:text-orange-600 hover:border-orange-300"}
                     >
-                        All
+                        {t("deptAdmin.all")}
                     </Button>
                     <Button
                         variant={filter === "solved" ? "default" : "outline"}
@@ -204,7 +206,7 @@ export default function DepartmentAdminDashboard() {
                         onClick={() => setFilter("solved")}
                         className={filter === "solved" ? "bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 text-white" : "hover:bg-emerald-50 hover:text-emerald-600 hover:border-emerald-300"}
                     >
-                        Solved
+                        {t("deptAdmin.filterSolved")}
                     </Button>
                     <Button
                         variant={filter === "unsolved" ? "default" : "outline"}
@@ -212,7 +214,7 @@ export default function DepartmentAdminDashboard() {
                         onClick={() => setFilter("unsolved")}
                         className={filter === "unsolved" ? "bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white" : "hover:bg-amber-50 hover:text-amber-600 hover:border-amber-300"}
                     >
-                        Unsolved
+                        {t("deptAdmin.filterUnsolved")}
                     </Button>
                 </div>
 
@@ -233,7 +235,7 @@ export default function DepartmentAdminDashboard() {
                                             <div>
                                                 <div className="flex justify-between items-start">
                                                     <h3 className="font-semibold text-lg text-foreground">{complaint.title}</h3>
-                                                    <Badge 
+                                                    <Badge
                                                         variant={complaint.status === "resolved" ? "default" : "secondary"}
                                                         className={complaint.status === "resolved" ? "bg-emerald-500/10 text-emerald-700 border-emerald-300/50" : "bg-orange-500/10 text-orange-700 border-orange-300/50"}
                                                     >
@@ -244,12 +246,12 @@ export default function DepartmentAdminDashboard() {
                                                     <MapPin className="h-3 w-3 text-orange-600" /> {complaint.location}
                                                 </p>
                                                 <p className="text-sm text-muted-foreground flex items-center gap-1">
-                                                    <Clock className="h-3 w-3 text-orange-600" /> Reported: {complaint.date}
+                                                    <Clock className="h-3 w-3 text-orange-600" /> {t("deptAdmin.reported")} {complaint.date}
                                                 </p>
                                             </div>
                                             <div className="mt-4 flex justify-end">
-                                                <Button 
-                                                    size="sm" 
+                                                <Button
+                                                    size="sm"
                                                     onClick={() => {
                                                         setSelectedIssue(complaint)
                                                         setSelectedStatus(complaint.status === "in-progress" ? "in-progress" : "assigned")
@@ -258,7 +260,7 @@ export default function DepartmentAdminDashboard() {
                                                     }}
                                                     className="bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white shadow-sm hover:shadow-md transition-all duration-300"
                                                 >
-                                                    View Details & Update
+                                                    {t("deptAdmin.viewDetails")}
                                                 </Button>
                                             </div>
                                         </div>
@@ -272,8 +274,8 @@ export default function DepartmentAdminDashboard() {
                                 <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gradient-to-br from-orange-100 to-orange-200 mb-4">
                                     <AlertCircle className="h-8 w-8 text-orange-600" />
                                 </div>
-                                <p className="text-lg font-semibold text-foreground">No complaints found</p>
-                                <p className="text-sm">No complaints found matching this filter.</p>
+                                <p className="text-lg font-semibold text-foreground">{t("deptAdmin.noComplaints")}</p>
+                                <p className="text-sm">{t("deptAdmin.noComplaintsHint")}</p>
                             </div>
                         </div>
                     )}
@@ -283,8 +285,8 @@ export default function DepartmentAdminDashboard() {
             <Sheet open={sheetOpen} onOpenChange={(open) => { setSheetOpen(open); if (!open) setCompletionPhoto(null) }}>
                 <SheetContent className="overflow-y-auto w-full sm:max-w-md md:max-w-xl lg:max-w-2xl p-6 sm:p-8">
                     <SheetHeader>
-                        <SheetTitle>Complaint Details</SheetTitle>
-                        <SheetDescription>Review details and update status.</SheetDescription>
+                        <SheetTitle>{t("deptAdmin.complaintDetails")}</SheetTitle>
+                        <SheetDescription>{t("deptAdmin.reviewAndUpdate")}</SheetDescription>
                     </SheetHeader>
 
                     {selectedIssue && (
@@ -298,14 +300,14 @@ export default function DepartmentAdminDashboard() {
                             <div className="space-y-4">
                                 <div className="space-y-2">
                                     <h3 className="font-semibold text-xl">{selectedIssue.title}</h3>
-                                    <h4 className="font-medium text-sm text-muted-foreground">Description</h4>
+                                    <h4 className="font-medium text-sm text-muted-foreground">{t("deptAdmin.description")}</h4>
                                     <p className="text-sm">{selectedIssue.description}</p>
                                 </div>
                             </div>
 
                             {/* 3. Map and Link */}
                             <div className="space-y-2">
-                                <h4 className="font-medium text-sm text-muted-foreground">Location</h4>
+                                <h4 className="font-medium text-sm text-muted-foreground">{t("deptAdmin.location")}</h4>
                                 <p className="text-sm">{selectedIssue.location}</p>
                                 {selectedIssue.latitude != null && selectedIssue.longitude != null && (
                                     <>
@@ -323,7 +325,7 @@ export default function DepartmentAdminDashboard() {
                                             className="inline-flex items-center gap-2 text-sm text-primary hover:underline"
                                         >
                                             <MapPin className="h-4 w-4" />
-                                            Get Directions / Open in Google Maps
+                                            {t("deptAdmin.getDirections")}
                                             <ExternalLink className="h-3 w-3" />
                                         </a>
                                     </>
@@ -333,31 +335,31 @@ export default function DepartmentAdminDashboard() {
                             {/* 4. Update Status and Resolve */}
                             <div className="border-t pt-6 space-y-6">
                                 <div className="space-y-4">
-                                    <h4 className="font-medium text-lg">Update Status</h4>
+                                    <h4 className="font-medium text-lg">{t("deptAdmin.updateStatus")}</h4>
                                     <form onSubmit={handleUpdateStatus} className="space-y-4">
                                         <RadioGroup value={selectedStatus} onValueChange={setSelectedStatus} className="flex flex-col sm:flex-row gap-4">
                                             <div className="flex items-center space-x-2">
                                                 <RadioGroupItem id="status-assigned" value="assigned" />
-                                                <Label htmlFor="status-assigned">Assigned</Label>
+                                                <Label htmlFor="status-assigned">{t("deptAdmin.assigned")}</Label>
                                             </div>
                                             <div className="flex items-center space-x-2">
                                                 <RadioGroupItem id="status-in-progress" value="in-progress" />
-                                                <Label htmlFor="status-in-progress">In Progress</Label>
+                                                <Label htmlFor="status-in-progress">{t("deptAdmin.inProgress")}</Label>
                                             </div>
                                         </RadioGroup>
-                                        <Button type="submit" className="w-full bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white shadow-sm hover:shadow-md transition-all duration-300" disabled={loading}>Save Status</Button>
+                                        <Button type="submit" className="w-full bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white shadow-sm hover:shadow-md transition-all duration-300" disabled={loading}>{t("deptAdmin.saveStatus")}</Button>
                                     </form>
                                 </div>
 
                                 <div className="space-y-4 border-t pt-6">
-                                    <h4 className="font-medium text-lg">Resolve Issue</h4>
-                                    <p className="text-sm text-muted-foreground">Add an after-completion photo to mark the issue as resolved.</p>
+                                    <h4 className="font-medium text-lg">{t("deptAdmin.resolveIssue")}</h4>
+                                    <p className="text-sm text-muted-foreground">{t("deptAdmin.resolveHint")}</p>
                                     <form onSubmit={handleResolve} className="space-y-4">
                                         <div className="space-y-2">
-                                            <Label htmlFor="completion-photo" className="text-xs font-semibold uppercase text-muted-foreground">Upload Completion Photo</Label>
+                                            <Label htmlFor="completion-photo" className="text-xs font-semibold uppercase text-muted-foreground">{t("deptAdmin.uploadPhoto")}</Label>
                                             <Input id="completion-photo" type="file" required accept="image/*" onChange={(e) => setCompletionPhoto(e.target.files?.[0])} />
                                         </div>
-                                        <Button type="submit" className="w-full bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 text-white shadow-sm hover:shadow-md transition-all duration-300" disabled={loading}>Mark as Resolved</Button>
+                                        <Button type="submit" className="w-full bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 text-white shadow-sm hover:shadow-md transition-all duration-300" disabled={loading}>{t("deptAdmin.markResolved")}</Button>
                                     </form>
                                 </div>
                             </div>
@@ -365,16 +367,16 @@ export default function DepartmentAdminDashboard() {
                             {/* Before / After (if resolved) */}
                             {selectedIssue?.afterImage && (
                                 <div className="border-t pt-6 space-y-4">
-                                    <h4 className="font-medium text-lg">Resolution Evidence</h4>
+                                    <h4 className="font-medium text-lg">{t("deptAdmin.resolutionEvidence")}</h4>
                                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                         <div>
-                                            <Label className="text-xs text-muted-foreground mb-1 block">Before</Label>
+                                            <Label className="text-xs text-muted-foreground mb-1 block">{t("deptAdmin.before")}</Label>
                                             <div className="aspect-video w-full bg-muted rounded-md overflow-hidden">
                                                 <img src={selectedIssue.beforeImage || selectedIssue.image} alt="Before" className="w-full h-full object-cover" />
                                             </div>
                                         </div>
                                         <div>
-                                            <Label className="text-xs text-muted-foreground mb-1 block">After</Label>
+                                            <Label className="text-xs text-muted-foreground mb-1 block">{t("deptAdmin.after")}</Label>
                                             <div className="aspect-video w-full bg-muted rounded-md overflow-hidden">
                                                 <img src={selectedIssue.afterImage} alt="After" className="w-full h-full object-cover" />
                                             </div>

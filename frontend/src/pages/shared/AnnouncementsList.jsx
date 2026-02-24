@@ -6,9 +6,11 @@ import { Clock, Calendar, Megaphone, AlertTriangle, Lock, Eye, X } from "lucide-
 import { useAuth } from "@/context/AuthContext"
 import { Button } from "@/components/ui/button"
 import { ImageViewer } from "@/components/ui/image-viewer"
+import { useLanguage } from "@/context/LanguageContext"
 
 export default function AnnouncementsList({ mode = "public" }) {
     const { user } = useAuth()
+    const { t } = useLanguage()
     const [activeTab, setActiveTab] = React.useState("active")
     const [announcements, setAnnouncements] = React.useState([])
     const [loading, setLoading] = React.useState(true)
@@ -106,7 +108,7 @@ export default function AnnouncementsList({ mode = "public" }) {
     return (
         <div className="space-y-6 p-6 max-w-7xl mx-auto">
             <div className="flex items-center justify-between">
-                <h2 className="text-3xl font-bold tracking-tight bg-gradient-to-r from-orange-600 to-orange-700 bg-clip-text text-transparent">{mode === 'my' ? 'My Announcements' : 'Announcements'}</h2>
+                <h2 className="text-3xl font-bold tracking-tight bg-gradient-to-r from-orange-600 to-orange-700 bg-clip-text text-transparent">{mode === 'my' ? t("announce.myTitle") : t("nav.announcements")}</h2>
                 {(mode === 'my' || (user && ['super_admin', 'regional_admin'].includes(user?.role))) && (
                     <a
                         href="/create-announcement"
@@ -117,7 +119,7 @@ export default function AnnouncementsList({ mode = "public" }) {
                         }}
                         className="inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white shadow-md hover:shadow-lg h-10 px-4 py-2 transition-all duration-300"
                     >
-                        Create New
+                        {t("announce.createNew")}
                     </a>
                 )}
             </div>
@@ -125,23 +127,23 @@ export default function AnnouncementsList({ mode = "public" }) {
             <Tabs defaultValue="active" onValueChange={setActiveTab}>
                 {mode !== 'my' && (
                     <TabsList>
-                        <TabsTrigger value="active">Active Announcements</TabsTrigger>
-                        <TabsTrigger value="past">Past Announcements</TabsTrigger>
-                        <TabsTrigger value="all">All</TabsTrigger>
+                        <TabsTrigger value="active">{t("announce.active")}</TabsTrigger>
+                        <TabsTrigger value="past">{t("announce.past")}</TabsTrigger>
+                        <TabsTrigger value="all">{t("deptAdmin.all")}</TabsTrigger>
                     </TabsList>
                 )}
 
                 <div className="mt-6 space-y-4">
                     {loading ? (
-                        <div className="text-center py-10">Loading...</div>
+                        <div className="text-center py-10">{t("common.loading")}</div>
                     ) : announcements.length === 0 ? (
                         <div className="text-center py-12 border-2 border-dashed border-orange-200 rounded-lg bg-gradient-to-br from-orange-50/50 to-transparent">
                             <div className="flex flex-col items-center justify-center text-muted-foreground">
                                 <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gradient-to-br from-orange-100 to-orange-200 mb-4">
                                     <Megaphone className="h-8 w-8 text-orange-600" />
                                 </div>
-                                <p className="text-lg font-semibold text-foreground">No announcements found</p>
-                                <p className="text-sm">No {activeTab} announcements at this time.</p>
+                                <p className="text-lg font-semibold text-foreground">{t("announce.noAnnounce")}</p>
+                                <p className="text-sm">{t("announce.noneAtThisTime")}</p>
                             </div>
                         </div>
                     ) : (
@@ -164,18 +166,18 @@ export default function AnnouncementsList({ mode = "public" }) {
                                     <CardDescription className="flex items-center gap-4 text-xs mt-1">
                                         <span className="flex items-center gap-1">
                                             <Calendar className="w-3 h-3" />
-                                            Posted: {new Date(announcement.createdAt).toLocaleDateString()}
+                                            {t("announce.postedOn")}: {new Date(announcement.createdAt).toLocaleDateString()}
                                         </span>
                                         <span className="flex items-center gap-1 text-red-500">
                                             <Clock className="w-3 h-3" />
-                                            Expires: {new Date(announcement.expiryDate).toLocaleDateString()}
+                                            {t("announce.expires")}: {new Date(announcement.expiryDate).toLocaleDateString()}
                                         </span>
                                     </CardDescription>
                                 </CardHeader>
                                 <CardContent>
                                     {announcement.image && (
                                         <div className="mb-4 rounded-md overflow-hidden">
-                                            <div 
+                                            <div
                                                 className="w-full h-48 overflow-hidden cursor-pointer hover:opacity-90 transition-opacity"
                                                 onClick={() => setSelectedImage({ src: announcement.image, alt: announcement.title })}
                                             >
@@ -192,7 +194,7 @@ export default function AnnouncementsList({ mode = "public" }) {
                                 <CardFooter>
                                     <div className="flex items-center gap-2 font-semibold text-base px-3 py-1 rounded-full bg-blue-50 text-blue-700 dark:bg-blue-950/40 dark:text-blue-200 ml-auto border border-blue-200 dark:border-blue-800">
                                         <Eye className="w-5 h-5" />
-                                        {announcement.views || 0} views
+                                        {announcement.views || 0} {t("announce.views")}
                                     </div>
                                 </CardFooter>
                             </Card>
@@ -200,11 +202,11 @@ export default function AnnouncementsList({ mode = "public" }) {
                     )}
                 </div>
             </Tabs>
-            
+
             {/* Image Viewer Modal */}
             {selectedImage.src && (
-                <ImageViewer 
-                    src={selectedImage.src} 
+                <ImageViewer
+                    src={selectedImage.src}
                     alt={selectedImage.alt}
                     onClose={() => setSelectedImage({ src: null, alt: '' })}
                 />

@@ -13,6 +13,7 @@ import adminRoutes from './routes/admin.js';
 import departmentalRoutes from './routes/departmental.js';
 import notificationRoutes from './routes/notifications.js';
 import announcementRoutes from './routes/announcements.js';
+import usersRoutes from './routes/users.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -65,6 +66,7 @@ app.use('/api/admin', adminRoutes);
 app.use('/api/departmental', departmentalRoutes);
 app.use('/api/notifications', notificationRoutes);
 app.use('/api/announcements', announcementRoutes);
+app.use('/api/users', usersRoutes);
 
 // 404
 app.use((req, res) => res.status(404).json({ error: 'Not found' }));

@@ -15,12 +15,16 @@ import {
 import { Input } from "@/components/ui/input"
 import { issueService } from "@/services/issueService"
 import { IssueDetailDialog } from "@/components/IssueDetailDialog"
+import { useLanguage } from "@/context/LanguageContext"
+import { useIssueTranslation } from "@/hooks/useIssueTranslation"
 
 const statusMap = { PENDING: "pending", PENDING_DEPARTMENT: "awaiting-department", IN_PROGRESS: "in-progress", COMPLETED: "solved" }
 
 export default function MyIssuesPage() {
+    const { t } = useLanguage()
     const [searchTerm, setSearchTerm] = React.useState("")
     const [myIssues, setMyIssues] = React.useState([])
+    const getDesc = useIssueTranslation(myIssues)
     const [loading, setLoading] = React.useState(true)
     const [selectedIssue, setSelectedIssue] = React.useState(null)
     const [detailOpen, setDetailOpen] = React.useState(false)
@@ -36,6 +40,7 @@ export default function MyIssuesPage() {
         id: i.id,
         title: i.description?.slice(0, 60) || "Issue",
         description: i.description,
+        _rawIssue: i, // keep raw for translation hook
         region: i.department?.region?.name || "—",
         area: i.address || `${i.latitude}, ${i.longitude}`,
         date: i.createdAt ? new Date(i.createdAt).toLocaleDateString() : "",
@@ -74,8 +79,8 @@ export default function MyIssuesPage() {
     return (
         <div className="space-y-6 p-6 max-w-7xl mx-auto">
             <div className="flex flex-col space-y-2">
-                <h2 className="text-3xl font-bold tracking-tight bg-gradient-to-r from-orange-600 to-orange-700 bg-clip-text text-transparent">My Issues</h2>
-                <p className="text-muted-foreground">Track the status of issues you have reported.</p>
+                <h2 className="text-3xl font-bold tracking-tight bg-gradient-to-r from-orange-600 to-orange-700 bg-clip-text text-transparent">{t("myIssues.title")}</h2>
+                <p className="text-muted-foreground">{t("myIssues.subtitle")}</p>
             </div>
 
             {/* Search */}
@@ -83,7 +88,7 @@ export default function MyIssuesPage() {
                 <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-orange-600" />
                 <Input
                     type="search"
-                    placeholder="Search by title or ticket ID..."
+                    placeholder={t("myIssues.search")}
                     className="pl-8 md:w-[300px] lg:w-[400px] border-orange-200/50 focus:border-orange-400 focus:ring-orange-400/20"
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
@@ -97,7 +102,7 @@ export default function MyIssuesPage() {
                         <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-gradient-to-br from-orange-100 to-orange-200 mb-4">
                             <Clock className="h-6 w-6 text-orange-600 animate-spin" />
                         </div>
-                        <p className="text-muted-foreground font-medium">Loading your issues...</p>
+                        <p className="text-muted-foreground font-medium">{t("myIssues.loading")}</p>
                     </div>
                 ) : filteredIssues.length > 0 ? (
                     filteredIssues.map((issue) => (
@@ -148,18 +153,18 @@ export default function MyIssuesPage() {
                                             </div>
 
                                             <p className="text-sm text-muted-foreground mt-2 line-clamp-2">
-                                                {issue.description}
+                                                {getDesc(issue)}
                                             </p>
                                         </div>
 
                                         <div className="mt-4 flex justify-end">
-                                            <Button 
-                                                variant="outline" 
-                                                size="sm" 
+                                            <Button
+                                                variant="outline"
+                                                size="sm"
                                                 onClick={(e) => { e.stopPropagation(); setSelectedIssue(issue); setDetailOpen(true) }}
                                                 className="hover:bg-orange-50 hover:text-orange-600 hover:border-orange-300 transition-all duration-300"
                                             >
-                                                View Details
+                                                {t("myIssues.viewDetails")}
                                             </Button>
                                         </div>
                                     </div>
@@ -173,8 +178,8 @@ export default function MyIssuesPage() {
                             <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gradient-to-br from-orange-100 to-orange-200 mb-4">
                                 <AlertCircle className="h-8 w-8 text-orange-600" />
                             </div>
-                            <p className="text-lg font-semibold text-foreground">No issues found</p>
-                            <p className="text-sm">You haven't reported any issues matching your search.</p>
+                            <p className="text-lg font-semibold text-foreground">{t("myIssues.noIssues")}</p>
+                            <p className="text-sm">{t("myIssues.noIssuesHint")}</p>
                         </div>
                     </div>
                 )}

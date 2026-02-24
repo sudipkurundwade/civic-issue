@@ -2,6 +2,35 @@ import { GoogleGenerativeAI } from '@google/generative-ai';
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
+const LANG_NAMES = {
+    hi: 'Hindi',
+    mr: 'Marathi',
+    en: 'English',
+};
+
+/**
+ * Translate a short text snippet using Gemini
+ * @param {string} text - The text to translate (original, usually English)
+ * @param {string} targetLang - Language code: 'hi', 'mr', or 'en'
+ * @returns {Promise<string>} - Translated text
+ */
+export async function translateText(text, targetLang) {
+    if (!text || targetLang === 'en') return text;
+    if (!process.env.GEMINI_API_KEY) return text;
+
+    try {
+        const langName = LANG_NAMES[targetLang] || targetLang;
+        const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' });
+        const prompt = `Translate the following civic issue description to ${langName}. Return ONLY the translated text, no explanations or extra commentary.\n\nText: ${text}`;
+        const result = await model.generateContent(prompt);
+        const translated = result.response.text().trim();
+        return translated || text;
+    } catch (err) {
+        console.error('Translation error:', err);
+        return text; // Graceful fallback — return original text
+    }
+}
+
 /**
  * Analyze a civic issue image using Gemini AI
  * @param {string} base64Image - Base64 encoded image data (without data:image prefix)

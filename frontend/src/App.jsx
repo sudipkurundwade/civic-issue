@@ -10,6 +10,7 @@ import RegionDepartments from "@/pages/regionAdmin/RegionDepartments"
 import DepartmentAdminDashboard from "@/pages/departmentAdmin/departmentdashboard"
 import CitizenDashboard from "@/pages/citizen/citizensDashboard"
 import MyIssuesPage from "@/pages/citizen/myIssues"
+import Leaderboard from "@/pages/citizen/Leaderboard"
 import ProfilePage from "@/pages/SuperAdmin/profile"
 import AnalyticsPage from "@/pages/SuperAdmin/analytics"
 import NotificationsPage from "@/pages/Notifications"
@@ -178,16 +179,17 @@ function AppContent() {
             page.includes("dept-dashboard") ? "Department Dashboard" :
               page.includes("citizen-dashboard") ? "Report Issue" :
                 page.includes("my-issues") ? "My Issues" :
-                  page === "notifications" ? "Notifications" :
-                    page === "chat" ? "Chat" :
-                      page === "profile" ? "Profile" :
-                        page === "analytics" ? "Analytics" :
-                          page === "reports" ? "Reports" :
-                            page === "announcements" ? "Announcements" :
-                              page === "my-announcements" ? "My Announcements" :
-                                page === "create-announcement" ? "Create Announcement" :
-                                  page === "heatmap" ? "Heat Map" :
-                                    ""
+                  page === "leaderboard" ? "Leaderboard" :
+                    page === "notifications" ? "Notifications" :
+                      page === "chat" ? "Chat" :
+                        page === "profile" ? "Profile" :
+                          page === "analytics" ? "Analytics" :
+                            page === "reports" ? "Reports" :
+                              page === "announcements" ? "Announcements" :
+                                page === "my-announcements" ? "My Announcements" :
+                                  page === "create-announcement" ? "Create Announcement" :
+                                    page === "heatmap" ? "Heat Map" :
+                                      ""
 
     return (
       <SidebarProvider>
@@ -214,6 +216,7 @@ function AppContent() {
             {page.includes("dept-dashboard") && user?.role === "departmental_admin" && <DepartmentAdminDashboard />}
             {page.includes("citizen-dashboard") && user?.role === "civic" && <CitizenDashboard />}
             {page.includes("my-issues") && user?.role === "civic" && <MyIssuesPage />}
+            {page === "leaderboard" && user?.role === "civic" && <Leaderboard />}
             {page === "notifications" && <NotificationsPage />}
             {page === "chat" && <ChatPage />}
             {page === "profile" && <ProfilePage />}

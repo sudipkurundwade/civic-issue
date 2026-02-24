@@ -97,6 +97,20 @@ export const adminService = {
     return data;
   },
 
+  async bulkUploadRegionalAdmins(admins) {
+    // admins: Array<{ name, email, password, regionName }>
+    const results = [];
+    for (const admin of admins) {
+      try {
+        const data = await adminService.createRegionalAdmin(admin);
+        results.push({ ...admin, success: true, data });
+      } catch (err) {
+        results.push({ ...admin, success: false, error: err.message });
+      }
+    }
+    return results;
+  },
+
   // Reports
   async getRegionReport() {
     const res = await fetch(`${API_URL}/admin/reports/region-summary`, {
