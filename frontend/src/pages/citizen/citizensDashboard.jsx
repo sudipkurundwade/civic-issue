@@ -853,13 +853,48 @@ export default function CitizenDashboard() {
 
                                     {/* Post Content */}
                                     <div className="p-0 cursor-pointer" onClick={() => { setSelectedIssue(issue); setDetailOpen(true) }}>
-                                        <div className="aspect-video w-full bg-muted">
-                                            <img
-                                                src={issue.image}
-                                                alt={issue.title}
-                                                className="w-full h-full object-cover"
-                                            />
-                                        </div>
+                                        {(() => {
+                                            const photos = issue.photoUrls?.length > 0 ? issue.photoUrls : [issue.image]
+                                            const count = photos.length
+                                            if (count === 1) {
+                                                return (
+                                                    <div className="aspect-video w-full bg-muted">
+                                                        <img src={photos[0]} alt={issue.title} className="w-full h-full object-cover" />
+                                                    </div>
+                                                )
+                                            }
+                                            if (count === 2) {
+                                                return (
+                                                    <div className="grid grid-cols-2 gap-0.5 aspect-video w-full bg-muted">
+                                                        {photos.map((p, i) => (
+                                                            <img key={i} src={p} alt={`${issue.title} ${i + 1}`} className="w-full h-full object-cover" />
+                                                        ))}
+                                                    </div>
+                                                )
+                                            }
+                                            if (count === 3) {
+                                                return (
+                                                    <div className="grid grid-cols-2 grid-rows-2 gap-0.5 aspect-video w-full bg-muted">
+                                                        <img src={photos[0]} alt={`${issue.title} 1`} className="w-full h-full object-cover row-span-2" />
+                                                        <img src={photos[1]} alt={`${issue.title} 2`} className="w-full h-full object-cover" />
+                                                        <img src={photos[2]} alt={`${issue.title} 3`} className="w-full h-full object-cover" />
+                                                    </div>
+                                                )
+                                            }
+                                            // 4 photos — 2×2 grid
+                                            return (
+                                                <div className="grid grid-cols-2 grid-rows-2 gap-0.5 aspect-video w-full bg-muted">
+                                                    {photos.slice(0, 4).map((p, i) => (
+                                                        <img key={i} src={p} alt={`${issue.title} ${i + 1}`} className="w-full h-full object-cover" />
+                                                    ))}
+                                                </div>
+                                            )
+                                        })()}
+                                        {issue.photoUrls?.length > 1 && (
+                                            <div className="px-3 py-1 bg-muted/30 flex items-center gap-1.5">
+                                                <span className="text-[10px] font-medium text-muted-foreground">{issue.photoUrls.length} photos</span>
+                                            </div>
+                                        )}
                                         <div className="p-4 space-y-2">
                                             <h3 className="font-bold text-lg">{issue.title}</h3>
                                             <p className="text-sm text-foreground/80">{getDesc(issue)}</p>

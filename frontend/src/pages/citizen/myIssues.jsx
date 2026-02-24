@@ -129,6 +129,11 @@ export default function MyIssuesPage() {
                                                 {issue.ticketId}
                                             </Badge>
                                         </div>
+                                        {issue.photoUrls?.length > 1 && (
+                                            <div className="absolute bottom-2 right-2 bg-black/60 text-white text-[10px] font-medium px-1.5 py-0.5 rounded-full">
+                                                {issue.photoUrls.length} photos
+                                            </div>
+                                        )}
                                     </div>
 
                                     {/* Content Section */}
