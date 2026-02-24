@@ -35,6 +35,8 @@ import { notificationService } from "@/services/notificationService"
 import { useToast } from "@/components/ui/use-toast"
 import { IssueDetailDialog } from "@/components/IssueDetailDialog"
 import { useLanguage } from "@/context/LanguageContext"
+import sampleCSV from "@/assets/bulk_regional_admins_sample.csv?url"
+
 
 const formatTimeAgo = (date) => {
   const sec = Math.floor((Date.now() - date) / 1000)
@@ -189,7 +191,9 @@ export default function SuperAdminDashboard() {
         return
       }
 
+      console.log('Processed admins for bulk upload:', admins)
       const results = await adminService.bulkUploadRegionalAdmins(admins)
+      console.log('Bulk upload results:', results)
       setBulkResults(results)
       const successCount = results.filter((r) => r.success).length
       toast({ title: `Bulk upload done: ${successCount}/${results.length} created` })
@@ -199,6 +203,16 @@ export default function SuperAdminDashboard() {
     } finally {
       setBulkLoading(false)
     }
+  }
+
+  const handleDownloadSample = () => {
+    const link = document.createElement("a")
+    link.href = sampleCSV
+    link.download = "bulk_regional_admins_sample.csv"
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+    toast({ title: "Sample sheet downloaded" })
   }
 
   const filteredIssues = !selectedRegion || selectedRegion === "all"
@@ -220,12 +234,25 @@ export default function SuperAdminDashboard() {
               </Button>
             </DialogTrigger>
             <DialogContent className="max-w-lg">
-              <DialogHeader>
-                <DialogTitle>Bulk Upload Regional Admins</DialogTitle>
-                <DialogDescription>
-                  Upload an Excel (.xlsx) or CSV file. Required columns: <strong>name</strong>, <strong>email</strong>, <strong>password</strong>, <strong>regionName</strong>.
-                </DialogDescription>
-              </DialogHeader>
+                <DialogHeader>
+                  <DialogTitle>Bulk Upload Regional Admins</DialogTitle>
+                  <DialogDescription asChild>
+                    <div className="text-sm text-muted-foreground">
+                      Upload an Excel (.xlsx) or CSV file. Required columns: <strong>name</strong>, <strong>email</strong>, <strong>password</strong>, <strong>regionName</strong>.
+                      <div className="mt-3">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={handleDownloadSample}
+                          className="text-orange-600 border-orange-200 hover:bg-orange-50 hover:text-orange-700 hover:border-orange-300 transition-all duration-200 flex items-center gap-2"
+                        >
+                          <Upload className="h-4 w-4 rotate-180" />
+                          Download Sample Sheet
+                        </Button>
+                      </div>
+                    </div>
+                  </DialogDescription>
+                </DialogHeader>
               <div className="grid gap-4 py-4">
                 <div className="grid gap-2">
                   <Label htmlFor="bulkFile">Select File (.xlsx / .csv)</Label>

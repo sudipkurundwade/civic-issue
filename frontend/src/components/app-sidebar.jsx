@@ -123,7 +123,10 @@ export function AppSidebar({ user, onLogout, page, onNavigate }) {
   return (
     <Sidebar collapsible="icon">
       <SidebarHeader className="border-b border-sidebar-border/50 bg-gradient-to-br from-orange-50/30 to-transparent">
-        <div className="flex items-center gap-3 px-2 py-3 transition-all duration-200 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:px-2">
+        <div 
+          className="flex items-center gap-3 px-2 py-3 transition-all duration-200 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:px-2 cursor-pointer hover:bg-sidebar-accent/50 rounded-lg mx-1"
+          onClick={(e) => handleNav(e, navItems[0]?.url || "/")}
+        >
           <div className="shrink-0 w-10 h-10 transition-all duration-200 group-data-[collapsible=icon]:w-14 group-data-[collapsible=icon]:h-14">
             <img
               src={logoImg}

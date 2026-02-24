@@ -85,7 +85,10 @@ export default function Landing() {
       {/* Header */}
       <header className="sticky top-0 z-20 w-full border-b bg-background/80 backdrop-blur">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-           <div className="flex items-center gap-2">
+           <div 
+            className="flex items-center gap-2 cursor-pointer hover:opacity-80 transition-opacity" 
+            onClick={() => navigate("/")}
+           >
             <div className="shrink-0 w-9 h-9">
               <img
                 src={logoImg}
