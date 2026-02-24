@@ -445,9 +445,23 @@ export default function SuperAdminDashboard() {
                       <p className="text-sm text-muted-foreground">
                         {issue.department}
                       </p>
-                      <div className="flex items-center gap-2 text-xs text-muted-foreground mt-1">
-                        <Clock className="h-3 w-3" />
-                        {issue.time}
+                      <div className="flex flex-wrap items-center gap-3 text-xs text-muted-foreground mt-2">
+                        <span className="flex items-center gap-1 opacity-70">
+                          <Clock className="h-3 w-3 text-orange-400" />
+                          {issue.time}
+                        </span>
+                        <a
+                          href={`https://www.google.com/maps?q=${fullIssue.latitude},${fullIssue.longitude}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-orange-50 border border-orange-100/50 text-orange-700 hover:bg-orange-100 hover:border-orange-200 transition-all duration-200 group"
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          <MapPin className="h-3 w-3 text-orange-500 group-hover:scale-110 transition-transform" />
+                          <span className="font-semibold text-[10px] tracking-tight">
+                            {fullIssue.address || fullIssue.area || `${fullIssue.latitude}, ${fullIssue.longitude}`}
+                          </span>
+                        </a>
                       </div>
                     </div>
                   )

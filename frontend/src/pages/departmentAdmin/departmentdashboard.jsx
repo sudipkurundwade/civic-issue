@@ -242,11 +242,18 @@ export default function DepartmentAdminDashboard() {
                                                         {complaint.status}
                                                     </Badge>
                                                 </div>
-                                                <p className="text-sm text-muted-foreground mt-1 flex items-center gap-1">
-                                                    <MapPin className="h-3 w-3 text-orange-600" /> {complaint.location}
-                                                </p>
-                                                <p className="text-sm text-muted-foreground flex items-center gap-1">
-                                                    <Clock className="h-3 w-3 text-orange-600" /> {t("deptAdmin.reported")} {complaint.date}
+                                                <a
+                                                    href={`https://www.google.com/maps?q=${complaint.latitude},${complaint.longitude}`}
+                                                    target="_blank"
+                                                    rel="noopener noreferrer"
+                                                    className="inline-flex items-center gap-1.5 px-2 py-1 rounded-md bg-orange-50/50 border border-orange-100/50 text-muted-foreground hover:text-orange-700 hover:bg-orange-100/50 hover:border-orange-200 transition-all duration-200 group mt-1"
+                                                    onClick={(e) => e.stopPropagation()}
+                                                >
+                                                    <MapPin className="h-3.5 w-3.5 text-orange-500 group-hover:scale-110 transition-transform" />
+                                                    <span className="text-xs font-medium">{complaint.location}</span>
+                                                </a>
+                                                <p className="text-xs text-muted-foreground flex items-center gap-1 mt-1 opacity-80">
+                                                    <Clock className="h-3 w-3 text-orange-400" /> {t("deptAdmin.reported")} {complaint.date}
                                                 </p>
                                             </div>
                                             <div className="mt-4 flex justify-end">

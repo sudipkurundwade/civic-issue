@@ -141,13 +141,19 @@ export default function MyIssuesPage() {
                                                 </Badge>
                                             </div>
 
-                                            <div className="flex items-center text-sm text-muted-foreground mt-1 gap-4">
-                                                <span className="flex items-center">
-                                                    <MapPin className="h-3 w-3 mr-1 text-orange-600" />
-                                                    {issue.area}, {issue.region}
-                                                </span>
-                                                <span className="flex items-center">
-                                                    <Clock className="h-3 w-3 mr-1 text-orange-600" />
+                                            <div className="flex flex-wrap items-center text-sm text-muted-foreground mt-2 gap-3">
+                                                <a
+                                                    href={`https://www.google.com/maps?q=${issue.latitude},${issue.longitude}`}
+                                                    target="_blank"
+                                                    rel="noopener noreferrer"
+                                                    className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-orange-50 border border-orange-100/50 text-orange-700 hover:bg-orange-100 hover:border-orange-200 transition-all duration-200 group"
+                                                    onClick={(e) => e.stopPropagation()}
+                                                >
+                                                    <MapPin className="h-3.5 w-3.5 group-hover:scale-110 transition-transform" />
+                                                    <span className="text-xs font-semibold">{issue.area}, {issue.region}</span>
+                                                </a>
+                                                <span className="flex items-center text-xs opacity-70">
+                                                    <Clock className="h-3 w-3 mr-1 text-orange-400" />
                                                     {issue.date}
                                                 </span>
                                             </div>

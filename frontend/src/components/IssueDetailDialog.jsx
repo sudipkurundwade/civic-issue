@@ -89,8 +89,27 @@ export function IssueDetailDialog({ open, onClose, issue }) {
                     {/* Location */}
                     <div>
                         <h4 className="font-medium text-sm text-muted-foreground mb-1">Location</h4>
-                        <p className="text-sm">{address}</p>
-                        {region && region !== "—" && <p className="text-sm text-muted-foreground">{region}</p>}
+                        {hasCoords ? (
+                            <a
+                                href={`https://www.google.com/maps?q=${issue.latitude},${issue.longitude}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-orange-50/50 border border-orange-100 text-orange-700 hover:bg-orange-100/50 hover:border-orange-200 transition-all duration-300 group shadow-sm hover:shadow-md mt-1"
+                            >
+                                <MapPin className="h-4 w-4 text-orange-600 transition-transform group-hover:scale-110" />
+                                <span className="text-sm font-medium">{address}</span>
+                                <ExternalLink className="h-3 w-3 opacity-40 group-hover:opacity-100 transition-opacity" />
+                            </a>
+                        ) : (
+                            <p className="text-sm flex items-center gap-2 text-muted-foreground mt-1 px-1">
+                                <MapPin className="h-4 w-4 text-orange-400" />
+                                {address}
+                            </p>
+                        )}
+                        {region && region !== "—" && <p className="text-sm text-muted-foreground mt-2 ml-1 flex items-center gap-2">
+                            <span className="w-1.5 h-1.5 rounded-full bg-orange-200"></span>
+                            {region}
+                        </p>}
                         {hasCoords && (
                             <>
                                 <div className="mt-2 rounded-md overflow-hidden border h-40">

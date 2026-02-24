@@ -773,13 +773,23 @@ export default function CitizenDashboard() {
                                 >
                                     {/* Post Header */}
                                     <div className="p-4 flex items-center gap-3 border-b bg-muted/20">
-                                        <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
-                                            <MapPin className="h-5 w-5 text-primary" />
-                                        </div>
-                                        <div>
-                                            <h4 className="font-semibold text-sm">{issue.area}, {issue.region}</h4>
-                                            <p className="text-xs text-muted-foreground">{issue.date} · {t("citizen.reportedBy")} {issue.reporterName}</p>
-                                        </div>
+                                        <a
+                                            href={`https://www.google.com/maps?q=${issue.latitude},${issue.longitude}`}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="inline-flex items-start gap-2.5 p-2 rounded-xl hover:bg-white hover:shadow-sm border border-transparent hover:border-orange-100 transition-all duration-300 group"
+                                            onClick={(e) => e.stopPropagation()}
+                                        >
+                                            <div className="h-9 w-9 rounded-full bg-orange-100/50 flex items-center justify-center shrink-0 group-hover:bg-orange-100 transition-colors">
+                                                <MapPin className="h-5 w-5 text-orange-600 group-hover:scale-110 transition-transform" />
+                                            </div>
+                                            <div className="flex flex-col">
+                                                <h4 className="font-bold text-sm text-foreground group-hover:text-orange-700 transition-colors line-clamp-1">{issue.area}, {issue.region}</h4>
+                                                <p className="text-[11px] text-muted-foreground font-medium flex items-center gap-1.5 mt-0.5">
+                                                    {issue.date} <span className="w-1 h-1 rounded-full bg-muted-foreground/30"></span> {t("citizen.reportedBy")} {issue.reporterName}
+                                                </p>
+                                            </div>
+                                        </a>
                                         <div className="ml-auto">
                                             <Badge variant={issue.status === "pending" ? "destructive" : "secondary"}>
                                                 {issue.status}
