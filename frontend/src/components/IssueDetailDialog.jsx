@@ -6,7 +6,7 @@ import {
     DialogTitle,
 } from "@/components/ui/dialog"
 import { Badge } from "@/components/ui/badge"
-import { MapPin, ThumbsUp, MessageSquare, ExternalLink, Clock, User } from "lucide-react"
+import { MapPin, ThumbsUp, MessageSquare, ExternalLink, Clock, User, ChevronLeft, ChevronRight } from "lucide-react"
 import { LocationMap } from "@/components/LocationMap"
 import { issueService } from "@/services/issueService"
 import { Input } from "@/components/ui/input"
@@ -17,9 +17,11 @@ export function IssueDetailDialog({ open, onClose, issue }) {
     const [commentText, setCommentText] = React.useState("")
     const [loadingComments, setLoadingComments] = React.useState(false)
     const [addingComment, setAddingComment] = React.useState(false)
+    const [activePhotoIndex, setActivePhotoIndex] = React.useState(0)
 
     React.useEffect(() => {
         if (!open || !issue?.id) return
+        setActivePhotoIndex(0)
         setLoadingComments(true)
         issueService.getComments(issue.id)
             .then(setCommentsList)
@@ -29,7 +31,9 @@ export function IssueDetailDialog({ open, onClose, issue }) {
 
     if (!issue) return null
 
-    const image = issue.image || issue.photoUrl || "/placeholder.svg"
+    const images = issue.photoUrls?.length > 0
+        ? issue.photoUrls
+        : [issue.image || issue.photoUrl || "/placeholder.svg"]
     const description = issue.description || ""
     const address = issue.area || issue.address || (issue.latitude != null && issue.longitude != null
         ? `${issue.latitude.toFixed(5)}, ${issue.longitude.toFixed(5)}` : "—")
@@ -49,14 +53,48 @@ export function IssueDetailDialog({ open, onClose, issue }) {
                     <DialogTitle className="pr-8">Issue Details</DialogTitle>
                 </DialogHeader>
                 <div className="space-y-4">
-                    {/* Image */}
-                    <div className="aspect-video w-full rounded-lg overflow-hidden bg-muted">
-                        <img
-                            src={image}
-                            alt="Issue"
-                            className="w-full h-full object-cover"
-                        />
+                    {/* Image Gallery */}
+                    <div className="relative">
+                        <div className="aspect-video w-full rounded-lg overflow-hidden bg-muted">
+                            <img
+                                src={images[activePhotoIndex]}
+                                alt={`Issue photo ${activePhotoIndex + 1}`}
+                                className="w-full h-full object-cover"
+                            />
+                        </div>
+                        {images.length > 1 && (
+                            <>
+                                <button
+                                    onClick={() => setActivePhotoIndex(i => (i - 1 + images.length) % images.length)}
+                                    className="absolute left-2 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-black/70 text-white rounded-full p-1 transition-colors"
+                                >
+                                    <ChevronLeft className="h-5 w-5" />
+                                </button>
+                                <button
+                                    onClick={() => setActivePhotoIndex(i => (i + 1) % images.length)}
+                                    className="absolute right-2 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-black/70 text-white rounded-full p-1 transition-colors"
+                                >
+                                    <ChevronRight className="h-5 w-5" />
+                                </button>
+                                <div className="absolute bottom-2 right-2 bg-black/60 text-white text-xs px-2 py-0.5 rounded-full">
+                                    {activePhotoIndex + 1} / {images.length}
+                                </div>
+                            </>
+                        )}
                     </div>
+                    {images.length > 1 && (
+                        <div className="flex gap-2 overflow-x-auto pb-1">
+                            {images.map((img, idx) => (
+                                <button
+                                    key={idx}
+                                    onClick={() => setActivePhotoIndex(idx)}
+                                    className={`shrink-0 h-14 w-14 rounded-md overflow-hidden border-2 transition-all ${idx === activePhotoIndex ? 'border-orange-500 ring-1 ring-orange-300' : 'border-transparent opacity-70 hover:opacity-100'}`}
+                                >
+                                    <img src={img} alt={`Thumbnail ${idx + 1}`} className="w-full h-full object-cover" />
+                                </button>
+                            ))}
+                        </div>
+                    )}
 
                     {/* Status & Meta */}
                     <div className="flex flex-wrap items-center gap-2">

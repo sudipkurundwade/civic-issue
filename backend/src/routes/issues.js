@@ -190,30 +190,34 @@ router.post('/', authenticate, requireRole('civic'), maybeUploadPhoto, async (re
       });
     }
 
-    let photoUrl = req.body.photoUrl;
+    let photoUrls = [];
 
-    if (req.file?.buffer) {
-      photoUrl = await uploadToCloudinary(
-        req.file.buffer,
-        req.file.mimetype,
-        'civic-issues'
-      );
-    } else if (req.body.photoBase64) {
-      const base64 = req.body.photoBase64;
-      const mimetype = req.body.photoMimetype || 'image/jpeg';
-      const dataUri = base64.startsWith('data:') ? base64 : `data:${mimetype};base64,${base64}`;
-      const result = await new Promise((resolve, reject) => {
-        cloudinary.uploader.upload(dataUri, { folder: 'civic-issues' }, (err, r) => {
-          if (err) reject(err);
-          else resolve(r?.secure_url);
-        });
-      });
-      photoUrl = result;
+    // Handle multipart file uploads (array of files)
+    if (req.files && req.files.length > 0) {
+      for (const file of req.files) {
+        const url = await uploadToCloudinary(
+          file.buffer,
+          file.mimetype,
+          'civic-issues'
+        );
+        photoUrls.push(url);
+      }
     }
 
-    if (!photoUrl) {
-      return res.status(400).json({ error: 'Issue photo required (upload file or send photoBase64)' });
+    // Fallback: single photo field for backward compatibility
+    if (photoUrls.length === 0 && req.body.photoUrl) {
+      photoUrls = [req.body.photoUrl];
     }
+
+    if (photoUrls.length === 0) {
+      return res.status(400).json({ error: 'At least 1 issue photo is required (max 4)' });
+    }
+
+    if (photoUrls.length > 4) {
+      return res.status(400).json({ error: 'Maximum 4 photos allowed' });
+    }
+
+    const photoUrl = photoUrls[0]; // Primary photo for backward compat
 
     if (!latitude || !longitude || !description) {
       return res.status(400).json({
@@ -279,6 +283,7 @@ router.post('/', authenticate, requireRole('civic'), maybeUploadPhoto, async (re
 
     const issue = await Issue.create({
       photoUrl,
+      photoUrls,
       latitude: parseFloat(latitude),
       longitude: parseFloat(longitude),
       address: address || undefined,

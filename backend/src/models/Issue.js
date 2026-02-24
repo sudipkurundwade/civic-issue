@@ -2,7 +2,8 @@ import mongoose from 'mongoose';
 
 const issueSchema = new mongoose.Schema(
   {
-    photoUrl: { type: String, required: true },
+    photoUrl: { type: String, required: true }, // Primary photo (first of photoUrls)
+    photoUrls: [{ type: String }], // All photos (1-4)
     latitude: { type: Number, required: true },
     longitude: { type: Number, required: true },
     address: { type: String },

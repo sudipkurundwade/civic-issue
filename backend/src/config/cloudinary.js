@@ -22,8 +22,8 @@ const fileFilter = (req, file, cb) => {
 export const uploadPhoto = multer({
   storage,
   fileFilter,
-  limits: { fileSize: 5 * 1024 * 1024 }, // 5MB
-}).single('photo');
+  limits: { fileSize: 5 * 1024 * 1024 }, // 5MB per file
+}).array('photos', 4); // Accept up to 4 photos
 
 export const uploadCompletionPhoto = multer({
   storage,

@@ -49,6 +49,7 @@ export default function MyIssuesPage() {
         ticketId: `TKT-${String(i.id ?? i._id ?? "").slice(-6).toUpperCase() || "------"}`,
         latitude: i.latitude,
         longitude: i.longitude,
+        photoUrls: i.photoUrls || [],
         likes: 0,
         comments: 0,
     }))

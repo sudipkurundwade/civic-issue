@@ -27,7 +27,8 @@ import {
     Mic,
     MicOff,
     AlertTriangle,
-    Volume2
+    Volume2,
+    X
 } from "lucide-react"
 import { motion, AnimatePresence } from "framer-motion"
 import { issueService } from "@/services/issueService"
@@ -125,7 +126,7 @@ export default function CitizenDashboard() {
     const [location, setLocation] = React.useState({ lat: null, lng: null, address: "" })
     const [locationLoading, setLocationLoading] = React.useState(true)
     const [mapSelected, setMapSelected] = React.useState(null)
-    const [reportForm, setReportForm] = React.useState({ description: "", regionName: "", departmentName: "", photo: null, photoPreview: null, address: "" })
+    const [reportForm, setReportForm] = React.useState({ description: "", regionName: "", departmentName: "", photos: [], photoPreviews: [], address: "" })
     const [submitting, setSubmitting] = React.useState(false)
     const [analyzing, setAnalyzing] = React.useState(false)
     const [aiGenerated, setAiGenerated] = React.useState(false)
@@ -239,19 +240,19 @@ export default function CitizenDashboard() {
     }, [reportForm.description, reportForm.regionName, reportForm.departmentName, mapSelected, location.lat, location.lng])
 
     const handleAnalyzeImage = async () => {
-        if (!reportForm.photo) {
+        if (!reportForm.photos.length) {
             toast({ title: "No photo to analyze", variant: "destructive" })
             return
         }
 
         setAnalyzing(true)
         try {
-            // Convert photo to base64
+            // Convert first photo to base64 for AI analysis
             const reader = new FileReader()
             reader.onloadend = async () => {
                 try {
                     const base64 = reader.result
-                    const mimeType = reportForm.photo.type || 'image/jpeg'
+                    const mimeType = reportForm.photos[0].type || 'image/jpeg'
 
                     const result = await issueService.analyzeImage(base64, mimeType)
 
@@ -272,12 +273,40 @@ export default function CitizenDashboard() {
                     setAnalyzing(false)
                 }
             }
-            reader.readAsDataURL(reportForm.photo)
+            reader.readAsDataURL(reportForm.photos[0])
         } catch (error) {
             console.error('File read error:', error)
             toast({ title: "Failed to read image", variant: "destructive" })
             setAnalyzing(false)
         }
+    }
+
+    const addPhotos = (files) => {
+        setReportForm(f => {
+            const remaining = 4 - f.photos.length
+            if (remaining <= 0) {
+                toast({ title: "Maximum 4 photos allowed", variant: "destructive" })
+                return f
+            }
+            const newFiles = files.slice(0, remaining)
+            const newPreviews = newFiles.map(file => URL.createObjectURL(file))
+            return {
+                ...f,
+                photos: [...f.photos, ...newFiles],
+                photoPreviews: [...f.photoPreviews, ...newPreviews],
+            }
+        })
+    }
+
+    const removePhoto = (index) => {
+        setReportForm(f => {
+            const newPhotos = [...f.photos]
+            const newPreviews = [...f.photoPreviews]
+            URL.revokeObjectURL(newPreviews[index])
+            newPhotos.splice(index, 1)
+            newPreviews.splice(index, 1)
+            return { ...f, photos: newPhotos, photoPreviews: newPreviews }
+        })
     }
 
     const resolved = myIssues.filter((i) => i.status === "COMPLETED").length
@@ -303,6 +332,7 @@ export default function CitizenDashboard() {
         reporterName: i.user?.name || "Anonymous",
         latitude: i.latitude,
         longitude: i.longitude,
+        photoUrls: i.photoUrls || [],
     }))
 
     if (isReporting) {
@@ -362,8 +392,8 @@ export default function CitizenDashboard() {
                                         const pos = mapSelected || (location.lat != null ? location : null)
                                         const lat = pos?.lat
                                         const lng = pos?.lng
-                                        if (!reportForm.photo || !reportForm.description || !reportForm.regionName || !reportForm.departmentName) {
-                                            toast({ title: "Please add region, department, description, and photo.", variant: "destructive" })
+                                        if (!reportForm.photos.length || !reportForm.description || !reportForm.regionName || !reportForm.departmentName) {
+                                            toast({ title: "Please add region, department, description, and at least 1 photo.", variant: "destructive" })
                                             return
                                         }
                                         if (lat == null || lng == null) {
@@ -373,7 +403,9 @@ export default function CitizenDashboard() {
                                         setSubmitting(true)
                                         try {
                                             const fd = new FormData()
-                                            fd.append("photo", reportForm.photo)
+                                            reportForm.photos.forEach((photo) => {
+                                                fd.append("photos", photo)
+                                            })
                                             fd.append("latitude", String(lat))
                                             fd.append("longitude", String(lng))
                                             fd.append("address", reportForm.address || "")
@@ -390,7 +422,7 @@ export default function CitizenDashboard() {
                                                 toast({ title: "Issue submitted successfully" })
                                             }
                                             setIsReporting(false)
-                                            setReportForm({ description: "", regionName: "", departmentName: "", photo: null, photoPreview: null, address: "" })
+                                            setReportForm({ description: "", regionName: "", departmentName: "", photos: [], photoPreviews: [], address: "" })
                                             setMapSelected(null)
                                             issueService.getMyIssues().then(setMyIssues)
                                             issueService.getAllIssues().then(setAllIssues)
@@ -473,26 +505,23 @@ export default function CitizenDashboard() {
                                     <div className="space-y-2">
                                         <Label>{t("form.issuePhoto")}</Label>
                                         <p className="text-xs text-muted-foreground">
-                                            {t("form.photoHint")}
+                                            Add 1 to 4 photos of the issue ({reportForm.photos.length}/4)
                                         </p>
                                         <div className="flex gap-3">
                                             <input
                                                 ref={uploadInputRef}
                                                 type="file"
                                                 accept="image/*"
+                                                multiple
                                                 className="hidden"
                                                 onChange={async (e) => {
-                                                    const file = e.target.files?.[0]
-                                                    if (!file) return
+                                                    const files = Array.from(e.target.files || [])
+                                                    if (!files.length) return
                                                     setLocationLoading(true)
                                                     const pos = await captureLocation()
                                                     if (pos) setLocation((l) => ({ ...l, ...pos }))
                                                     setLocationLoading(false)
-                                                    setReportForm((f) => ({
-                                                        ...f,
-                                                        photo: file,
-                                                        photoPreview: URL.createObjectURL(file),
-                                                    }))
+                                                    addPhotos(files)
                                                     e.target.value = ""
                                                 }}
                                             />
@@ -500,7 +529,13 @@ export default function CitizenDashboard() {
                                                 type="button"
                                                 variant="outline"
                                                 className="flex-1 gap-2"
-                                                onClick={() => setCameraOpen(true)}
+                                                onClick={() => {
+                                                    if (reportForm.photos.length >= 4) {
+                                                        toast({ title: "Maximum 4 photos allowed", variant: "destructive" })
+                                                        return
+                                                    }
+                                                    setCameraOpen(true)
+                                                }}
                                             >
                                                 <Camera className="h-4 w-4" /> {t("form.takePhoto")}
                                             </Button>
@@ -508,21 +543,40 @@ export default function CitizenDashboard() {
                                                 type="button"
                                                 variant="outline"
                                                 className="flex-1 gap-2"
-                                                onClick={() => uploadInputRef.current?.click()}
+                                                onClick={() => {
+                                                    if (reportForm.photos.length >= 4) {
+                                                        toast({ title: "Maximum 4 photos allowed", variant: "destructive" })
+                                                        return
+                                                    }
+                                                    uploadInputRef.current?.click()
+                                                }}
                                             >
                                                 <Upload className="h-4 w-4" /> {t("form.upload")}
                                             </Button>
                                         </div>
-                                        {reportForm.photoPreview && (
+                                        {reportForm.photoPreviews.length > 0 && (
                                             <div className="mt-2 space-y-2">
-                                                <img
-                                                    src={reportForm.photoPreview}
-                                                    alt="Preview"
-                                                    className="h-24 rounded border object-cover"
-                                                />
+                                                <div className="grid grid-cols-4 gap-2">
+                                                    {reportForm.photoPreviews.map((preview, idx) => (
+                                                        <div key={idx} className="relative group">
+                                                            <img
+                                                                src={preview}
+                                                                alt={`Preview ${idx + 1}`}
+                                                                className="h-20 w-full rounded border object-cover"
+                                                            />
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => removePhoto(idx)}
+                                                                className="absolute -top-1.5 -right-1.5 bg-red-500 text-white rounded-full p-0.5 opacity-0 group-hover:opacity-100 transition-opacity shadow-md hover:bg-red-600"
+                                                            >
+                                                                <X className="h-3 w-3" />
+                                                            </button>
+                                                        </div>
+                                                    ))}
+                                                </div>
                                                 <div className="flex items-center justify-between">
                                                     <p className="text-xs text-emerald-600 font-medium">
-                                                        {t("form.photoAdded")}
+                                                        {reportForm.photos.length} photo{reportForm.photos.length > 1 ? 's' : ''} added
                                                     </p>
                                                     <Button
                                                         type="button"
@@ -672,7 +726,7 @@ export default function CitizenDashboard() {
                                         className="w-full bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white shadow-md hover:shadow-lg transition-all duration-300 font-semibold"
                                         disabled={
                                             submitting ||
-                                            !reportForm.photo ||
+                                            !reportForm.photos.length ||
                                             !reportForm.regionName ||
                                             !reportForm.departmentName ||
                                             !(mapSelected || (location.lat != null && location.lng != null))
@@ -698,7 +752,7 @@ export default function CitizenDashboard() {
                             const pos = await captureLocation()
                             if (pos) setLocation((l) => ({ ...l, ...pos }))
                             setLocationLoading(false)
-                            setReportForm((f) => ({ ...f, photo: file, photoPreview: URL.createObjectURL(file) }))
+                            addPhotos([file])
                         }}
                     />
                 </div>
